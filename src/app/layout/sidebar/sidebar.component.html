@@ -24,7 +24,7 @@
 
   <!-- ── Main Navigation with Collapsible Sections ───────────────────────────────────────── -->
   <nav class="nav-main">
-    @for (section of menuSections; track section.id) {
+    @for (section of menuSections(); track section.id) {
       <div class="nav-section" 
            [class.expanded]="isSectionExpanded(section.id)"
            [class.has-active-child]="hasSectionActiveChild(section)">
@@ -89,7 +89,7 @@
 
     <!-- Dev Section (standalone) -->
     <!-- <div class="nav-dev-section">
-      <a routerLink="/app/ui-components" routerLinkActive="active" title="UI Components" class="nav-item">
+      <a [routerLink]="[orgPrefix(), 'app', 'ui-components']" routerLinkActive="active" title="UI Components" class="nav-item">
         <span class="nav-item-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/>
@@ -105,7 +105,7 @@
   <!-- ── Bottom ────────────────────────────────────────────────── -->
   <div class="nav-bottom">
 
-    <a routerLink="/app/settings/org-profile" routerLinkActive="active" title="Settings" class="nav-item">
+    <a [routerLink]="[orgPrefix(), 'app', 'settings', 'org-profile']" routerLinkActive="active" title="Settings" class="nav-item">
       <span class="nav-item-icon">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/>

@@ -1,9 +1,10 @@
 import {
-  Component, ChangeDetectionStrategy, signal, OnInit
+  Component, ChangeDetectionStrategy, signal, OnInit, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MOCK_EMPLOYEES, EmployeeRow } from '../../models/employee.model';
+import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
 
 @Component({
   selector: 'app-employee-detail',
@@ -14,7 +15,8 @@ import { MOCK_EMPLOYEES, EmployeeRow } from '../../models/employee.model';
   styleUrl: './employee-detail.component.scss',
 })
 export class EmployeeDetailComponent implements OnInit {
-  constructor(private router: Router, private route: ActivatedRoute) {}
+  private route = inject(ActivatedRoute);
+  private orgNav = inject(OrgNavigationService);
 
   employee = signal<EmployeeRow | null>(null);
 
@@ -46,8 +48,8 @@ export class EmployeeDetailComponent implements OnInit {
     this.employee.set(emp);
   }
 
-  goBack()  { this.router.navigate(['/app/employees']); }
-  editEmp() { this.router.navigate(['/app/employees', this.employee()?.id, 'edit']); }
+  goBack()  { this.orgNav.navigate(['app', 'employees']); }
+  editEmp() { this.orgNav.navigate(['app', 'employees', this.employee()?.id ?? '', 'edit']); }
   setTab(t: 'overview' | 'attendance' | 'leaves' | 'performance') { this.activeTab.set(t); }
 
   attendanceRate = 92;

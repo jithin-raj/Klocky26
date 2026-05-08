@@ -1,10 +1,11 @@
 import {
-  Component, ChangeDetectionStrategy, signal, OnInit
+  Component, ChangeDetectionStrategy, signal, OnInit, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MOCK_EMPLOYEES, DEPARTMENTS, DESIGNATIONS } from '../../models/employee.model';
+import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
 
 interface EmployeeForm {
   employeeCode: string;
@@ -30,7 +31,8 @@ interface EmployeeForm {
   styleUrl: './employee-add.component.scss',
 })
 export class EmployeeAddComponent implements OnInit {
-  constructor(private router: Router, private route: ActivatedRoute) {}
+  private route = inject(ActivatedRoute);
+  private orgNav = inject(OrgNavigationService);
 
   isEdit   = signal(false);
   empId    = signal<string | null>(null);
@@ -127,9 +129,9 @@ export class EmployeeAddComponent implements OnInit {
     setTimeout(() => {
       this.loading.set(false);
       this.saved.set(true);
-      setTimeout(() => this.router.navigate(['/app/employees']), 1200);
+      setTimeout(() => this.orgNav.navigate(['app', 'employees']), 1200);
     }, 800);
   }
 
-  cancel() { this.router.navigate(['/app/employees']); }
+  cancel() { this.orgNav.navigate(['app', 'employees']); }
 }

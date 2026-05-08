@@ -55,7 +55,7 @@
   background: rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(10px);
   border: 3px solid rgba(255, 255, 255, 0.4);
-  color: #fff;
+  color: var(--btn-text, #fff);
   font-size: 24px;
   font-weight: 700;
   display: flex;
@@ -74,15 +74,16 @@
 .ed-greeting-title {
   font-size: 28px;
   font-weight: 800;
-  color: #fff;
+  color: var(--btn-text, #fff);
   margin: 0;
   letter-spacing: -0.5px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .ed-greeting-sub {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--btn-text, rgba(255, 255, 255, 0.9));
+  opacity: 0.85;
   margin: 0;
   font-weight: 500;
 }
@@ -110,14 +111,15 @@
 .ed-hero-stat-value {
   font-size: 24px;
   font-weight: 800;
-  color: #fff;
+  color: var(--btn-text, #fff);
   line-height: 1;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .ed-hero-stat-label {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--btn-text, rgba(255, 255, 255, 0.85));
+  opacity: 0.75;
   text-align: center;
   font-weight: 600;
   text-transform: uppercase;
@@ -136,12 +138,12 @@
   gap: 16px;
   padding: 18px 32px;
   border-radius: 16px;
-  border: none;
-  background: #fff;
-  color: var(--accent, #6366f1);
+  border: 2px solid var(--accent, #6366f1);
+  background: #ffffff;
+  color: var(--accent-dark, #4f46e5);
   font-family: inherit;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 280px;
 
@@ -152,6 +154,8 @@
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+    background: var(--accent, #6366f1);
+    color: var(--btn-text, #ffffff);
   }
 
   &:active {
@@ -233,13 +237,14 @@
 .ed-clock-status {
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
+  color: var(--btn-text, #fff);
 }
 
 .ed-face-id {
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--btn-text, rgba(255, 255, 255, 0.85));
+  opacity: 0.85;
   background: rgba(0, 0, 0, 0.15);
   padding: 2px 8px;
   border-radius: 6px;
@@ -249,7 +254,8 @@
 
 .ed-geo-tag {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--btn-text, rgba(255, 255, 255, 0.9));
+  opacity: 0.85;
   font-weight: 600;
 }
 
@@ -263,7 +269,7 @@
   border: 2px solid rgba(255, 255, 255, 0.4);
   background: rgba(239, 68, 68, 0.15);
   backdrop-filter: blur(10px);
-  color: #fff;
+  color: var(--btn-text, #fff);
   font-size: 14px;
   font-weight: 700;
   font-family: inherit;

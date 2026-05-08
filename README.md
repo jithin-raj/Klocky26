@@ -2,6 +2,33 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.0.
 
+## Environment Setup
+
+This application supports three environments:
+
+### 🏠 Local Development
+- **Command**: `npm start`
+- **URL**: `http://localhost:4200`
+- **API**: `http://localhost:3000/api/v1`
+- **Encryption**: ❌ Disabled (plain JSON in localStorage)
+- **Logging**: ✅ Enabled
+
+### 🧪 Dev/Staging Environment
+- **Command**: `npm run build:dev`
+- **Domain**: `app-dev.klocky.app`
+- **API**: `https://api-dev.klocky.app/v1`
+- **Encryption**: ❌ Disabled (plain JSON for debugging)
+- **Logging**: ✅ Enabled
+- **Optimized**: ✅ Production-ready bundle
+
+### 🚀 Production Environment
+- **Command**: `npm run build:prod`
+- **Domain**: `https://klock.vercel.app`
+- **API**: `https://api.klocky.app/v1`
+- **Encryption**: ✅ Enabled (AES-256-GCM)
+- **Logging**: ❌ Disabled
+- **Optimized**: ✅ Fully optimized
+
 ## Development server
 
 To start a local development server, run:
@@ -28,13 +55,47 @@ ng generate --help
 
 ## Building
 
-To build the project run:
+The project supports multiple build configurations:
 
+### Development Build (Local)
 ```bash
-ng build
+npm start
+# or
+ng serve
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### Dev/Staging Build (app-dev)
+```bash
+npm run build:dev
+# Output: dist/klocky-app/browser
+```
+
+### Production Build
+```bash
+npm run build:prod
+# or
+ng build --configuration=production
+```
+
+### Watch Mode (Auto-rebuild)
+```bash
+npm run watch
+```
+
+All builds compile your project and store artifacts in the `dist/` directory.
+
+## Vercel Deployment
+
+See [VERCEL-DEPLOYMENT.md](./VERCEL-DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy Commands
+```bash
+# Deploy to dev/staging
+vercel
+
+# Deploy to production
+vercel --prod
+```
 
 ## Running unit tests
 

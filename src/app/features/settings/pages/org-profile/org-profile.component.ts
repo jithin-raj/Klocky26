@@ -3,12 +3,15 @@ import {
   signal,
   ViewChild,
   ElementRef,
+  inject,
+  OnInit,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UiInputComponent } from '../../../../shared/components/ui-input/ui-input.component';
 import { UiTextareaComponent } from '../../../../shared/components/ui-textarea/ui-textarea.component';
 import { UiSelectComponent } from '../../../../shared/components/ui-select/ui-select.component';
 import { UiToggleComponent } from '../../../../shared/components/ui-toggle/ui-toggle.component';
+import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import {
   INDUSTRIES,
   COMPANY_SIZES,
@@ -90,9 +93,19 @@ const HOLIDAY_TYPE_LABELS: Record<Holiday['type'], string> = {
   templateUrl: './org-profile.component.html',
   styleUrl: './org-profile.component.scss',
 })
-export class OrgProfileComponent {
+export class OrgProfileComponent implements OnInit {
   @ViewChild('logoInput') logoInputRef!: ElementRef<HTMLInputElement>;
   @ViewChild('colorInput') colorInputRef!: ElementRef<HTMLInputElement>;
+
+  private readonly orgThemeService = inject(OrgThemeService);
+
+  ngOnInit(): void {
+    // Initialize accent color from current theme
+    const currentTheme = this.orgThemeService.theme();
+    if (currentTheme?.accent) {
+      this.accentColor = currentTheme.accent.toLowerCase();
+    }
+  }
 
   // ── Reference data ────────────────────────────────────────────
   readonly timezones           = TIMEZONES;
@@ -202,6 +215,7 @@ export class OrgProfileComponent {
   readonly activeSection       = signal('identity');
   readonly showDiscardConfirm  = signal(false);
   readonly holidayMonth        = signal(1);  // 1–12, currently viewed month
+  readonly colorWarning        = signal('');  // Warning for light colors
 
   markDirty(): void {
     this.isDirty.set(true);
@@ -227,8 +241,13 @@ export class OrgProfileComponent {
 
   // ── Accent color ───────────────────────────────────────────────
   setAccentColor(color: string): void {
-    this.accentColor = color;
+    this.accentColor = color.toLowerCase();
+    this._checkColorBrightness(color);
     this.markDirty();
+  }
+
+  isColorSelected(color: string): boolean {
+    return this.accentColor.toLowerCase() === color.toLowerCase();
   }
 
   openColorPicker(): void {
@@ -237,8 +256,137 @@ export class OrgProfileComponent {
   }
 
   onCustomColor(event: Event): void {
-    this.accentColor = (event.target as HTMLInputElement).value;
+    const color = (event.target as HTMLInputElement).value;
+    this.accentColor = color.toLowerCase();
+    this._checkColorBrightness(color);
     this.markDirty();
+  }
+
+  /**
+   * Check if the selected color is too light and show a warning
+   */
+  private _checkColorBrightness(hex: string): void {
+    const luminance = this._getLuminance(hex);
+    if (luminance > 0.85) {
+      this.colorWarning.set('⚠️ Very light color detected. For the best UI experience, we recommend selecting a darker, more vibrant color instead of white or near-white shades.');
+    } else if (luminance > 0.7) {
+      this.colorWarning.set('💡 Light color selected. Theme will automatically adapt to ensure good contrast and readability.');
+    } else {
+      this.colorWarning.set('');
+    }
+  }
+
+  /**
+   * Calculate relative luminance of a color (0 = black, 1 = white)
+   */
+  private _getLuminance(hex: string): number {
+    const rgb = this._hexToRgb(hex);
+    const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(val => {
+      const normalized = val / 255;
+      return normalized <= 0.03928
+        ? normalized / 12.92
+        : Math.pow((normalized + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  private _hexToRgb(hex: string): { r: number; g: number; b: number } {
+    const clean = hex.replace('#', '');
+    const int = parseInt(clean, 16);
+    return {
+      r: (int >> 16) & 255,
+      g: (int >> 8) & 255,
+      b: int & 255,
+    };
+  }
+
+  /**
+   * Get preview theme generated from the selected accent color
+   */
+  private _previewTheme: any = null;
+  private _lastAccentColor = '';
+
+  getPreviewTheme(): any {
+    // Always use the selected accent color for the preview (not the applied theme)
+    const currentColor = this.accentColor;
+    
+    if (currentColor !== this._lastAccentColor) {
+      this._lastAccentColor = currentColor;
+      const luminance = this._getLuminance(currentColor);
+      const isLight = luminance > 0.5;
+      
+      this._previewTheme = {
+        accent: currentColor,
+        pageBg: isLight ? '#ffffff' : '#0a1214',
+        textColor: isLight ? '#1e293b' : '#f8fafc',
+        textColorMuted: isLight ? 'rgba(30, 41, 59, 0.6)' : 'rgba(248, 250, 252, 0.6)',
+        btnTextColor: luminance > 0.5 ? '#1e293b' : '#ffffff',
+      };
+    }
+    return this._previewTheme;
+  }
+
+  getPreviewBg(): string {
+    return this.getPreviewTheme().pageBg;
+  }
+
+  /**
+   * Get text color for preview based on background
+   */
+  getTextColor(opacity: number = 1): string {
+    const theme = this.getPreviewTheme();
+    return opacity === 1 ? theme.textColor : theme.textColorMuted;
+  }
+
+  /**
+   * Get button text color based on accent brightness
+   */
+  getBtnTextColor(): string {
+    return this.getPreviewTheme().btnTextColor;
+  }
+
+  /**
+   * Get logo background color with proper contrast (for form logo preview)
+   */
+  getLogoBackground(): string {
+    // Always use the selected accent color (not the applied theme)
+    const currentColor = this.accentColor;
+    const luminance = this._getLuminance(currentColor);
+    // If accent is very light, darken the logo background
+    if (luminance > 0.7) {
+      return this._adjustBrightness(currentColor, -0.3);
+    }
+    // If accent is dark, lighten slightly for depth
+    return this._adjustBrightness(currentColor, 0.1);
+  }
+
+  /**
+   * Get logo text color with guaranteed visibility
+   */
+  getLogoTextColor(): string {
+    const bgLuminance = this._getLuminance(this.getLogoBackground());
+    return bgLuminance > 0.5 ? '#1e293b' : '#ffffff';
+  }
+
+  /**
+   * Adjust brightness helper for logo
+   */
+  private _adjustBrightness(hex: string, percent: number): string {
+    const rgb = this._hexToRgb(hex);
+    
+    const adjust = (val: number) => {
+      if (percent > 0) {
+        return Math.min(255, Math.round(val + (255 - val) * percent));
+      } else {
+        return Math.max(0, Math.round(val * (1 + percent)));
+      }
+    };
+
+    const r = adjust(rgb.r);
+    const g = adjust(rgb.g);
+    const b = adjust(rgb.b);
+    
+    return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
   }
 
   // ── Secondary emails ───────────────────────────────────────────
@@ -310,13 +458,53 @@ export class OrgProfileComponent {
     return Array.from({ length: days }, (_, i) => i + 1);
   }
 
+  // ── Theme Testing ─────────────────────────────────────────────────
+  /**
+   * Test the theme by applying it to the app temporarily (before saving)
+   */
+  testTheme(): void {
+    const completeTheme = this.orgThemeService.generateThemeFromColor(this.accentColor);
+    this.orgThemeService.apply(completeTheme);
+    
+    console.log('🎨 Testing theme:', {
+      accentColor: this.accentColor,
+      generatedTheme: completeTheme
+    });
+  }
+
   // ── Save / Discard ─────────────────────────────────────────────
   async save(): Promise<void> {
     this.saving.set(true);
-    // TODO: wire to API
-    await new Promise(r => setTimeout(r, 900));
-    this.saving.set(false);
-    this.isDirty.set(false);
+    
+    try {
+      // ────────────────────────────────────────────────────────────
+      // API Integration Example:
+      // Only send the accent color to your backend
+      // ────────────────────────────────────────────────────────────
+      const payload = {
+        companyName: this.companyName,
+        brandColor: this.accentColor,  // Single color! 🎨
+        // ... other org profile fields
+      };
+      
+      // await this.apiService.updateOrgProfile(payload);
+      await new Promise(r => setTimeout(r, 900)); // Simulated API call
+      
+      // ────────────────────────────────────────────────────────────
+      // After save: Generate complete theme and apply it
+      // ────────────────────────────────────────────────────────────
+      const completeTheme = this.orgThemeService.generateThemeFromColor(this.accentColor);
+      this.orgThemeService.apply(completeTheme);
+      
+      // Optional: Log to see the auto-generated colors
+      console.log('Generated theme from single color:', completeTheme);
+      
+      this.saving.set(false);
+      this.isDirty.set(false);
+    } catch (error) {
+      this.saving.set(false);
+      console.error('Failed to save org profile:', error);
+    }
   }
 
   discard(): void {

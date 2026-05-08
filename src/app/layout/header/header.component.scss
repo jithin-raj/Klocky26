@@ -44,7 +44,7 @@
   height: 24px;
   border-radius: 50%;
   background: color-mix(in srgb, var(--org-accent, #6366f1) 20%, #fff);
-  color: var(--org-accent, #6366f1);
+  color: var(--accent-dark, var(--org-accent, #6366f1));
   font-size: 11px;
   font-weight: 800;
   display: flex;
