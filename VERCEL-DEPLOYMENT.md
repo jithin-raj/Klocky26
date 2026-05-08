@@ -1,88 +1,96 @@
 # Vercel Deployment Guide for Klocky Web App
 
+## Quick Start
+
+Deploy to production with one command:
+
+```bash
+vercel --prod
+```
+
+Your app will be deployed to your Vercel production URL.
+
+**Current Production URL**: `https://klock-jithinrajpv123-6097s-projects.vercel.app`
+
+> **💡 Tip**: To get a shorter URL like `klock.vercel.app`, rename your project in Vercel Dashboard → Settings → General → Project Name. If that name is taken, consider adding a custom domain instead.
+
 ## Environment Setup
 
 ### Production Deployment
-- **Domain**: `https://klock.vercel.app` (Vercel production URL)
-- **Branch**: `main`
-- **Build Command**: `npm run build:prod`
-- **Environment Variables**:
-  - None required (uses `environment.prod.ts`)
+- **URL**: `https://klock.vercel.app`
+- **Branch**: `main` (or any branch you choose)
+- **Build Command**: `npm run build` (automatically runs production build)
+- **Output Directory**: `dist/klocky-app/browser`
+- **Framework**: Angular
+- **Node Version**: 18.x or later
 
-### Development/Staging Deployment  
-- **Domain**: `https://klock-dev.vercel.app` (or your dev deployment URL)
-- **Branch**: `dev` (or staging branch)
-- **Build Command**: `npm run build:dev`
-- **Environment Variables**:
-  - None required (uses `environment.dev.ts`)
+### Local Development
+- **URL**: `http://localhost:4200`
+- **API**: `http://localhost:3000/api/v1`
+- **Command**: `npm start`
 
 ## Vercel Configuration
 
-### 1. Install Vercel CLI (Optional)
+The project includes a `vercel.json` file that automatically configures:
+- SPA routing (all routes redirect to `/index.html`)
+- Organization slug header handling
+- Correct output directory
+
+### 1. Install Vercel CLI
 ```bash
 npm i -g vercel
 ```
 
-### 2. Link Project to Vercel
+### 2. Link Project to Vercel (First Time Only)
 ```bash
 vercel link
 ```
 
+Follow the prompts to connect your project.
+
 ### 3. Deploy to Production
 ```bash
-# Deploy from main branch
 vercel --prod
 ```
 
-### 4. Deploy to Dev/Staging
-```bash
-# Deploy from dev branch
-vercel
-```
-
-## Environment-Specific Features
+## Environment Features
 
 ### Local Development (`npm start`)
 - **Frontend**: `http://localhost:4200`
 - **API**: `http://localhost:3000/api/v1`
-- **No encryption** for localStorage (easier debugging)
-- API logging enabled
-- Source maps enabled
-
-### Dev/Staging (`https://klock-dev.vercel.app`)
-- **Frontend**: Vercel preview URL or custom dev domain
-- **API**: `https://api-dev.klocky.app/v1`
-- **No encryption** for localStorage (easier debugging)
-- API logging enabled
-- Optimized build
+- **Encryption**: ❌ Disabled (plain JSON in localStorage for easier debugging)
+- **API Logging**: ✅ Enabled
+- **Source Maps**: ✅ Enabled
+- **Hot Reload**: ✅ Enabled
 
 ### Production (`https://klock.vercel.app`)
 - **Frontend**: `https://klock.vercel.app`
 - **API**: `https://api.klocky.app/v1`
-- **Encryption enabled** for localStorage
-- API logging disabled
-- Fully optimized build
+- **Encryption**: ✅ Enabled (AES-256-GCM for localStorage)
+- **API Logging**: ❌ Disabled
+- **Optimization**: ✅ Fully optimized bundle
+- **Source Maps**: ❌ Disabled
 
 ## Automatic Deployments
 
 ### GitHub Integration
-Vercel automatically deploys when you push to connected branches:
+Connect your GitHub repository to Vercel for automatic deployments:
 
-- **Push to `main`** → Production deployment (`https://klock.vercel.app`)
-- **Push to `dev`** → Dev deployment (preview URL)
-- **Pull Requests** → Preview deployments
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Import your GitHub repository
+3. Vercel will automatically deploy on every push to `main`
 
-### Branch Configuration in Vercel Dashboard
-1. Go to Project Settings → Git
-2. Set Production Branch: `main`
-3. Add Preview Branch: `dev` (optional for staging deployments)
+**Automatic behavior:**
+- **Push to `main`** → Deploys to production (`https://klock.vercel.app`)
+- **Pull Requests** → Creates preview deployments
+- **Other branches** → Creates preview deployments
 
 ### Custom Domain (Optional)
 If you want a custom domain instead of `https://klock.vercel.app`:
-1. Go to Project Settings → Domains in Vercel Dashboard
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard) → Your Project → Settings → Domains
 2. Add your custom domain (e.g., `app.klocky.com`)
 3. Follow DNS configuration instructions
-4. Vercel will automatically provision SSL certificate
+4. Vercel will automatically provision an SSL certificate
 
 ## Local Testing
 
@@ -90,22 +98,17 @@ If you want a custom domain instead of `https://klock.vercel.app`:
 ```bash
 npm start
 # Opens http://localhost:4200
-# Check localStorage - values should be plain JSON
-```
-
-### Test Dev Build Locally
-```bash
-npm run build:dev
-npx http-server dist/klocky-app/browser -p 8080
-# Opens http://localhost:8080
+# Check DevTools → Application → Local Storage
+# Values should be plain JSON (no encryption)
 ```
 
 ### Test Production Build Locally
 ```bash
-npm run build:prod
+npm run build
 npx http-server dist/klocky-app/browser -p 8080
 # Opens http://localhost:8080
-# Check localStorage - values should be encrypted
+# Check DevTools → Application → Local Storage
+# Values should be encrypted (e.g., "CqKvZ8J9aXY=.A3xKmPQr9vT2...")
 ```
 
 ## Debugging localStorage
@@ -133,18 +136,39 @@ Open DevTools → Application → Local Storage:
 # Clear cache and reinstall
 rm -rf node_modules dist .angular
 npm install
-npm run build:dev
+npm run build:d on Vercel
+1. Check build logs in Vercel Dashboard
+2. Ensure Node.js version is 18.x or later
+3. Verify `package.json` dependencies are correct
+
+### Build Fails Locally
+```bash
+# Clear cache and reinstall
+rm -rf node_modules dist .angular
+npm install
+npm run build
 ```
 
 ### Wrong Environment Loaded
-Check your build command uses the correct configuration:
-- Dev: `npm run build:dev` 
-- Prod: `npm run build:prod`
-
-### Environment Not Detected
-Verify `environment.ts` is being replaced:
+Verify that production build uses `environment.prod.ts`:
 ```bash
 # After build, check the output
 cat dist/klocky-app/browser/main-*.js | grep "disableEncryption"
-# Should show: disableEncryption: false (prod) or true (dev)
+# Should show: disableEncryption:!1 or disableEncryption:false (production)
 ```
+
+### localStorage Not Encrypted in Production
+1. Make sure you built with `npm run build` (not `npm start`)
+2. Check that `environment.prod.ts` has `disableEncryption: false`
+3. Clear browser cache and localStorage
+4. Reload the page
+
+## Summary
+
+**Simple Deployment:**
+```bash
+# One command to deploy
+vercel --prod
+```
+
+**That's it!** Your app will be live at `https://klock.vercel.app` 🚀

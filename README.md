@@ -4,25 +4,17 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 ## Environment Setup
 
-This application supports three environments:
+This application supports two environments:
 
 ### 🏠 Local Development
 - **Command**: `npm start`
 - **URL**: `http://localhost:4200`
 - **API**: `http://localhost:3000/api/v1`
-- **Encryption**: ❌ Disabled (plain JSON in localStorage)
+- **Encryption**: ❌ Disabled (plain JSON in localStorage for easier debugging)
 - **Logging**: ✅ Enabled
-
-### 🧪 Dev/Staging Environment
-- **Command**: `npm run build:dev`
-- **Domain**: `app-dev.klocky.app`
-- **API**: `https://api-dev.klocky.app/v1`
-- **Encryption**: ❌ Disabled (plain JSON for debugging)
-- **Logging**: ✅ Enabled
-- **Optimized**: ✅ Production-ready bundle
 
 ### 🚀 Production Environment
-- **Command**: `npm run build:prod`
+- **Command**: `npm run build` or `vercel --prod`
 - **Domain**: `https://klock.vercel.app`
 - **API**: `https://api.klocky.app/v1`
 - **Encryption**: ✅ Enabled (AES-256-GCM)
@@ -55,47 +47,41 @@ ng generate --help
 
 ## Building
 
-The project supports multiple build configurations:
+The project supports two build configurations:
 
-### Development Build (Local)
+### Local Development
 ```bash
 npm start
-# or
-ng serve
-```
-
-### Dev/Staging Build (app-dev)
-```bash
-npm run build:dev
-# Output: dist/klocky-app/browser
+# Runs development server at http://localhost:4200
 ```
 
 ### Production Build
 ```bash
-npm run build:prod
-# or
-ng build --configuration=production
+npm run build
+# Output: dist/klocky-app/browser
+# Ready for deployment to Vercel
 ```
 
 ### Watch Mode (Auto-rebuild)
 ```bash
 npm run watch
+# Automatically rebuilds on file changes
 ```
-
-All builds compile your project and store artifacts in the `dist/` directory.
 
 ## Vercel Deployment
 
-See [VERCEL-DEPLOYMENT.md](./VERCEL-DEPLOYMENT.md) for detailed deployment instructions.
+Deploy to production with a single command:
 
-### Quick Deploy Commands
 ```bash
-# Deploy to dev/staging
-vercel
-
-# Deploy to production
+# Deploy to https://klock.vercel.app
 vercel --prod
 ```
+
+The build will automatically:
+- Use production environment (`environment.prod.ts`)
+- Enable localStorage encryption
+- Optimize the bundle
+- Deploy to your Vercel production URL
 
 ## Running unit tests
 

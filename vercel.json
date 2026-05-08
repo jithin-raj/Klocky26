@@ -1,6 +1,7 @@
 {
   "version": 2,
   "outputDirectory": "dist/klocky-app/browser",
+  "alias": ["klock.vercel.app"],
   "rewrites": [
     {
       "source": "/(.*)",
