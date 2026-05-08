@@ -69,5 +69,9 @@ export class LandingComponent implements OnInit {
   goRegister()  { this.closeMenu(); this.router.navigate(['/register']); }
   goTrial()     { this.closeMenu(); this.router.navigate(['/free-trial']); }
   goDemo()      { this.closeMenu(); this.router.navigate(['/request-demo']); }
-  goDashboard() { this.closeMenu(); this.router.navigate(['/app/dashboard']); }
+  goDashboard() { 
+    this.closeMenu(); 
+    // Note: This won't work without login - publicGuard will handle redirect
+    this.router.navigate(['/login']); 
+  }
 }

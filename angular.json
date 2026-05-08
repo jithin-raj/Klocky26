@@ -59,6 +59,19 @@
               ],
               "outputHashing": "all"
             },
+            "dev": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.dev.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractLicenses": true,
+              "namedChunks": false
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
@@ -72,6 +85,9 @@
           "configurations": {
             "production": {
               "buildTarget": "klocky-App:build:production"
+            },
+            "dev": {
+              "buildTarget": "klocky-App:build:dev"
             },
             "development": {
               "buildTarget": "klocky-App:build:development"

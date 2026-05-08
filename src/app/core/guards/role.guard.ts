@@ -16,7 +16,7 @@ import { UserRole }        from '../models/user.model';
 //     loadChildren: ...
 //   }
 //
-// Redirects users with insufficient role to /app/dashboard.
+// Redirects users with insufficient permissions to /404 (unauthorized access).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const roleGuard: CanActivateFn = (route, _state) => {
@@ -35,5 +35,6 @@ export const roleGuard: CanActivateFn = (route, _state) => {
     return true;
   }
 
-  return router.createUrlTree(['/app/dashboard']);
+  // User doesn't have required role — redirect to 404 (unauthorized)
+  return router.createUrlTree(['/404']);
 };

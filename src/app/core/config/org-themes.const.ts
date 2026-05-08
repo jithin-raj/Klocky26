@@ -114,6 +114,27 @@ export const ORG_THEMES: Record<string, OrgTheme> = {
     textAccentPale: '#fed7aa',
     pageBg:         '#0d0602',
   },
+
+  // ── Light theme examples ─────────────────────────────────────────────────
+  // Note: Light themes are automatically detected and text colors are adapted
+  
+  /** Light Mode — Clean white with blue accent */
+  lightblue: {
+    accent:         '#2563eb',
+    accentDark:     '#1e40af',
+    textAccent:     '#1e3a8a',     // Dark blue for text on light bg
+    textAccentPale: '#3b82f6',     // Medium blue for secondary text
+    pageBg:         '#ffffff',
+  },
+
+  /** Light Mode — Cream with purple accent */
+  lightpurple: {
+    accent:         '#7c3aed',
+    accentDark:     '#6d28d9',
+    textAccent:     '#5b21b6',     // Dark purple for text on light bg
+    textAccentPale: '#8b5cf6',     // Medium purple for secondary text
+    pageBg:         '#fefce8',
+  },
 };
 
 /**

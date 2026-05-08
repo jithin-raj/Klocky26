@@ -1,17 +1,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Production environment configuration
-// This file is swapped in at build time via angular.json fileReplacements.
+// Development environment configuration (app-dev)
+// Used for staging/dev deployments on Vercel
 // ─────────────────────────────────────────────────────────────────────────────
 export const environment = {
-  production: true,
+  production: false,
 
-  /** Production API base URL. Override via CI/CD env var → fileReplacement. */
-  apiBaseUrl: 'https://api.klocky.app/v1',
+  /** Development API base URL (update with your dev API endpoint) */
+  apiBaseUrl: 'https://api-dev.klocky.app/v1',
 
-  enableApiLogging: false,
+  /** Enable API request/response logging in dev */
+  enableApiLogging: true,
 
-  /** Enable encryption in production for security */
-  disableEncryption: false,
+  /** Disable encryption in dev environment for easier debugging */
+  disableEncryption: true,
 
   tokenKey: 'klocky_access_token',
   refreshTokenKey: 'klocky_refresh_token',

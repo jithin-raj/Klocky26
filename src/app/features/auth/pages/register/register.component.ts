@@ -147,7 +147,8 @@ export class RegisterComponent implements OnInit {
     if (this.loading) return;
     this.loading = true;
     await this.delay(600);
-    this.router.navigate(['/app/dashboard']);
+    const orgSlug = this.authState.regOrgSlug() || 'demo';
+    this.router.navigate([`/${orgSlug}/app/dashboard`]);
   }
 
   goBack(): void {

@@ -1,11 +1,12 @@
 import {
-  Component, ChangeDetectionStrategy, signal, computed, OnInit
+  Component, ChangeDetectionStrategy, signal, computed, OnInit, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MOCK_EMPLOYEES, EmployeeRow } from '../../models/employee.model';
 import { RolePermissionModalComponent } from '../../components/role-permission-modal/role-permission-modal.component';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
+import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
 
 export interface TreeNode {
   emp: EmployeeRow;
@@ -22,7 +23,8 @@ export interface TreeNode {
   styleUrl: './org-tree.component.scss',
 })
 export class OrgTreeComponent implements OnInit {
-  constructor(private router: Router, readonly orgTheme: OrgThemeService) {}
+  private orgNav = inject(OrgNavigationService);
+  readonly orgTheme = inject(OrgThemeService);
 
   roots = signal<TreeNode[]>([]);
   searchQuery = signal('');
@@ -57,8 +59,8 @@ export class OrgTreeComponent implements OnInit {
     this.roots.set([...this.roots()]); // trigger CD
   }
 
-  viewEmployee(id: string) { this.router.navigate(['/app/employees', id]); }
-  goBack()                 { this.router.navigate(['/app/employees']); }
+  viewEmployee(id: string) { this.orgNav.navigate(['app', 'employees', id]); }
+  goBack()                 { this.orgNav.navigate(['app', 'employees']); }
   
   manageRole(emp: EmployeeRow) {
     this.selectedEmployee.set(emp);

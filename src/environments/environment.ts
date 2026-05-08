@@ -16,6 +16,9 @@ export const environment = {
   /** If true, HTTP requests/responses are logged to the console */
   enableApiLogging: true,
 
+  /** Disable encryption in local development for easier debugging */
+  disableEncryption: true,
+
   /** Access token key in localStorage */
   tokenKey: 'klocky_access_token',
 

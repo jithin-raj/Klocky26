@@ -1,11 +1,12 @@
 import {
-  Component, ChangeDetectionStrategy, signal, computed, OnInit, HostListener
+  Component, ChangeDetectionStrategy, signal, computed, OnInit, HostListener, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MOCK_EMPLOYEES, EmployeeRow, DEPARTMENTS } from '../../models/employee.model';
 import { RolePermissionModalComponent } from '../../components/role-permission-modal/role-permission-modal.component';
+import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
 
 type SortField = 'fullName' | 'employeeCode' | 'department' | 'role' | 'dateOfJoining' | 'status';
 type SortDir   = 'asc' | 'desc';
@@ -19,8 +20,7 @@ type SortDir   = 'asc' | 'desc';
   styleUrl: './employee-list.component.scss',
 })
 export class EmployeeListComponent implements OnInit {
-
-  constructor(private router: Router) {}
+  private orgNav = inject(OrgNavigationService);
 
   private allEmployees = [...MOCK_EMPLOYEES];
 
@@ -134,10 +134,10 @@ export class EmployeeListComponent implements OnInit {
     this.actionMenuId.set(this.actionMenuId() === id ? null : id);
   }
 
-  viewEmployee(id: string)   { this.router.navigate(['/app/employees', id]); }
-  editEmployee(id: string)   { this.router.navigate(['/app/employees', id, 'edit']); }
-  addEmployee()              { this.router.navigate(['/app/employees/add']); }
-  viewOrgTree()              { this.router.navigate(['/app/employees/tree']); }
+  viewEmployee(id: string)   { this.orgNav.navigate(['app', 'employees', id]); }
+  editEmployee(id: string)   { this.orgNav.navigate(['app', 'employees', id, 'edit']); }
+  addEmployee()              { this.orgNav.navigate(['app', 'employees', 'add']); }
+  viewOrgTree()              { this.orgNav.navigate(['app', 'employees', 'tree']); }
 
   confirmDeactivate(emp: EmployeeRow) {
     this.deactivateTarget.set(emp);

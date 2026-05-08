@@ -79,10 +79,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
       // ── 403 Forbidden ──────────────────────────────────────────────────────
       if (error.status === 403) {
-        router.navigate(['/app/dashboard']);
+        // Unauthorized access - redirect to 404
+        router.navigate(['/404']);
         return throwError(() => ({
           ...error,
-          userMessage: 'You do not have permission to perform this action.',
+          userMessage: 'You do not have permission to access this resource.',
         }));
       }
 

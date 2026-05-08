@@ -45,14 +45,24 @@ export const routes: Routes = [
       import('./features/klocky-admin/klocky-admin.routes').then((m) => m.klockyAdminRoutes),
   },
 
-  // ── App shell (requires authentication) ────────────────────────────────
+  // ── 404 Not Found (explicit route for guard redirects) ──────────────────
   {
-    path: 'app',
-    // authGuard: unauthenticated → /login?returnUrl=/app/...
-    canActivate: [authGuard],
+    path: '404',
     loadComponent: () =>
-      import('./layout/shell/shell.component').then((m) => m.ShellComponent),
+      import('./shared/pages/not-found/not-found.component').then((m) => m.NotFoundComponent),
+  },
+
+  // ── Org-scoped app routes (/:orgSlug/app/...) ──────────────────────────
+  {
+    path: ':orgSlug',
     children: [
+      {
+        path: 'app',
+        // authGuard: unauthenticated → /login?returnUrl=/:orgSlug/app/...
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./layout/shell/shell.component').then((m) => m.ShellComponent),
+        children: [
       {
         path: 'dashboard',
         loadChildren: () =>
@@ -136,11 +146,18 @@ export const routes: Routes = [
       },
     ],
   },
+      // Catch-all for invalid /:orgSlug routes (e.g., /:orgSlug/xyz)
+      {
+        path: '**',
+        redirectTo: '/404',
+      },
+    ],
+  },
 
-  // ── Catch-all — redirect unknown URLs to landing ─────────────────────────
+  // ── Catch-all — 404 Not Found ────────────────────────────────────────────
   {
     path: '**',
-    redirectTo: '',
-    pathMatch: 'full',
+    loadComponent: () =>
+      import('./shared/pages/not-found/not-found.component').then((m) => m.NotFoundComponent),
   },
 ];

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { environment } from '../../../environments/environment';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CryptoService — AES-256-GCM encryption/decryption via the native Web Crypto API
@@ -9,6 +10,7 @@ import { Injectable } from '@angular/core';
 //  • Key is derived via PBKDF2 (100k iterations) — brute-force resistant
 //  • A fresh random IV is generated per encryption — no IV reuse
 //  • The derived key is cached after first use (lazy singleton)
+//  • Encryption can be disabled in dev/local environments for easier debugging
 //
 // ⚠  NOTE: Client-side encryption CANNOT protect against a motivated attacker
 //    who inspects the source bundle. The purpose is to prevent casual reading
@@ -44,11 +46,19 @@ export class CryptoService {
   /**
    * Encrypts any serialisable value to a compact base64 string.
    * Format of output:  `<iv_base64>.<ciphertext_base64>`
+   * 
+   * In dev/local environments (when disableEncryption is true), 
+   * returns plaintext JSON for easier debugging.
    *
    * @example
    *   const encrypted = await crypto.encrypt({ user: { id: '1' }, token: 'abc' });
    */
   async encrypt(value: unknown): Promise<string> {
+    // Skip encryption in dev/local environments for easier debugging
+    if (environment.disableEncryption) {
+      return JSON.stringify(value);
+    }
+
     const key  = await this._getKey();
     const iv   = crypto.getRandomValues(new Uint8Array(12));          // 96-bit random IV
     const data = new TextEncoder().encode(JSON.stringify(value));
@@ -61,11 +71,23 @@ export class CryptoService {
   /**
    * Decrypts a string produced by `encrypt()` and returns the original value.
    * Returns `null` if decryption fails (tampered data, wrong key, corrupt input).
+   * 
+   * In dev/local environments (when disableEncryption is true),
+   * parses plaintext JSON directly.
    *
    * @example
    *   const state = await crypto.decrypt<AppState>(encrypted);
    */
   async decrypt<T = unknown>(ciphertext: string): Promise<T | null> {
+    // In dev/local, stored data is plaintext JSON
+    if (environment.disableEncryption) {
+      try {
+        return JSON.parse(ciphertext) as T;
+      } catch {
+        return null;
+      }
+    }
+
     try {
       const [ivB64, dataB64] = ciphertext.split('.');
       if (!ivB64 || !dataB64) return null;

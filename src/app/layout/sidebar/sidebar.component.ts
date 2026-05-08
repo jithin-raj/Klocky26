@@ -1,4 +1,4 @@
-import { Component, Input, inject, signal, effect } from '@angular/core';
+import { Component, Input, inject, signal, effect, computed } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs';
@@ -6,6 +6,7 @@ import {
   IconKlockyLogoComponent,
 } from '../../shared/icons';
 import { OrgThemeService } from '../../core/services/org-theme.service';
+import { AppStateService } from '../../core/services/app-state.service';
 
 interface MenuItem {
   label: string;
@@ -38,9 +39,13 @@ export class SidebarComponent {
 
   private router    = inject(Router);
   private orgTheme  = inject(OrgThemeService);
+  private appState  = inject(AppStateService);
   
   // Track current URL reactively
   currentUrl = signal<string>(this.router.url);
+  
+  // Org-scoped route prefix
+  orgPrefix = computed(() => `/${this.appState.orgSlug() || 'default'}`);
   
   // State for expanded sections - initially empty, sections expand on click or when they have active routes
   expandedSections = signal<Set<string>>(new Set());
@@ -54,17 +59,17 @@ export class SidebarComponent {
       });
   }
 
-  // Menu structure with sections
-  menuSections: MenuSection[] = [
+  // Menu structure with sections (routes without org prefix - added dynamically)
+  private baseMenuSections: MenuSection[] = [
     {
       id: 'main',
       label: 'Main',
       icon: 'home',
       expanded: false,
       items: [
-        { label: 'Dashboard', route: '/app/dashboard', icon: 'home', exact: true },
-        { label: 'Admin Dashboard', route: '/app/dashboard/admin', icon: 'user' },
-        { label: 'My Profile', route: '/app/profile', icon: 'profile' },
+        { label: 'Dashboard', route: 'app/dashboard', icon: 'home', exact: true },
+        { label: 'Admin Dashboard', route: 'app/dashboard/admin', icon: 'user' },
+        { label: 'My Profile', route: 'app/profile', icon: 'profile' },
       ]
     },
     {
@@ -73,9 +78,9 @@ export class SidebarComponent {
       icon: 'employees',
       expanded: false,
       items: [
-        { label: 'Employees', route: '/app/employees', icon: 'employees', exact: true },
-        { label: 'Org Tree', route: '/app/employees/tree', icon: 'tree' },
-        { label: 'Roles & Permissions', route: '/app/roles', icon: 'roles' },
+        { label: 'Employees', route: 'app/employees', icon: 'employees', exact: true },
+        { label: 'Org Tree', route: 'app/employees/tree', icon: 'tree' },
+        { label: 'Roles & Permissions', route: 'app/roles', icon: 'roles' },
       ]
     },
     {
@@ -84,11 +89,11 @@ export class SidebarComponent {
       icon: 'clock',
       expanded: false,
       items: [
-        { label: 'Attendance', route: '/app/attendance', icon: 'clock', exact: true },
-        { label: 'Shifts & Roster', route: '/app/shifts', icon: 'shifts' },
-        { label: 'Geo-fencing', route: '/app/attendance/geofence', icon: 'geo' },
-        { label: 'Face Scan', route: '/app/attendance/face-scan', icon: 'face' },
-        { label: 'Face Roster', route: '/app/attendance/face-roster', icon: 'roster' },
+        { label: 'Attendance', route: 'app/attendance', icon: 'clock', exact: true },
+        { label: 'Shifts & Roster', route: 'app/shifts', icon: 'shifts' },
+        { label: 'Geo-fencing', route: 'app/attendance/geofence', icon: 'geo' },
+        { label: 'Face Scan', route: 'app/attendance/face-scan', icon: 'face' },
+        { label: 'Face Roster', route: 'app/attendance/face-roster', icon: 'roster' },
       ]
     },
     {
@@ -97,9 +102,9 @@ export class SidebarComponent {
       icon: 'leaves',
       expanded: false,
       items: [
-        { label: 'Leave Approvals', route: '/app/leaves', icon: 'leaves' },
-        { label: 'Tasks', route: '/app/tasks', icon: 'tasks' },
-        { label: 'Notifications', route: '/app/notifications', icon: 'notifications' },
+        { label: 'Leave Approvals', route: 'app/leaves', icon: 'leaves' },
+        { label: 'Tasks', route: 'app/tasks', icon: 'tasks' },
+        { label: 'Notifications', route: 'app/notifications', icon: 'notifications' },
       ]
     },
     {
@@ -108,13 +113,25 @@ export class SidebarComponent {
       icon: 'performance',
       expanded: false,
       items: [
-        { label: 'Performance', route: '/app/performance', icon: 'performance' },
-        { label: 'HR Analytics', route: '/app/analytics', icon: 'analytics' },
-        { label: 'Engagement', route: '/app/engagement', icon: 'engagement' },
-        { label: 'Recruitment', route: '/app/recruitment', icon: 'recruitment' },
+        { label: 'Performance', route: 'app/performance', icon: 'performance' },
+        { label: 'HR Analytics', route: 'app/analytics', icon: 'analytics' },
+        { label: 'Engagement', route: 'app/engagement', icon: 'engagement' },
+        { label: 'Recruitment', route: 'app/recruitment', icon: 'recruitment' },
       ]
     },
   ];
+
+  // Computed menu sections with org-scoped routes
+  menuSections = computed(() => {
+    const prefix = this.orgPrefix();
+    return this.baseMenuSections.map(section => ({
+      ...section,
+      items: section.items.map(item => ({
+        ...item,
+        route: `${prefix}/${item.route}`
+      }))
+    }));
+  });
 
   toggleSection(sectionId: string): void {
     const expanded = this.expandedSections();

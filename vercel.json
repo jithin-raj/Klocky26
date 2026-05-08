@@ -1,6 +1,10 @@
 {
+  "version": 2,
   "outputDirectory": "dist/klocky-app/browser",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

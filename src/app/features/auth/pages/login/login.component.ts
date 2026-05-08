@@ -155,7 +155,10 @@ export class LoginComponent implements OnInit {
     await this.delay(2000);
     this.loginSuccess = true;
     await this.delay(600);
-    await this.router.navigate(['/app/dashboard']); 
+    
+    // Navigate to org-scoped dashboard
+    const orgSlug = this.authState.orgIdentifier() || 'demo';
+    await this.router.navigate([`/${orgSlug}/app/dashboard`]); 
     this.orgTheme.apply(randomSlug);
   }
 

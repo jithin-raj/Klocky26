@@ -228,7 +228,9 @@
           <div class="op-field">
             <p class="op-field-label">Organisation Logo</p>
             <div class="op-logo-upload">
-              <div class="op-logo-avatar" [style.background]="accentColor">
+              <div class="op-logo-avatar" 
+                   [style.background]="getLogoBackground()"
+                   [style.color]="getLogoTextColor()">
                 @if (logoPreview()) {
                   <img [src]="logoPreview()" alt="Logo preview" />
                 } @else {
@@ -256,14 +258,17 @@
           <!-- Accent color -->
           <div class="op-field op-field-sep">
             <p class="op-field-label">Accent Color</p>
-            <p class="op-field-desc">Applied to sidebar, badges, and interactive elements across the app</p>
+            <p class="op-field-desc">
+              Applied to sidebar, badges, and interactive elements across the app.
+              <span class="op-auto-gen-hint">✨ All other theme colors are automatically generated from this single color.</span>
+            </p>
             <div class="op-swatch-row">
               @for (color of accentPresets; track color) {
                 <button type="button" class="op-swatch" [style.background]="color"
-                        [class.selected]="accentColor === color"
+                        [class.selected]="isColorSelected(color)"
                         [title]="color"
                         (click)="setAccentColor(color)">
-                  @if (accentColor === color) {
+                  @if (isColorSelected(color)) {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
@@ -279,16 +284,86 @@
               <input #colorInput type="color" class="op-hidden" (change)="onCustomColor($event)" />
             </div>
 
+            <!-- Color brightness warning -->
+            @if (colorWarning()) {
+              <div class="op-color-warning">
+                {{ colorWarning() }}
+              </div>
+            }
+
             <!-- Live preview -->
-            <div class="op-brand-preview">
-              <div class="op-bp-label">Preview</div>
-              <div class="op-bp-sidebar" [style.background]="accentColor">
-                <div class="op-bp-dot">{{ companyName.charAt(0).toUpperCase() || '?' }}</div>
+            <div class="op-brand-preview-wrapper">
+              <div class="op-bp-header-row">
+                <div class="op-bp-label">Theme Preview</div>
+                <button type="button" class="op-bp-test-btn" (click)="testTheme()" [disabled]="!isDirty()">
+                  Test Live
+                </button>
               </div>
-              <div class="op-bp-badge" [style.background]="accentColor + '22'" [style.color]="accentColor">
-                {{ companyName || 'Your Organisation' }}
+              
+              <!-- Main preview card with background -->
+              <div class="op-brand-preview" [style.background]="getPreviewBg()">
+                
+                <!-- Mini Sidebar -->
+                <div class="op-bp-sidebar" 
+                     [style.background]="'linear-gradient(180deg, ' + 
+                       'color-mix(in srgb, ' + accentColor + ' 18%, #0d1117) 0%, ' +
+                       'color-mix(in srgb, ' + accentColor + ' 12%, #0a0e14) 50%, ' +
+                       'color-mix(in srgb, ' + accentColor + ' 8%, #0a0e14) 100%)'">
+                  <!-- Top accent stripe -->
+                  <div class="op-bp-stripe" 
+                       [style.background]="'linear-gradient(90deg, transparent 0%, ' + accentColor + ' 50%, color-mix(in srgb, ' + accentColor + ' 70%, #fff) 85%, transparent 100%)'"></div>
+                  <div class="op-bp-logo" 
+                       [style.background]="'rgba(255, 255, 255, 0.15)'" 
+                       [style.color]="'#ffffff'">
+                    {{ companyName.charAt(0).toUpperCase() || 'K' }}
+                  </div>
+                </div>
+                
+                <!-- Content Preview -->
+                <div class="op-bp-content">
+                  <!-- Top Bar -->
+                  <div class="op-bp-topbar">
+                    <div class="op-bp-page-title" [style.color]="getTextColor()">Dashboard</div>
+                    <div class="op-bp-badge" 
+                         [style.background]="accentColor + '20'" 
+                         [style.color]="accentColor">
+                      ● Active
+                    </div>
+                  </div>
+                  
+                  <!-- Sample Card -->
+                  <div class="op-bp-card">
+                    <div class="op-bp-card-title" [style.color]="getTextColor()">Welcome, Admin</div>
+                    <div class="op-bp-card-text" [style.color]="getTextColor(0.6)">
+                      This preview shows how {{ companyName || 'your organization' }} theme colors will appear across the application.
+                    </div>
+                    <div class="op-bp-actions">
+                      <button class="op-bp-btn-primary" 
+                              [style.background]="accentColor" 
+                              [style.color]="getBtnTextColor()">
+                        Primary Button
+                      </button>
+                      <button class="op-bp-btn-secondary" 
+                              [style.color]="accentColor" 
+                              [style.borderColor]="accentColor">
+                        Secondary
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Stats Preview -->
+                  <div class="op-bp-stats">
+                    <div class="op-bp-stat">
+                      <div class="op-bp-stat-value" [style.color]="accentColor">124</div>
+                      <div class="op-bp-stat-label" [style.color]="getTextColor(0.5)">Employees</div>
+                    </div>
+                    <div class="op-bp-stat">
+                      <div class="op-bp-stat-value" [style.color]="getTextColor()">89%</div>
+                      <div class="op-bp-stat-label" [style.color]="getTextColor(0.5)">Attendance</div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="op-bp-btn" [style.background]="accentColor">Button</div>
             </div>
           </div>
 

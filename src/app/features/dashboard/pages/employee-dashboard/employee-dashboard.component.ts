@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, signal, inject, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, ViewChild, ElementRef, OnDestroy, ChangeDetectorRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
 import { FaceRosterService } from '../../../../core/services/face-roster.service';
+import { AppStateService } from '../../../../core/services/app-state.service';
 import * as faceapi from '@vladmandic/face-api';
 
 interface LeaveBalance {
@@ -41,6 +42,10 @@ export class EmployeeDashboardComponent implements OnDestroy {
   readonly attendanceSvc = inject(AttendanceStateService);
   readonly rosterSvc     = inject(FaceRosterService);
   private  cdr           = inject(ChangeDetectorRef);
+  private  appState      = inject(AppStateService);
+  
+  // Org-scoped route prefix for routerLink bindings
+  orgPrefix = computed(() => `/${this.appState.orgSlug() || 'default'}`);
 
   // Shorthand getters for template
   get isClockedIn()  { return this.attendanceSvc.isClockedIn; }
