@@ -9,7 +9,7 @@
         <path d="M0 14.5 Q10 12 20 14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
       </svg>
     </button>
-    <app-brand [size]="'sm'" [orgName]="orgName" [orgLogoUrl]="orgLogoUrl"></app-brand>
+    <app-brand [size]="'sm'" [orgName]="orgName" [orgLogoUrl]="orgLogoUrl" [orgAccentColor]="orgAccentColor" [showAppBranding]="false" [clickable]="true" (brandClick)="navigateToDashboard()"></app-brand>
   </div>
 
   <!-- CENTER: Search -->

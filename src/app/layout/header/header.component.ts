@@ -1,8 +1,10 @@
 ﻿import { Component, EventEmitter, Input, Output, OnDestroy, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { IconBellComponent, IconSearchComponent } from '../../shared/icons';
 import { AppBrandComponent } from '../../shared/components/app-brand/app-brand.component';
 import { AttendanceStateService } from '../../core/services/attendance-state.service';
+import { AppStateService } from '../../core/services/app-state.service';
 
 @Component({
   selector: 'klocky-header',
@@ -19,6 +21,8 @@ export class HeaderComponent implements OnDestroy {
   @Input() orgAccentColor = '';
 
   readonly attendance = inject(AttendanceStateService);
+  private readonly router = inject(Router);
+  private readonly appState = inject(AppStateService);
 
   // Expose signals as shorthand aliases for the template
   get isClockedIn()  { return this.attendance.isClockedIn; }
@@ -78,6 +82,12 @@ export class HeaderComponent implements OnDestroy {
     this._pendingGeoId = '';
     this.attendance.geoStatus.set('idle');
     this.attendance.showToast('Clock-in cancelled.', 'info');
+  }
+
+  navigateToDashboard() {
+    const orgSlug = this.appState.orgSlug();
+    const dashboardRoute = `/${orgSlug}/app/dashboard`;
+    this.router.navigate([dashboardRoute]);
   }
 
   ngOnDestroy() { /* service manages its own lifecycle */ }
