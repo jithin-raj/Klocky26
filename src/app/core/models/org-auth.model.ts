@@ -62,6 +62,8 @@ export interface RegisterOrgRequest {
 export interface OrgLoginResponse {
   accessToken: string;
   orgSlug: string;
+  /** Short, suffix-free path segment for routing — see ORG_URL_NAME_INTEGRATION.md. Use this, not orgSlug, for the SPA URL. */
+  orgUrlName: string;
   role: UserRole;
   expiresAt: string;
   mustChangePassword: boolean;
@@ -74,6 +76,23 @@ export interface ValidateSlugResponse {
   isValid: boolean;
   orgSlug: string;
   companyName: string;
+}
+
+/**
+ * GET /api/org/auth/validate-url-name/{urlName} response (data) —
+ * ORG_URL_NAME_INTEGRATION.md §2. Replaces validate-slug as the guard check:
+ * keyed on the actual path segment, and when called with a bearer token also
+ * confirms that token's own org owns this urlName (tokenVerified). Called
+ * anonymously (pre-login) tokenVerified is always null; a 403 (not 200 with
+ * tokenVerified:false) means "token doesn't belong to this org" — treat
+ * exactly like a 404.
+ */
+export interface ValidateUrlNameResponse {
+  isValid: boolean;
+  orgUrlName: string;
+  orgSlug: string;
+  companyName: string;
+  tokenVerified: boolean | null;
 }
 
 /** PUT /api/tenant/register-complete request — org-wide attendance/policy defaults */
@@ -122,6 +141,8 @@ export interface OrgLoginRequest {
 /** GET/PUT /api/org/auth/details */
 export interface OrgDetails {
   orgSlug: string;
+  /** Read-only here — org admin can see it, only a Klock platform admin can change it. */
+  orgUrlName: string;
   companyName: string;
   legalName: string;
   industry: string;

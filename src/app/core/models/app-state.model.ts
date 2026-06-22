@@ -13,8 +13,11 @@ export interface AppState {
   /** Employee refresh token — single-use, 7-day expiry */
   refreshToken: string | null;
 
-  /** Active org slug (drives theme + org-scoped routing) */
+  /** Active org slug — the login code (auth_type claim, request bodies). Not the URL segment — see orgUrlName. */
   orgSlug: string | null;
+
+  /** Active org's URL path segment (short, no suffix) — drives theme + org-scoped routing. See ORG_URL_NAME_INTEGRATION.md. */
+  orgUrlName: string | null;
 
   /** Unix ms timestamp when the access token expires */
   expiresAt: number | null;
@@ -37,6 +40,7 @@ export const DEFAULT_APP_STATE: AppState = {
   accessToken: null,
   refreshToken: null,
   orgSlug: null,
+  orgUrlName: null,
   expiresAt: null,
   orgAdminToken: null,
   orgAdminTokenExpiresAt: null,

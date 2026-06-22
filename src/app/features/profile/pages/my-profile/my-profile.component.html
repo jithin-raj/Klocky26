@@ -1,14 +1,24 @@
 <div class="mp-page">
 
+@if (loadError()) {
+  <div class="mp-error">⚠ {{ loadError() }}</div>
+} @else if (!me()) {
+  <div class="mp-card">Loading your profile…</div>
+} @else {
+
   <!-- Hero -->
   <div class="mp-hero">
-    <div class="mp-avatar" [style.background]="me.avatarColor">{{ me.initials }}</div>
+    @if (me()!.avatarUrl) {
+      <img class="mp-avatar" [src]="me()!.avatarUrl" [alt]="me()!.fullName" style="object-fit:cover;" />
+    } @else {
+      <div class="mp-avatar" style="background:var(--accent,#6366f1)">{{ initials() }}</div>
+    }
     <div class="mp-hero__info">
-      <h1>{{ me.fullName }}</h1>
-      <p>{{ me.designation }} · {{ me.department }}</p>
+      <h1>{{ me()!.fullName }}</h1>
+      <p>{{ me()!.designationTitle ?? 'No designation set' }} · {{ me()!.departmentName ?? 'No department' }}</p>
       <div class="mp-badges">
-        <span class="mp-role-badge mp-role-badge--{{ me.role }}">{{ me.role.charAt(0).toUpperCase() + me.role.slice(1) }}</span>
-        <span class="mp-code">{{ me.employeeCode }}</span>
+        <span class="mp-role-badge mp-role-badge--{{ me()!.role }}">{{ me()!.role.charAt(0).toUpperCase() + me()!.role.slice(1) }}</span>
+        @if (me()!.employeeCode) { <span class="mp-code">{{ me()!.employeeCode }}</span> }
       </div>
     </div>
     @if (!editMode()) {
@@ -20,6 +30,7 @@
   </div>
 
   @if (saved()) { <div class="mp-success">✓ Profile updated successfully</div> }
+  @if (profileError()) { <div class="mp-error">⚠ {{ profileError() }}</div> }
   @if (pwSaved()) { <div class="mp-success">✓ Password changed successfully</div> }
 
   <!-- Tabs -->
@@ -34,31 +45,27 @@
     <div class="mp-grid">
       <div class="mp-card">
         <h3>Personal Information</h3>
-        <div class="mp-field-row"><span>Full Name</span><span>{{ me.fullName }}</span></div>
-        <div class="mp-field-row"><span>Email</span><span>{{ me.email }}</span></div>
+        <div class="mp-field-row"><span>Full Name</span><span>{{ me()!.fullName }}</span></div>
+        <div class="mp-field-row"><span>Email</span><span>{{ me()!.email }}</span></div>
         @if (editMode()) {
           <div class="mp-field-row mp-field-row--edit">
             <span>Phone</span>
-            <input class="mp-input" [ngModel]="phone()" (ngModelChange)="phone.set($event)" type="tel" />
+            <input class="mp-input" [ngModel]="phone()" (ngModelChange)="phone.set($event)" type="tel" placeholder="Add a phone number" />
           </div>
           <div class="mp-field-row mp-field-row--edit">
-            <span>Location</span>
-            <select class="mp-select" [ngModel]="officeLocation()" (ngModelChange)="officeLocation.set($event)">
-              @for (o of ['Mumbai HQ','Bangalore','Delhi','Hyderabad','Pune']; track o) {
-                <option [value]="o">{{ o }}</option>
-              }
-            </select>
+            <span>Address</span>
+            <input class="mp-input" [ngModel]="address()" (ngModelChange)="address.set($event)" type="text" placeholder="Add your address" />
           </div>
           <div class="mp-actions">
-            <button class="mp-btn mp-btn--ghost" (click)="editMode.set(false)">Cancel</button>
-            <button class="mp-btn mp-btn--primary" (click)="saveProfile()">Save Changes</button>
+            <button class="mp-btn mp-btn--ghost" [disabled]="saving()" (click)="editMode.set(false)">Cancel</button>
+            <button class="mp-btn mp-btn--primary" [disabled]="saving()" (click)="saveProfile()">{{ saving() ? 'Saving…' : 'Save Changes' }}</button>
           </div>
         } @else {
-          <div class="mp-field-row"><span>Phone</span><span>{{ phone() }}</span></div>
-          <div class="mp-field-row"><span>Location</span><span>{{ officeLocation() }}</span></div>
+          <div class="mp-field-row"><span>Phone</span><span>{{ phone() || '—' }}</span></div>
+          <div class="mp-field-row"><span>Address</span><span>{{ address() || '—' }}</span></div>
         }
-        <div class="mp-field-row"><span>Date of Joining</span><span>{{ me.dateOfJoining | date:'MMMM d, yyyy' }}</span></div>
-        <div class="mp-field-row"><span>Reports To</span><span>{{ me.reportingManagerName ?? 'Top of hierarchy' }}</span></div>
+        <div class="mp-field-row"><span>Department</span><span>{{ me()!.departmentName ?? '—' }}</span></div>
+        <div class="mp-field-row"><span>Reports To</span><span>{{ me()!.reportingManagerName ?? 'Top of hierarchy' }}</span></div>
       </div>
 
       <div class="mp-card">
@@ -136,5 +143,7 @@
       <button class="mp-btn mp-btn--primary" style="margin-top:16px" (click)="saved.set(true)">Save Preferences</button>
     </div>
   }
+
+}
 
 </div>

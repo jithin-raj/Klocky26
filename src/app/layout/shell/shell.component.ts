@@ -27,7 +27,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     const user = this.appState.user();
     if (user?.displayName) return user.displayName;
 
-    const slug = this.appState.orgSlug();
+    const slug = this.appState.orgUrlName();
     if (!slug) return '';
     return slug
       .split('-')

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthStateService } from '../../services/auth-state.service';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { toOrgSlug } from '../../../../core/utils/org-slug.util';
 
 /** Secret code that bypasses the normal org flow and goes straight to the admin panel */
 const ADMIN_CODE = 'klock2026';
@@ -56,16 +57,24 @@ export class OrgLookupComponent {
     }
 
     this.loading = true;
-    const slug = raw.toLowerCase().replace(/\s+/g, '-');
+    // Users only type the short code (e.g. "experion") — the backend's real
+    // slug always carries a ".klock" suffix (e.g. "experion.klock"), appended
+    // here so they never have to type it themselves.
+    const code = raw.toLowerCase().replace(/\s+/g, '-');
+    const slug = toOrgSlug(code);
+    const notFoundMessage = `We couldn't find a workspace at "${code}". Check the spelling, or register a new organisation.`;
 
     this.orgAuth.validateSlug(slug).subscribe({
       next: (res) => {
         this.loading = false;
         if (!res.data.isValid) {
-          this.error = `We couldn't find a workspace at "${slug}". Check the spelling, or register a new organisation.`;
+          this.error = notFoundMessage;
           return;
         }
-        this.state.setOrg(res.data.orgSlug, res.data.companyName);
+        // Third arg is the real login-code orgSlug — this screen validates and
+        // collects the slug directly (not orgUrlName), so it's the same value
+        // for both the display identifier and the one POST /api/users/auth/login needs.
+        this.state.setOrg(res.data.orgSlug, res.data.companyName, res.data.orgSlug);
         // Org colour theme is applied once the credentials step succeeds and
         // the org's accentColor is known — stay on the default theme here.
         this.found.emit();
@@ -73,7 +82,7 @@ export class OrgLookupComponent {
       error: (err) => {
         this.loading = false;
         this.error = err?.status === 404
-          ? `We couldn't find a workspace at "${slug}". Check the spelling, or register a new organisation.`
+          ? notFoundMessage
           : (err?.error?.message ?? 'Something went wrong. Please try again.');
       },
     });

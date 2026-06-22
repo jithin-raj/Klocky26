@@ -26,6 +26,8 @@ export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'cancelled';
  */
 export interface PlatformOrgListItem {
   orgSlug: string;
+  /** Short, suffix-free path segment for routing — editable only by a Klock platform admin. */
+  orgUrlName: string;
   companyName: string;
   primaryEmail: string;
   industry: string | null;
@@ -65,6 +67,8 @@ export interface CreatePlatformOrgResponse {
 export interface UpdatePlatformOrgRequest {
   isActive?: boolean;
   companyName?: string;
+  /** Klock-admin-only rename — ORG_URL_NAME_INTEGRATION.md §3. 400 if format invalid, 409 if taken. */
+  orgUrlName?: string;
   accentColor?: string;
   inactivityRetentionDays?: number;
   subscriptionStatus?: SubscriptionStatus;

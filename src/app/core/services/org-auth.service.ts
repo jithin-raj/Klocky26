@@ -13,6 +13,7 @@ import {
   RegisterOrgRequest,
   OrgLoginResponse,
   ValidateSlugResponse,
+  ValidateUrlNameResponse,
   RegisterCompleteRequest,
   TenantOptionsResponse,
   OrgLoginRequest,
@@ -57,9 +58,22 @@ export class OrgAuthService {
     );
   }
 
-  /** GET /api/org/auth/validate-slug/{slug} */
+  /** GET /api/org/auth/validate-slug/{slug} — superseded by validateUrlName() for routing; kept for the login-code lookup case. */
   validateSlug(slug: string): Observable<ApiResponse<ValidateSlugResponse>> {
     return this.api.get<ApiResponse<ValidateSlugResponse>>(`/org/auth/validate-slug/${slug}`);
+  }
+
+  /**
+   * GET /api/org/auth/validate-url-name/{urlName} — ORG_URL_NAME_INTEGRATION.md
+   * §2. Default AUTH_SCOPE ('user') means this naturally behaves as the spec
+   * describes: called pre-login (no token yet) it's the anonymous case
+   * (`tokenVerified: null`); called post-login the interceptor attaches the
+   * employee bearer token automatically, making it the authenticated case
+   * (`tokenVerified: true`, or a 403 if the token's org doesn't own this
+   * urlName — treat a 403 exactly like a 404).
+   */
+  validateUrlName(urlName: string): Observable<ApiResponse<ValidateUrlNameResponse>> {
+    return this.api.get<ApiResponse<ValidateUrlNameResponse>>(`/org/auth/validate-url-name/${urlName}`);
   }
 
   /** GET /api/tenant/options — dropdown lists for the registration form, cache after first call. */

@@ -55,7 +55,7 @@ export class EmailStepComponent {
     this.state.setEmail(email);
 
     this.userAuth.login({
-      orgSlug: this.state.orgIdentifier(),
+      orgSlug: this.state.orgSlugForLogin(),
       email,
       password: this.form.value.passwordInput,
     }).subscribe({

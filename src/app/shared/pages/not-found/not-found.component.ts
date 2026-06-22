@@ -656,9 +656,9 @@ export class NotFoundComponent implements OnInit {
   }
 
   goHome(): void {
-    const orgSlug = this.appState.orgSlug();
-    if (orgSlug && this.appState.isAuthenticated()) {
-      this.router.navigate([`/${orgSlug}/app/dashboard`]);
+    const orgUrlName = this.appState.orgUrlName();
+    if (orgUrlName && this.appState.isAuthenticated()) {
+      this.router.navigate([`/${orgUrlName}/app/dashboard`]);
     } else {
       // Redirect unauthenticated users to landing page
       this.router.navigate(['/']);

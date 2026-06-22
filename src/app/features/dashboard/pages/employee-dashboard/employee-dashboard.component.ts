@@ -41,7 +41,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
   private  appState      = inject(AppStateService);
 
   // Org-scoped route prefix for routerLink bindings
-  orgPrefix = computed(() => `/${this.appState.orgSlug() || 'default'}`);
+  orgPrefix = computed(() => `/${this.appState.orgUrlName() || 'default'}`);
 
   // Shorthand getters for template
   get isClockedIn()  { return this.attendanceSvc.isClockedIn; }

@@ -18,7 +18,7 @@ export const dashboardRedirectGuard: CanActivateFn = () => {
 
   const user = appState.user();
   if (user && (user.isAdmin || user.isManager || user.isHr)) {
-    return router.createUrlTree([`/${appState.orgSlug()}/app/dashboard/admin`]);
+    return router.createUrlTree([`/${appState.orgUrlName()}/app/dashboard/admin`]);
   }
   return true;
 };

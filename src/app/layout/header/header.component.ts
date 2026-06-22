@@ -89,8 +89,8 @@ export class HeaderComponent implements OnDestroy {
   }
 
   navigateToDashboard() {
-    const orgSlug = this.appState.orgSlug();
-    const dashboardRoute = `/${orgSlug}/app/dashboard`;
+    const orgUrlName = this.appState.orgUrlName();
+    const dashboardRoute = `/${orgUrlName}/app/dashboard`;
     this.router.navigate([dashboardRoute]);
   }
 

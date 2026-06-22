@@ -60,6 +60,15 @@ export class PlatformAdminService {
   }
 
   /**
+   * Klock-admin-only rename of an org's URL path segment — ORG_URL_NAME_INTEGRATION.md
+   * §3. Org admins have no endpoint to change their own orgUrlName; this is
+   * the only way it changes. 400 if format invalid, 409 if already taken.
+   */
+  renameOrgUrlName(orgSlug: string, newUrlName: string): Observable<ApiResponse<PlatformOrgListItem>> {
+    return this.updateOrganisation(orgSlug, { orgUrlName: newUrlName });
+  }
+
+  /**
    * POST /api/platform/organisations/{slug}/reset-admin-password — REQUESTED,
    * not implemented server-side yet (SERVER_CHANGES_REQUEST.md §0). Will 404
    * until that endpoint exists; callers should handle that explicitly rather

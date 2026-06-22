@@ -54,7 +54,7 @@ export class SidebarComponent {
   currentUrl = signal<string>(this.router.url);
 
   // Org-scoped route prefix
-  orgPrefix = computed(() => `/${this.appState.orgSlug() || 'default'}`);
+  orgPrefix = computed(() => `/${this.appState.orgUrlName() || 'default'}`);
 
   // State for expanded sections - initially empty, sections expand on click or when they have active routes
   expandedSections = signal<Set<string>>(new Set());

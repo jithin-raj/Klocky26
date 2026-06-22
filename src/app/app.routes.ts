@@ -52,13 +52,14 @@ export const routes: Routes = [
       import('./shared/pages/not-found/not-found.component').then((m) => m.NotFoundComponent),
   },
 
-  // ── Org-scoped app routes (/:orgSlug/app/...) ──────────────────────────
+  // ── Org-scoped app routes (/:orgUrlName/app/...) ────────────────────────
+  // orgUrlName, not orgSlug — see ORG_URL_NAME_INTEGRATION.md.
   {
-    path: ':orgSlug',
+    path: ':orgUrlName',
     children: [
       {
         path: 'app',
-        // authGuard: unauthenticated → /login?returnUrl=/:orgSlug/app/...
+        // authGuard: unauthenticated → /login?returnUrl=/:orgUrlName/app/...
         canActivate: [authGuard],
         loadComponent: () =>
           import('./layout/shell/shell.component').then((m) => m.ShellComponent),
@@ -146,7 +147,7 @@ export const routes: Routes = [
       },
     ],
   },
-      // Catch-all for invalid /:orgSlug routes (e.g., /:orgSlug/xyz)
+      // Catch-all for invalid /:orgUrlName routes (e.g., /:orgUrlName/xyz)
       {
         path: '**',
         redirectTo: '/404',

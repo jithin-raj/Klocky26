@@ -111,7 +111,7 @@
                     <div class="ad-org-avatar">{{ org.companyName.slice(0, 2).toUpperCase() }}</div>
                     <div>
                       <div class="ad-org-name">{{ org.companyName }}</div>
-                      <div class="ad-org-slug">{{ org.orgSlug }}</div>
+                      <div class="ad-org-slug">/{{ org.orgUrlName }}/app</div>
                     </div>
                   </div>
                 </td>
@@ -151,7 +151,7 @@
         <div class="ad-drawer-avatar">{{ selectedOrg()!.companyName.slice(0,2).toUpperCase() }}</div>
         <div>
           <h2 class="ad-drawer-name">{{ selectedOrg()!.companyName }}</h2>
-          <p class="ad-drawer-slug">{{ selectedOrg()!.orgSlug }}</p>
+          <p class="ad-drawer-slug">/{{ selectedOrg()!.orgUrlName }}/app</p>
         </div>
         <button class="ad-drawer-close" type="button" (click)="closeDetail()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"

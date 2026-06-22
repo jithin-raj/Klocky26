@@ -20,6 +20,8 @@ export interface LoginResponse {
   fullName: string;
   role: UserRole;
   orgSlug: string;
+  /** Short, suffix-free path segment for routing — see ORG_URL_NAME_INTEGRATION.md. Use this, not orgSlug, for the SPA URL. */
+  orgUrlName: string;
   expiresAt: string;
   refreshTokenExpiresAt: string;
   mustChangePassword: boolean;
@@ -65,6 +67,8 @@ export interface EmployeeUser {
   allowedClockInMethods: ClockInMethod[] | null;
 
   orgSlug: string;
+  /** Short, suffix-free path segment for routing — see ORG_URL_NAME_INTEGRATION.md. Use this, not orgSlug, for the SPA URL. */
+  orgUrlName: string;
   companyName: string;
   displayName: string;
   industry: string | null;

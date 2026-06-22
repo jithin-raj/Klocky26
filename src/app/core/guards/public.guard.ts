@@ -21,6 +21,6 @@ export const publicGuard: CanActivateFn = (_route, _state) => {
   }
 
   // Already logged in — send to org-scoped dashboard
-  const orgSlug = appState.orgSlug() || 'default';
-  return router.createUrlTree([`/${orgSlug}/app/dashboard`]);
+  const orgUrlName = appState.orgUrlName() || 'default';
+  return router.createUrlTree([`/${orgUrlName}/app/dashboard`]);
 };

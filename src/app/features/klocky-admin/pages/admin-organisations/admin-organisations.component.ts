@@ -52,6 +52,11 @@ export class AdminOrganisationsComponent implements OnInit {
   readonly resetPwError      = signal('');
   readonly resetPwResult     = signal('');
 
+  // ── Rename orgUrlName — ORG_URL_NAME_INTEGRATION.md §3, Klock-admin-only ──
+  readonly renameSubmitting = signal(false);
+  readonly renameError      = signal('');
+  editOrgUrlName = '';
+
   // ── Database configuration — UI shell only, NOT wired to any backend.
   // No endpoint exists for this anywhere in INTEGRATION_GUIDE.md, and tenant
   // DB credentials shouldn't transit a web UI at all (see SERVER_CHANGES_REQUEST.md
@@ -175,6 +180,9 @@ export class AdminOrganisationsComponent implements OnInit {
     this.emailCustomSubject = '';
     this.emailCustomMessage = '';
 
+    this.renameError.set('');
+    this.editOrgUrlName = org.orgUrlName;
+
     this.editCompanyName = org.companyName;
     this.editAccentColor = org.accentColor ?? '';
     this.editIsActive = org.isActive;
@@ -227,6 +235,31 @@ export class AdminOrganisationsComponent implements OnInit {
       error: (err) => {
         this.editSubmitting.set(false);
         this.editError.set(err?.error?.message ?? 'Could not save changes.');
+      },
+    });
+  }
+
+  /** PUT /api/platform/organisations/{slug} { orgUrlName } — renames the URL path segment. */
+  submitRename(): void {
+    const org = this.editingOrg();
+    if (!org || this.renameSubmitting() || !this.editOrgUrlName.trim() || this.editOrgUrlName.trim() === org.orgUrlName) return;
+    this.renameError.set('');
+    this.renameSubmitting.set(true);
+
+    this.platformAdmin.renameOrgUrlName(org.orgSlug, this.editOrgUrlName.trim()).subscribe({
+      next: (res) => {
+        this.renameSubmitting.set(false);
+        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? res.data : o));
+        this.editingOrg.set(res.data);
+        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(res.data);
+      },
+      error: (err) => {
+        this.renameSubmitting.set(false);
+        this.renameError.set(
+          err?.status === 409
+            ? 'That name is already taken by another organisation.'
+            : (err?.error?.message ?? 'Could not rename — check the format (lowercase letters/numbers/hyphens, 2-40 chars).'),
+        );
       },
     });
   }

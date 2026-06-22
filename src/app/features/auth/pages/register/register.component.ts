@@ -24,11 +24,13 @@ import {
   WEEKDAYS,
 } from '../../../../core/config/form-options.const';
 import { SelectOption } from '../../../../shared/components/ui-select/ui-select.component';
-import { ORG_SLUG_PATTERN } from '../../../../core/utils/org-slug.util';
+import { ORG_CODE_PATTERN, toOrgSlug } from '../../../../core/utils/org-slug.util';
 
 type RegStep = 'org-info' | 'admin-email' | 'otp' | 'org-profile' | 'done';
 
-const SLUG_PATTERN = ORG_SLUG_PATTERN;
+// This field is the short user-facing code (e.g. "acme-corp") — the backend
+// appends ".klock" itself when it derives the real slug from organisationName.
+const SLUG_PATTERN = ORG_CODE_PATTERN;
 
 @Component({
   selector: 'klocky-register',
@@ -142,6 +144,10 @@ export class RegisterComponent implements OnInit {
 
   /** Temp password shown exactly once after registration succeeds */
   temporaryPassword = '';
+  /** The real, server-derived slug (includes the ".klock" suffix) — set once registerOrg() succeeds */
+  private registeredOrgSlug = '';
+  /** Real, server-derived URL path segment — use this for navigation, not registeredOrgSlug. */
+  private registeredOrgUrlName = '';
 
   // ── Step 1 ───────────────────────────────────────────────────
   submitOrgInfo(): void {
@@ -222,6 +228,11 @@ export class RegisterComponent implements OnInit {
       next: (res) => {
         this.loading = false;
         this.temporaryPassword = res.data.temporaryPassword ?? '';
+        // The backend derives the real slug from organisationName itself —
+        // use what it actually returned, not the client-side guess in
+        // orgInfoForm.orgSlug (which is just a UI preview).
+        this.registeredOrgSlug = res.data.orgSlug;
+        this.registeredOrgUrlName = res.data.orgUrlName;
         this.step = 'done';
       },
       error: (err) => {
@@ -237,13 +248,16 @@ export class RegisterComponent implements OnInit {
   goToDashboard(): void {
     if (this.loading) return;
     this.loading = true;
-    const orgSlug = this.orgInfoForm.value.orgSlug;
+    // Fall back to a client-side guess only if registerOrg() somehow didn't
+    // return these — the real ones are always preferred.
+    const orgSlug = this.registeredOrgSlug || toOrgSlug(this.orgInfoForm.value.orgSlug);
+    const orgUrlName = this.registeredOrgUrlName || this.orgInfoForm.value.orgSlug;
     const email = this.adminForm.value.adminEmail.trim();
 
     this.userAuth.login({ orgSlug, email, password: this.temporaryPassword }).subscribe({
       next: () => {
         this.loading = false;
-        this.router.navigate([`/${orgSlug}/app/dashboard`]);
+        this.router.navigate([`/${orgUrlName}/app/dashboard`]);
       },
       error: () => {
         // Auto-login failed for any reason — fall back to the normal login screen.

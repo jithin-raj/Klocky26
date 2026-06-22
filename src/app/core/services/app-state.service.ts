@@ -51,8 +51,11 @@ export class AppStateService {
   /** Raw employee refresh token */
   readonly refreshToken = computed(() => this._state().refreshToken);
 
-  /** Active org slug */
+  /** Active org slug — the login code, NOT the URL segment. Use orgUrlName for routing. */
   readonly orgSlug      = computed(() => this._state().orgSlug);
+
+  /** Active org's URL path segment — use this for all `:orgUrlName` routing. */
+  readonly orgUrlName   = computed(() => this._state().orgUrlName);
 
   /** Raw org-admin step-up token */
   readonly orgAdminToken = computed(() => this._state().orgAdminToken);
@@ -116,6 +119,7 @@ export class AppStateService {
       accessToken:  response.accessToken,
       refreshToken: response.refreshToken,
       orgSlug:      response.orgSlug,
+      orgUrlName:   response.orgUrlName,
       expiresAt:    new Date(response.expiresAt).getTime(),
     });
   }
@@ -132,7 +136,7 @@ export class AppStateService {
 
   /** Stores the hydrated profile from GET /api/users/auth/me (also used after PUT /me). */
   async updateUser(user: EmployeeUser): Promise<void> {
-    await this._persist({ ...this._state(), user });
+    await this._persist({ ...this._state(), user, orgUrlName: user.orgUrlName });
   }
 
   // ── Org-admin step-up session ─────────────────────────────────────────────
@@ -143,8 +147,9 @@ export class AppStateService {
       ...this._state(),
       orgAdminToken:           response.accessToken,
       orgAdminTokenExpiresAt:  new Date(response.expiresAt).getTime(),
-      // Registration only: no employee session exists yet, but the org slug is known.
-      orgSlug: this._state().orgSlug ?? response.orgSlug,
+      // Registration only: no employee session exists yet, but the org slug/urlName are known.
+      orgSlug:    this._state().orgSlug ?? response.orgSlug,
+      orgUrlName: this._state().orgUrlName ?? response.orgUrlName,
     });
   }
 

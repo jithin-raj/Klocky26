@@ -90,7 +90,7 @@
                     <div class="ao-avatar">{{ org.companyName.slice(0, 2).toUpperCase() }}</div>
                     <div>
                       <div class="ao-org-name">{{ org.companyName }}</div>
-                      <div class="ao-org-slug">{{ org.orgSlug }}</div>
+                      <div class="ao-org-slug">/{{ org.orgUrlName }}/app</div>
                     </div>
                   </div>
                 </td>
@@ -132,7 +132,7 @@
         <div class="ao-drawer-avatar">{{ selectedOrg()!.companyName.slice(0, 2).toUpperCase() }}</div>
         <div class="ao-drawer-info">
           <h2 class="ao-drawer-name">{{ selectedOrg()!.companyName }}</h2>
-          <p class="ao-drawer-slug">{{ selectedOrg()!.orgSlug }}</p>
+          <p class="ao-drawer-slug">/{{ selectedOrg()!.orgUrlName }}/app &bull; login code: {{ selectedOrg()!.orgSlug }}</p>
         </div>
         <button class="ao-drawer-close" type="button" (click)="closeDetail()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -196,6 +196,22 @@
       </div>
 
       <div class="ao-drawer-body">
+
+        <!-- URL name — Klock-admin-only rename, separate action from the rest
+             (renaming has its own 400/409 semantics, distinct from the bulk save below). -->
+        <div class="ao-detail-row ao-detail-row--col">
+          <span class="ao-detail-label">URL Name (klock.vercel.app/&lt;this&gt;/app/...) — Klock-admin only</span>
+          <div style="display:flex; gap:6px;">
+            <input class="ao-search" type="text" [(ngModel)]="editOrgUrlName" placeholder="acme" style="flex:1;" />
+            <button class="ao-action-btn" type="button" [disabled]="renameSubmitting()" (click)="submitRename()">
+              {{ renameSubmitting() ? 'Renaming…' : 'Rename' }}
+            </button>
+          </div>
+          <p class="ao-org-slug">Login code (orgSlug, unaffected by rename): {{ editingOrg()!.orgSlug }}</p>
+          @if (renameError()) {
+            <p class="ao-empty" style="color:#ef4444;">{{ renameError() }}</p>
+          }
+        </div>
 
         <!-- Identity — wired, real fields -->
         <div class="ao-detail-row ao-detail-row--col">
