@@ -62,6 +62,7 @@
         @case ('attendance') {
           <ob-attendance-setup-tab
             [initialData]="attendanceData"
+            [methodOptions]="methodOptions"
             (dataChange)="attendanceData = $event"
           />
         }
@@ -112,13 +113,18 @@
       }
 
       @if (activeTab() === 'preview') {
-        <button type="button" class="ob-btn" (click)="complete()">
-          Create Organisation
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2.5"
-               stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
+        <button type="button" class="ob-btn" [disabled]="submitting" (click)="complete()">
+          @if (submitting) {
+            <ui-loader variant="spinner" [size]="15"></ui-loader>
+            Creating organisation…
+          } @else {
+            Create Organisation
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          }
         </button>
       }
     </div>

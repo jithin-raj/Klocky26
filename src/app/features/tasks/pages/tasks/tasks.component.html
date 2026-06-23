@@ -4,12 +4,7 @@
   <div class="tk-header">
     <div><h1>Tasks</h1><p>Create, assign, and track work across your team</p></div>
     <div class="tk-header__right">
-      <select class="tk-select" [ngModel]="filterPrio()" (ngModelChange)="filterPrio.set($event)">
-        <option value="">All Priorities</option>
-        @for (p of priorities; track p) {
-          <option [value]="p">{{ p.charAt(0).toUpperCase() + p.slice(1) }}</option>
-        }
-      </select>
+      <ui-select [options]="filterPrioOptions" [ngModel]="filterPrio()" (ngModelChange)="filterPrio.set($event)"></ui-select>
       <button class="tk-btn tk-btn--primary" (click)="showAdd.set(true)">+ Add Task</button>
     </div>
   </div>
@@ -85,22 +80,14 @@
         </div>
         <div class="tk-form-row">
           <div class="tk-field">
-            <label for="tk-priority">Priority</label>
-            <select id="tk-priority" class="tk-select tk-select--full" [ngModel]="newPriority()" (ngModelChange)="newPriority.set($event)">
-              @for (p of priorities; track p) { <option [value]="p">{{ p.charAt(0).toUpperCase() + p.slice(1) }}</option> }
-            </select>
+            <ui-select label="Priority" [options]="priorityOptions" [ngModel]="newPriority()" (ngModelChange)="newPriority.set($event)"></ui-select>
           </div>
           <div class="tk-field">
-            <label for="tk-due">Due Date</label>
-            <input id="tk-due" class="tk-input" type="date" [ngModel]="newDue()" (ngModelChange)="newDue.set($event)" />
+            <ui-datepicker label="Due Date" [ngModel]="newDue()" (ngModelChange)="newDue.set($event)"></ui-datepicker>
           </div>
         </div>
         <div class="tk-field">
-          <label for="tk-assignee">Assign To</label>
-          <select id="tk-assignee" class="tk-select tk-select--full" [ngModel]="newAssignee()" (ngModelChange)="newAssignee.set($event)">
-            <option value="">Unassigned</option>
-            @for (e of employees; track e.id) { <option [value]="e.id">{{ e.fullName }} – {{ e.department }}</option> }
-          </select>
+          <ui-select label="Assign To" [options]="assigneeOptions" [ngModel]="newAssignee()" (ngModelChange)="newAssignee.set($event)"></ui-select>
         </div>
         <div class="tk-field">
           <label for="tk-tags">Tags (comma separated)</label>

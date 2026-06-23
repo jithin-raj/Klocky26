@@ -1,4 +1,5 @@
 import { Injectable, OnDestroy, signal, inject } from '@angular/core';
+import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { RealtimeService } from './realtime.service';
 import { ApiResponse } from '../models/api-response.model';
@@ -8,6 +9,7 @@ import {
   ClockInRequest,
   ClockOutRequest,
   LocationPingResponse,
+  TeamAttendanceItem,
 } from '../models/attendance.model';
 
 export type GeoStatus = 'idle' | 'locating' | 'watching' | 'error';
@@ -152,6 +154,13 @@ export class AttendanceStateService implements OnDestroy {
     } else {
       this._stopPingTimer();
     }
+  }
+
+  // ── Team status (manager/HR/admin only) ────────────────────────────────
+
+  /** GET /api/attendance/team — 403s for regular employees; only call this when the user is a manager/HR/admin. */
+  getTeamStatus(): Observable<ApiResponse<TeamAttendanceItem[]>> {
+    return this.api.get<ApiResponse<TeamAttendanceItem[]>>('/attendance/team');
   }
 
   // ── Toast ────────────────────────────────────────────────────────────

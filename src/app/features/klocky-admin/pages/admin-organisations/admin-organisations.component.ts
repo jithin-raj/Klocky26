@@ -2,12 +2,13 @@ import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } 
 import { FormsModule } from '@angular/forms';
 import { PlatformAdminService } from '../../../../core/services/platform-admin.service';
 import { PlatformOrgListItem, SubscriptionStatus, OrgEmailType } from '../../../../core/models/platform-auth.model';
+import { UiSelectComponent, UiDatePickerComponent } from '../../../../shared/components';
 
 @Component({
   selector: 'klocky-admin-organisations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, UiSelectComponent, UiDatePickerComponent],
   templateUrl: './admin-organisations.component.html',
   styleUrl: './admin-organisations.component.scss',
 })
@@ -39,6 +40,7 @@ export class AdminOrganisationsComponent implements OnInit {
   editCompanyName = '';
   editAccentColor = '';
   editIsActive = true;
+  readonly subscriptionStatusOptions: SubscriptionStatus[] = ['trial', 'active', 'expired', 'cancelled'];
   editSubscriptionStatus: SubscriptionStatus = 'trial';
   editSubscriptionPlan = '';
   editTrialEndsAt = '';
@@ -71,6 +73,11 @@ export class AdminOrganisationsComponent implements OnInit {
   // UI shell only, no backend endpoint exists yet (SERVER_CHANGES_REQUEST.md §0).
   readonly agentStatusNotice = signal('');
   agentStatus: 'active' | 'pending' | 'inactive' = 'pending';
+  readonly agentStatusOptions = [
+    { label: 'Active',   value: 'active'   },
+    { label: 'Pending',  value: 'pending'  },
+    { label: 'Inactive', value: 'inactive' },
+  ];
 
   // ── Send email — REQUESTED endpoint, not live yet (SERVER_CHANGES_REQUEST.md §0d) ──
   readonly emailSubmitting = signal(false);
@@ -79,6 +86,12 @@ export class AdminOrganisationsComponent implements OnInit {
   emailType: OrgEmailType = 'resend_welcome';
   emailCustomSubject = '';
   emailCustomMessage = '';
+  readonly emailTypeOptions = [
+    { label: 'Resend Welcome Email',          value: 'resend_welcome'     },
+    { label: 'Resend Verification Code',      value: 'resend_otp'         },
+    { label: 'Subscription / Payment Alert',  value: 'subscription_alert' },
+    { label: 'Custom Message',                value: 'custom'             },
+  ];
 
   ngOnInit(): void {
     this.refresh();

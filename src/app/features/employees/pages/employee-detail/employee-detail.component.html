@@ -1,3 +1,6 @@
+@if (loading()) {
+  <div class="ed-not-found">Loading employee…</div>
+} @else if (employee()) {
 @if (employee(); as emp) {
 <div class="ed-page">
 
@@ -8,22 +11,29 @@
       Employees
     </button>
     <div class="ed-hero">
-      <div class="ed-avatar" [style.background]="emp.avatarColor">{{ emp.initials }}</div>
+      <div class="ed-avatar" [style.background]="avatarColor(emp)">{{ initials(emp) }}</div>
       <div class="ed-hero__info">
         <h1>{{ emp.fullName }}</h1>
-        <p>{{ emp.designation }} · {{ emp.department }}</p>
+        <p>{{ emp.designationTitle || 'No designation' }} · {{ emp.departmentName || 'No department' }}</p>
         <div class="ed-badges">
           <span class="ed-role-badge ed-role-badge--{{ emp.role }}">{{ emp.role.charAt(0).toUpperCase() + emp.role.slice(1) }}</span>
-          <span class="ed-status-badge ed-status-badge--{{ emp.status }}">
-            @if (emp.status === 'on_leave') { On Leave } @else { {{ emp.status.charAt(0).toUpperCase() + emp.status.slice(1) }} }
+          <span class="ed-status-badge ed-status-badge--{{ emp.isActive ? 'active' : 'inactive' }}">
+            {{ emp.isActive ? 'Active' : 'Inactive' }}
           </span>
           <span class="ed-code">{{ emp.employeeCode }}</span>
         </div>
       </div>
-      <button class="ed-edit-btn" (click)="editEmp()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Edit
-      </button>
+      <div style="display:flex; gap:8px;">
+        @if (emp.isActive) {
+          <button class="ed-edit-btn" (click)="deactivateEmployee()">Deactivate</button>
+        } @else {
+          <button class="ed-edit-btn" (click)="activateEmployee()">Activate</button>
+        }
+        <button class="ed-edit-btn" (click)="editEmp()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+      </div>
     </div>
   </div>
 
@@ -32,7 +42,7 @@
     <div class="ed-stat"><span class="ed-stat__val">{{ attendanceRate }}%</span><span class="ed-stat__lbl">Attendance</span></div>
     <div class="ed-stat"><span class="ed-stat__val">{{ leaveBalance }}</span><span class="ed-stat__lbl">Leave Balance</span></div>
     <div class="ed-stat"><span class="ed-stat__val">{{ mockGoals.length }}</span><span class="ed-stat__lbl">Active Goals</span></div>
-    <div class="ed-stat"><span class="ed-stat__val">{{ emp.officeLocation }}</span><span class="ed-stat__lbl">Office</span></div>
+    <div class="ed-stat"><span class="ed-stat__val">{{ emp.overrideOfficeName || '—' }}</span><span class="ed-stat__lbl">Office</span></div>
   </div>
 
   <!-- Tabs -->
@@ -49,14 +59,14 @@
       <div class="ed-card">
         <h3>Contact & Personal</h3>
         <div class="ed-field-row"><span>Email</span><span>{{ emp.email }}</span></div>
-        <div class="ed-field-row"><span>Phone</span><span>{{ emp.phone }}</span></div>
-        <div class="ed-field-row"><span>Location</span><span>{{ emp.officeLocation }}</span></div>
-        <div class="ed-field-row"><span>Joined</span><span>{{ emp.dateOfJoining | date:'MMMM d, yyyy' }}</span></div>
+        <div class="ed-field-row"><span>Phone</span><span>{{ emp.phone || '—' }}</span></div>
+        <div class="ed-field-row"><span>Location</span><span>{{ emp.overrideOfficeName || '—' }}</span></div>
+        <div class="ed-field-row"><span>Joined</span><span>{{ emp.dateOfJoining ? (emp.dateOfJoining | date:'MMMM d, yyyy') : '—' }}</span></div>
       </div>
       <div class="ed-card">
         <h3>Work Information</h3>
-        <div class="ed-field-row"><span>Department</span><span>{{ emp.department }}</span></div>
-        <div class="ed-field-row"><span>Designation</span><span>{{ emp.designation }}</span></div>
+        <div class="ed-field-row"><span>Department</span><span>{{ emp.departmentName || '—' }}</span></div>
+        <div class="ed-field-row"><span>Designation</span><span>{{ emp.designationTitle || '—' }}</span></div>
         <div class="ed-field-row"><span>Role</span><span>{{ emp.role.charAt(0).toUpperCase() + emp.role.slice(1) }}</span></div>
         <div class="ed-field-row"><span>Reports To</span><span>{{ emp.reportingManagerName ?? 'No manager' }}</span></div>
       </div>
@@ -129,6 +139,7 @@
   }
 
 </div>
+}
 } @else {
   <div class="ed-not-found">Employee not found. <button (click)="goBack()">Go back</button></div>
 }

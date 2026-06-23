@@ -1,8 +1,9 @@
 import {
-  Component, ChangeDetectionStrategy, signal, ElementRef, ViewChild, OnDestroy
+  Component, ChangeDetectionStrategy, signal, ElementRef, ViewChild, OnDestroy, computed
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UiSelectComponent } from '../../../../shared/components';
 
 type ScanMode = 'idle' | 'enroll' | 'verify';
 type ScanStatus = 'idle' | 'processing' | 'success' | 'fail';
@@ -27,7 +28,7 @@ interface ClockEntry {
   selector: 'app-face-scan',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiSelectComponent],
   templateUrl: './face-scan.component.html',
   styleUrl: './face-scan.component.scss',
 })
@@ -59,6 +60,11 @@ export class FaceScanComponent implements OnDestroy {
   ]);
 
   selectedEmployeeId = signal<string | null>(null);
+
+  readonly employeeOptions = computed(() => [
+    { label: '— Choose —', value: null },
+    ...this.employees().map(e => ({ label: e.name, value: e.id })),
+  ]);
 
   // ── Camera ─────────────────────────────────────────────────────────
 

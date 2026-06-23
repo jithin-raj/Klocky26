@@ -52,13 +52,8 @@
               <h3>Enrol Face</h3>
               <p>Register your face for the first time or re-enrol</p>
               <div class="fs-select-wrap">
-                <label for="fs-emp-select">Select person</label>
-                <select id="fs-emp-select" class="fs-select" [ngModel]="selectedEmployeeId()" (ngModelChange)="selectedEmployeeId.set($event)">
-                  <option [ngValue]="null">— Choose —</option>
-                  @for (e of employees(); track e.id) {
-                    <option [value]="e.id">{{ e.name }}</option>
-                  }
-                </select>
+                <ui-select label="Select person" [options]="employeeOptions()"
+                           [ngModel]="selectedEmployeeId()" (ngModelChange)="selectedEmployeeId.set($event)"></ui-select>
               </div>
               <button class="fs-btn fs-btn--enroll" [disabled]="!selectedEmployeeId()" (click)="startCamera('enroll')">
                 Start Enrolment

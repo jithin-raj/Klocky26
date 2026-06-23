@@ -40,16 +40,10 @@
         </div>
 
         @if (audience() === 'department') {
-          <select class="nt-select" [ngModel]="target()" (ngModelChange)="target.set($event)">
-            <option value="">Select department</option>
-            @for (d of departments; track d) { <option [value]="d">{{ d }}</option> }
-          </select>
+          <ui-select [options]="departmentOptions" [ngModel]="target()" (ngModelChange)="target.set($event)"></ui-select>
         }
         @if (audience() === 'individual') {
-          <select class="nt-select" [ngModel]="target()" (ngModelChange)="target.set($event)">
-            <option value="">Select employee</option>
-            @for (e of employees; track e.id) { <option [value]="e.id">{{ e.fullName }} – {{ e.department }}</option> }
-          </select>
+          <ui-select [options]="employeeOptions" [ngModel]="target()" (ngModelChange)="target.set($event)"></ui-select>
         }
       </div>
 

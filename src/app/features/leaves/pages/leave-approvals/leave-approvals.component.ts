@@ -3,6 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UiSelectComponent } from '../../../../shared/components';
 
 type LeaveStatus = 'pending' | 'approved' | 'rejected';
 type LeaveType   = 'casual' | 'sick' | 'earned' | 'maternity' | 'paternity' | 'unpaid';
@@ -40,7 +41,7 @@ const MOCK: LeaveRequest[] = [
   selector: 'app-leave-approvals',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiSelectComponent],
   templateUrl: './leave-approvals.component.html',
   styleUrl: './leave-approvals.component.scss',
 })
@@ -54,6 +55,10 @@ export class LeaveApprovalsComponent {
   detailTarget = signal<LeaveRequest | null>(null);
 
   readonly leaveTypes: LeaveType[] = ['casual','sick','earned','maternity','paternity','unpaid'];
+  readonly leaveTypeOptions = [
+    { label: 'All Leave Types', value: '' },
+    ...this.leaveTypes.map(t => ({ label: this.typeLabel(t), value: t })),
+  ];
 
   readonly filtered = computed(() => {
     return this.all().filter(r => {

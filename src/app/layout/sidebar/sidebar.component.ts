@@ -92,6 +92,7 @@ export class SidebarComponent {
       items: [
         { label: 'Employees', route: 'app/employees', icon: 'employees', exact: true, roles: MANAGEMENT_ROLES },
         { label: 'Org Tree', route: 'app/employees/tree', icon: 'tree', roles: MANAGEMENT_ROLES },
+        { label: 'Departments & Roles', route: 'app/employees/org-structure', icon: 'employees', roles: ADMIN_ONLY_ROLES },
         { label: 'Roles & Permissions', route: 'app/roles', icon: 'roles', roles: ADMIN_ONLY_ROLES },
       ]
     },

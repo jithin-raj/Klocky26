@@ -33,12 +33,7 @@
         </button>
       }
     </div>
-    <select class="lv-select" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)">
-      <option value="">All Leave Types</option>
-      @for (t of leaveTypes; track t) {
-        <option [value]="t">{{ typeLabel(t) }}</option>
-      }
-    </select>
+    <ui-select [options]="leaveTypeOptions" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)"></ui-select>
   </div>
 
   <!-- List -->

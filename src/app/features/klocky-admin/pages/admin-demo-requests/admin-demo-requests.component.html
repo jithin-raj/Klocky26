@@ -40,12 +40,7 @@
         <input class="adr-search" type="text" placeholder="Search by name, email or company…"
                [value]="search()" (input)="onSearch($event)" />
       </div>
-      <select class="adr-filter" [value]="statusFilter()" (change)="onStatusFilter($event)">
-        <option value="all">All statuses</option>
-        @for (s of statuses; track s) {
-          <option [value]="s">{{ statusLabel(s) }}</option>
-        }
-      </select>
+      <ui-select [options]="statusFilterOptions()" [ngModel]="statusFilter()" (ngModelChange)="onStatusFilter($event)"></ui-select>
     </div>
 
     <div class="adr-table-scroll">
@@ -86,12 +81,8 @@
                 {{ req.message || '—' }}
               </td>
               <td (click)="$event.stopPropagation()">
-                <select class="adr-status-select" [value]="req.status"
-                        (change)="setStatus(req, $any($event.target).value)">
-                  @for (s of statuses; track s) {
-                    <option [value]="s">{{ statusLabel(s) }}</option>
-                  }
-                </select>
+                <ui-select class="adr-status-select" [options]="statusOptions" [ngModel]="req.status"
+                           (ngModelChange)="setStatus(req, $event)"></ui-select>
               </td>
             </tr>
           } @empty {

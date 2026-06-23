@@ -21,60 +21,62 @@
   <!-- RIGHT -->
   <div class="right">
 
-    <!-- PUNCH IN / OUT icon button -->
-    <div class="punch-wrap">
-      <button
-        class="punch-btn"
-        [class.punched-in]="isClockedIn()"
-        [class.locating]="geoStatus() === 'locating'"
-        (click)="toggleClock()"
-        [attr.aria-label]="isClockedIn() ? 'Clock Out' : 'Clock In'"
-        [title]="isClockedIn() ? 'Clocked in - Click to clock out' : 'Clock In (uses your location)'"
-      >
-        <!-- Pulse ring when punched in -->
-        @if (isClockedIn()) {
-          <span class="punch-pulse"></span>
-        }
-        <!-- Locating spinner -->
-        @if (geoStatus() === 'locating') {
-          <span class="punch-spin"></span>
-        }
+    <!-- PUNCH IN / OUT icon button — admins manage the org, they don't punch in/out -->
+    @if (!isAdmin()) {
+      <div class="punch-wrap">
+        <button
+          class="punch-btn"
+          [class.punched-in]="isClockedIn()"
+          [class.locating]="geoStatus() === 'locating'"
+          (click)="toggleClock()"
+          [attr.aria-label]="isClockedIn() ? 'Clock Out' : 'Clock In'"
+          [title]="isClockedIn() ? 'Clocked in - Click to clock out' : 'Clock In (uses your location)'"
+        >
+          <!-- Pulse ring when punched in -->
+          @if (isClockedIn()) {
+            <span class="punch-pulse"></span>
+          }
+          <!-- Locating spinner -->
+          @if (geoStatus() === 'locating') {
+            <span class="punch-spin"></span>
+          }
 
-        <!-- Stopwatch + Play = Clock In -->
-        @if (!isClockedIn() && geoStatus() !== 'locating') {
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 2h4"/>
-            <path d="M12 2v2.5"/>
-            <circle cx="12" cy="13" r="8"/>
-            <polygon points="10.5 10.5 16 13 10.5 15.5"
-                     fill="currentColor" stroke="none"/>
-          </svg>
-        }
+          <!-- Stopwatch + Play = Clock In -->
+          @if (!isClockedIn() && geoStatus() !== 'locating') {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 2h4"/>
+              <path d="M12 2v2.5"/>
+              <circle cx="12" cy="13" r="8"/>
+              <polygon points="10.5 10.5 16 13 10.5 15.5"
+                       fill="currentColor" stroke="none"/>
+            </svg>
+          }
 
-        <!-- Stopwatch + Stop square = Clock Out -->
-        @if (isClockedIn()) {
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M10 2h4"/>
-            <path d="M12 2v2.5"/>
-            <circle cx="12" cy="13" r="8"/>
-            <rect x="9.5" y="10.5" width="5" height="5" rx="0.8"
-                  fill="currentColor" stroke="none"/>
-          </svg>
-        }
-      </button>
-      <div class="punch-tip-wrap">
-        <span class="punch-tip">{{ isClockedIn() ? 'Clock Out' : 'Clock In' }}</span>
-        @if (isClockedIn() && geoStatus() === 'watching') {
-          <span class="punch-geo">geo-tracked</span>
-        }
+          <!-- Stopwatch + Stop square = Clock Out -->
+          @if (isClockedIn()) {
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 2h4"/>
+              <path d="M12 2v2.5"/>
+              <circle cx="12" cy="13" r="8"/>
+              <rect x="9.5" y="10.5" width="5" height="5" rx="0.8"
+                    fill="currentColor" stroke="none"/>
+            </svg>
+          }
+        </button>
+        <div class="punch-tip-wrap">
+          <span class="punch-tip">{{ isClockedIn() ? 'Clock Out' : 'Clock In' }}</span>
+          @if (isClockedIn() && geoStatus() === 'watching') {
+            <span class="punch-geo">geo-tracked</span>
+          }
+        </div>
       </div>
-    </div>
 
-    <div class="v-sep"></div>
+      <div class="v-sep"></div>
+    }
 
     <!-- BELL -->
     <button class="icon-btn" title="Notifications">

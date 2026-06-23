@@ -9,10 +9,7 @@
     <button [class.active]="activeTab() === 'jobs'"        (click)="activeTab.set('jobs')">Job Openings</button>
     <button [class.active]="activeTab() === 'onboarding'"  (click)="activeTab.set('onboarding')">Onboarding</button>
     @if (activeTab() === 'pipeline') {
-      <select class="rc-filter" [ngModel]="selectedJob()" (ngModelChange)="selectedJob.set($event)">
-        <option value="">All Jobs</option>
-        @for (j of jobs; track j.id) { <option [value]="j.id">{{ j.title }}</option> }
-      </select>
+      <ui-select [options]="jobOptions" [ngModel]="selectedJob()" (ngModelChange)="selectedJob.set($event)"></ui-select>
     }
   </div>
 

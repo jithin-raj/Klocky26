@@ -16,6 +16,12 @@ import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
 import {
+  TenantSettings,
+  UpdateTenantSettingsRequest,
+  LeaveTypeDto,
+  HolidayDto,
+} from '../../../../core/models/org-auth.model';
+import {
   INDUSTRIES,
   COMPANY_SIZES,
   COUNTRIES,
@@ -83,6 +89,22 @@ export const TIMEZONES = TIMEZONE_OPTIONS;
 
 const EMPLOYEE_BANDS = COMPANY_SIZES;
 
+// ── Display ↔ API value conversions ───────────────────────────────────────
+// COMPANY_SIZES displays with spaced en-dashes ('51 – 200'); the API enum
+// uses plain hyphens ('51-200').
+function toApiCompanySize(display: string): string {
+  return display.replace(/\s*–\s*/g, '-');
+}
+function toDisplayCompanySize(api: string): string {
+  const match = EMPLOYEE_BANDS.find(b => toApiCompanySize(b) === api);
+  return match ?? api;
+}
+
+/** A real server-issued GUID — anything else (locally-generated Date.now() ids, mock seed ids) is "new" and should be sent as null so the API creates it fresh. */
+function isServerId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
 const HOLIDAY_TYPE_LABELS: Record<Holiday['type'], string> = {
   national:   'National',
   optional:   'Optional',
@@ -106,12 +128,16 @@ export class OrgProfileComponent implements OnInit {
   private readonly fb              = inject(FormBuilder);
 
   // ── Org-admin step-up (POST /api/org/auth/login) ────────────────────
+  // GET/PUT /api/tenant/settings (§1.5c) both require the org-admin token,
+  // so the very first load can also need the step-up password — not just
+  // save. `_pendingAction` remembers which one to retry once stepped up.
   readonly stepUpOpen       = signal(false);
   readonly stepUpSubmitting = signal(false);
   readonly stepUpError      = signal('');
   readonly stepUpForm: FormGroup = this.fb.group({
     password: ['', Validators.required],
   });
+  private _pendingAction: 'load' | 'save' = 'load';
 
   submitStepUp(): void {
     this.stepUpForm.markAllAsTouched();
@@ -128,7 +154,8 @@ export class OrgProfileComponent implements OnInit {
         this.stepUpSubmitting.set(false);
         this.stepUpOpen.set(false);
         this.stepUpForm.reset();
-        this._doSave();
+        if (this._pendingAction === 'save') this._doSave();
+        else this._loadSettings();
       },
       error: (err) => {
         this.stepUpSubmitting.set(false);
@@ -144,14 +171,116 @@ export class OrgProfileComponent implements OnInit {
       this.accentColor = currentTheme.accent.toLowerCase();
     }
 
-    // GET /api/tenant/options (§1.6) — replace the local country list with
-    // the server's; keep the local fallback if the call fails.
+    // GET /api/tenant/options (§1.6) — replace the local country list and
+    // the clock-in method choices with the server's; never hardcode the
+    // latter, the set of valid methods is the server's to define.
     this.orgAuth.getTenantOptions().subscribe({
       next: (res) => {
         if (res.data.countries?.length) this.countries.set(res.data.countries);
+        if (res.data.clockInMethods?.length) this.clockInMethodOptions.set(res.data.clockInMethods);
       },
       error: () => { /* keep the local fallback list */ },
     });
+
+    this._pendingAction = 'load';
+    if (this.appState.isOrgAdminAuthenticated()) {
+      this._loadSettings();
+    } else {
+      this.stepUpError.set('');
+      this.stepUpOpen.set(true);
+    }
+  }
+
+  // ── Load (GET /api/tenant/settings) ─────────────────────────────────
+  private _loadSettings(): void {
+    this.loadingSettings.set(true);
+    this.orgAuth.getTenantSettings().subscribe({
+      next: (res) => {
+        this._applySettings(res.data);
+        this.loadingSettings.set(false);
+      },
+      error: () => { this.loadingSettings.set(false); },
+    });
+  }
+
+  private _applySettings(s: TenantSettings): void {
+    this.companyName  = s.companyName;
+    this.legalName    = s.legalName ?? '';
+    this.companyType  = s.companyType ?? this.companyType;
+    this.foundedYear  = s.foundedYear != null ? String(s.foundedYear) : '';
+    this.regNumber    = s.regNumber ?? '';
+    this.gstNumber    = s.gstNumber ?? '';
+    this.panNumber    = s.panNumber ?? '';
+    this.esicNumber   = s.esicNumber ?? '';
+    this.pfAccount    = s.pfAccount ?? '';
+    this.website      = s.website ?? '';
+    this.description  = s.about ?? '';
+
+    this.accentColor  = (s.accentColor || this.accentColor).toLowerCase();
+    this._loadedLogoUrl = s.logoUrl ?? '';
+
+    this.primaryEmail     = s.primaryEmail;
+    this.secondaryEmails  = [...(s.secondaryEmails ?? [])];
+    this.phone             = s.phone ?? '';
+    this.billingEmail      = s.billingEmail ?? '';
+
+    this.employeeCount  = toDisplayCompanySize(s.companySize);
+    this.industry        = s.industry;
+    this.hrContactName   = s.hrContactName ?? '';
+    this.hrContactEmail  = s.hrContactEmail ?? '';
+    this.country          = s.country;
+
+    this.defaultTimezone = s.defaultTimezone;
+    this.dateFormat       = s.dateFormat ?? this.dateFormat;
+    this.currency          = s.currency ?? this.currency;
+    this.workWeekStartDay = this._capitalize(s.weekStartDay);
+    this.workWeekEndDay   = this._capitalize(s.weekEndDay);
+    this.weekStart         = this.workWeekStartDay;
+
+    this.workHoursPerDay  = s.workHours;
+    this.gracePeriodMins   = s.checkInRuleType === 'none'
+      ? 0
+      : s.checkInRuleType === 'custom'
+        ? (s.checkInCustomMinutes ?? 0)
+        : Number(s.checkInRuleType);
+    this.halfDayThresholdHrs = s.halfDayThresholdHrs;
+    this.overtimeEnabled      = s.overtimeEnabled;
+    this.overtimeAfterHrs     = s.overtimeAfterHrs ?? this.overtimeAfterHrs;
+    this.geoFencingEnabled    = s.geoFencingEnabled;
+    this.selectedClockInMethods = [...(s.clockInMethods ?? [])];
+    this.selfieCheckinEnabled = s.selfieVerificationEnabled;
+    this.autoCheckoutEnabled  = s.autoCheckoutEnabled;
+    this.autoCheckoutTime     = s.autoCheckoutTime ? s.autoCheckoutTime.slice(0, 5) : this.autoCheckoutTime;
+
+    this.leaveYearStart      = this._capitalize(s.leaveYearStart ?? 'january');
+    this.annualLeaveDays     = s.annualLeaveDays ?? this.annualLeaveDays;
+    this.sickLeaveDays       = s.sickLeaveDays ?? this.sickLeaveDays;
+    this.casualLeaveDays     = s.casualLeaveDays ?? this.casualLeaveDays;
+    this.carryForwardEnabled = s.carryForwardEnabled;
+    this.carryForwardMaxDays = s.carryForwardMaxDays ?? this.carryForwardMaxDays;
+    this.compOffEnabled      = s.compOffEnabled;
+    this.lopEnabled           = s.lopEnabled;
+    this.encashmentEnabled    = s.encashmentEnabled;
+
+    this.customLeaveTypes = (s.leaveTypes ?? []).map(lt => ({
+      id: lt.id ?? String(Date.now() + Math.random()),
+      name: lt.name,
+      daysPerYear: lt.daysPerYear,
+      isPaid: lt.isPaid,
+      carryForward: lt.carryForward,
+      applicableTo: lt.applicableTo,
+    }));
+    this.holidays = (s.holidays ?? []).map(h => ({
+      id: h.id ?? String(Date.now() + Math.random()),
+      name: h.name,
+      month: h.month,
+      day: h.day,
+      type: h.type,
+    }));
+  }
+
+  private _capitalize(v: string): string {
+    return v ? v.charAt(0).toUpperCase() + v.slice(1).toLowerCase() : v;
   }
 
   // ── Reference data ────────────────────────────────────────────
@@ -162,6 +291,18 @@ export class OrgProfileComponent implements OnInit {
   // Countries start from the local constant, replaced by GET /api/tenant/options
   // (§1.6) once it resolves — see ngOnInit.
   readonly countries           = signal<string[]>(COUNTRIES);
+  // Clock-in methods — populated from GET /api/tenant/options (§1.6), never hardcoded.
+  // Empty until that call resolves; the checkbox group below renders nothing until then.
+  readonly clockInMethodOptions = signal<string[]>([]);
+  private readonly clockInMethodLabels: Record<string, string> = {
+    web: 'Web Clock-in',
+    mobile: 'Mobile App',
+    biometric: 'Biometric Device',
+    face: 'Face Recognition',
+  };
+  clockInMethodLabel(value: string): string {
+    return this.clockInMethodLabels[value] ?? value;
+  }
   readonly employeeBands       = EMPLOYEE_BANDS;
   readonly currencies          = CURRENCIES;
   readonly dateFormats         = DATE_FORMATS;
@@ -245,7 +386,8 @@ export class OrgProfileComponent implements OnInit {
   overtimeEnabled      = false;
   overtimeAfterHrs     = 9;
   geoFencingEnabled    = false;
-  remoteCheckinEnabled = true;
+  /** Sourced from GET /api/tenant/options (clockInMethodOptions) — never a hardcoded list. */
+  selectedClockInMethods: string[] = [];
   selfieCheckinEnabled = false;
   autoCheckoutEnabled  = false;
   autoCheckoutTime     = '20:00';
@@ -270,9 +412,13 @@ export class OrgProfileComponent implements OnInit {
 
   holidays: Holiday[] = DEFAULT_HOLIDAYS.map((h, i) => ({ ...h, id: String(i + 1) }));
 
+  /** Last logoUrl returned by the server — no upload endpoint exists yet, so this is passed straight through unchanged on save (see TenantSettings.logoUrl). */
+  private _loadedLogoUrl = '';
+
   // ── UI state (signals) ─────────────────────────────────────────
   readonly isDirty             = signal(false);
   readonly saving              = signal(false);
+  readonly loadingSettings     = signal(false);
   readonly logoPreview         = signal('');
   readonly activeSection       = signal('identity');
   readonly showDiscardConfirm  = signal(false);
@@ -451,6 +597,18 @@ export class OrgProfileComponent implements OnInit {
     return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`;
   }
 
+  // ── Clock-in methods (multi-select, options from tenant/options) ──
+  isClockInMethodSelected(value: string): boolean {
+    return this.selectedClockInMethods.includes(value);
+  }
+
+  toggleClockInMethod(value: string): void {
+    this.selectedClockInMethods = this.isClockInMethodSelected(value)
+      ? this.selectedClockInMethods.filter(v => v !== value)
+      : [...this.selectedClockInMethods, value];
+    this.markDirty();
+  }
+
   // ── Secondary emails ───────────────────────────────────────────
   addSecondaryEmail(): void {
     this.secondaryEmails = [...this.secondaryEmails, ''];
@@ -543,6 +701,7 @@ export class OrgProfileComponent implements OnInit {
    */
   save(): void {
     if (!this.appState.isOrgAdminAuthenticated()) {
+      this._pendingAction = 'save';
       this.stepUpError.set('');
       this.stepUpOpen.set(true);
       return;
@@ -550,52 +709,104 @@ export class OrgProfileComponent implements OnInit {
     this._doSave();
   }
 
+  /** Checkbox grace period (0/5/10/15/30) → API's checkInRuleType enum + checkInCustomMinutes. */
+  private _toCheckInRule(): { checkInRuleType: any; checkInCustomMinutes: number | null } {
+    const mins = this.gracePeriodMins;
+    if (mins === 0) return { checkInRuleType: 'none', checkInCustomMinutes: null };
+    if ([5, 10, 15, 30].includes(mins)) return { checkInRuleType: String(mins), checkInCustomMinutes: null };
+    return { checkInRuleType: 'custom', checkInCustomMinutes: mins };
+  }
+
+  private _toLeaveTypeDtos(): LeaveTypeDto[] {
+    return this.customLeaveTypes.map(lt => ({
+      id: isServerId(lt.id) ? lt.id : null,
+      name: lt.name,
+      daysPerYear: lt.daysPerYear,
+      isPaid: lt.isPaid,
+      carryForward: lt.carryForward,
+      applicableTo: lt.applicableTo,
+    }));
+  }
+
+  private _toHolidayDtos(): HolidayDto[] {
+    return this.holidays.map(h => ({
+      id: isServerId(h.id) ? h.id : null,
+      name: h.name,
+      month: h.month,
+      day: h.day,
+      type: h.type,
+    }));
+  }
+
   private _doSave(): void {
     this.saving.set(true);
+    const { checkInRuleType, checkInCustomMinutes } = this._toCheckInRule();
 
-    const details$ = this.orgAuth.updateOrgDetails({
+    const payload: UpdateTenantSettingsRequest = {
       companyName: this.companyName,
+      displayName: this.companyName,
       legalName: this.legalName,
-      industry: this.industry,
-      website: this.website,
       about: this.description,
+      companyType: this.companyType,
+      foundedYear: this.foundedYear ? Number(this.foundedYear) : null,
       phone: this.phone,
+      website: this.website,
       accentColor: this.accentColor,
-    });
+      logoUrl: this._loadedLogoUrl || null,
+      secondaryEmails: this.secondaryEmails.filter(e => e.trim().length > 0),
+      billingEmail: this.billingEmail,
+      hrContactName: this.hrContactName,
+      hrContactEmail: this.hrContactEmail,
+      regNumber: this.regNumber,
+      gstNumber: this.gstNumber,
+      panNumber: this.panNumber,
+      esicNumber: this.esicNumber,
+      pfAccount: this.pfAccount,
+      industry: this.industry,
+      companySize: toApiCompanySize(this.employeeCount) as any,
+      country: this.country,
+      defaultTimezone: this.defaultTimezone,
+      dateFormat: this.dateFormat,
+      currency: this.currency,
+      clockInMethods: (this.selectedClockInMethods.length ? this.selectedClockInMethods : ['web']) as any,
+      weekStartDay: this.workWeekStartDay.toLowerCase(),
+      weekEndDay: this.workWeekEndDay.toLowerCase(),
+      workHours: this.workHoursPerDay,
+      checkInRuleType,
+      checkInCustomMinutes,
+      halfDayThresholdHrs: this.halfDayThresholdHrs,
+      locationPolicy: this.geoFencingEnabled ? 'geo_fenced_area' : 'no_restrictions',
+      lateThresholdMins: this.gracePeriodMins,
+      overtimeEnabled: this.overtimeEnabled,
+      overtimeAfterHrs: this.overtimeAfterHrs,
+      requirePhotoOnClockIn: false,
+      selfieVerificationEnabled: this.selfieCheckinEnabled,
+      ipRestrictionEnabled: false,
+      autoCheckoutEnabled: this.autoCheckoutEnabled,
+      autoCheckoutTime: this.autoCheckoutEnabled && this.autoCheckoutTime ? `${this.autoCheckoutTime}:00` : null,
+      geoFencingEnabled: this.geoFencingEnabled,
+      geofencePingIntervalMinutes: 5,
+      geofenceMissedPingGraceMinutes: 15,
+      leaveYearStart: this.leaveYearStart.toLowerCase(),
+      annualLeaveDays: this.annualLeaveDays,
+      sickLeaveDays: this.sickLeaveDays,
+      casualLeaveDays: this.casualLeaveDays,
+      carryForwardEnabled: this.carryForwardEnabled,
+      carryForwardMaxDays: this.carryForwardMaxDays,
+      compOffEnabled: this.compOffEnabled,
+      lopEnabled: this.lopEnabled,
+      encashmentEnabled: this.encashmentEnabled,
+      leaveTypes: this._toLeaveTypeDtos(),
+      holidays: this._toHolidayDtos(),
+    };
 
-    details$.subscribe({
-      next: () => {
-        this.orgAuth.registerComplete({
-          companyName: this.companyName,
-          displayName: this.companyName,
-          primaryEmail: this.primaryEmail,
-          industry: this.industry,
-          companySize: this.employeeCount as any,
-          country: this.country,
-          defaultTimezone: this.defaultTimezone,
-          clockInMethods: this.remoteCheckinEnabled ? ['web', 'mobile'] : ['web'],
-          weekStartDay: this.workWeekStartDay.toLowerCase(),
-          weekEndDay: this.workWeekEndDay.toLowerCase(),
-          workHours: this.workHoursPerDay,
-          checkInRuleType: 'none',
-          halfDayThresholdHrs: this.halfDayThresholdHrs,
-          locationPolicy: this.geoFencingEnabled ? 'geo_fenced_area' : 'no_restrictions',
-          overtimeEnabled: this.overtimeEnabled,
-          overtimeAfterHrs: this.overtimeAfterHrs,
-          autoCheckoutEnabled: this.autoCheckoutEnabled,
-          autoCheckoutTime: this.autoCheckoutTime ? `${this.autoCheckoutTime}:00` : undefined,
-          geoFencingEnabled: this.geoFencingEnabled,
-          geofencePingIntervalMinutes: 5,
-          geofenceMissedPingGraceMinutes: 15,
-        }).subscribe({
-          next: () => {
-            const completeTheme = this.orgThemeService.generateThemeFromColor(this.accentColor);
-            this.orgThemeService.apply(completeTheme);
-            this.saving.set(false);
-            this.isDirty.set(false);
-          },
-          error: () => { this.saving.set(false); },
-        });
+    this.orgAuth.updateTenantSettings(payload).subscribe({
+      next: (res) => {
+        this._applySettings(res.data);
+        const completeTheme = this.orgThemeService.generateThemeFromColor(this.accentColor);
+        this.orgThemeService.apply(completeTheme);
+        this.saving.set(false);
+        this.isDirty.set(false);
       },
       error: () => { this.saving.set(false); },
     });

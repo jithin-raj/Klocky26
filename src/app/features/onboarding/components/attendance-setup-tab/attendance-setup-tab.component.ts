@@ -45,6 +45,19 @@ export class AttendanceSetupTabComponent {
   }
   @Output() dataChange = new EventEmitter<AttendanceSetupData>();
 
+  /** Valid clock-in method values — sourced from GET /api/tenant/options by the parent, never hardcoded here. */
+  @Input() methodOptions: string[] = [];
+
+  private readonly methodLabels: Record<string, string> = {
+    web: 'Web Clock-in',
+    mobile: 'Mobile App',
+    biometric: 'Biometric Device',
+    face: 'Face Recognition',
+  };
+  methodLabel(value: string): string {
+    return this.methodLabels[value] ?? value;
+  }
+
   clockInMethods: string[] = [];
   workHoursPerDay   = 8;
   workWeekStart = 'Monday';
@@ -69,14 +82,6 @@ export class AttendanceSetupTabComponent {
   selfieVerification  = false;
   autoCheckoutEnabled = false;
   autoCheckoutTime    = '20:00';
-
-  readonly allClockInMethods = [
-    { label: 'Web Clock-in',      icon: '🖥️' },
-    { label: 'Mobile App',        icon: '📱' },
-    { label: 'Biometric Device',  icon: '👆' },
-    { label: 'Face Recognition',  icon: '🤳' },
-    { label: 'QR Code Scan',      icon: '⬛' },
-  ];
 
   readonly weekdays = [
     'Monday', 'Tuesday', 'Wednesday', 'Thursday',

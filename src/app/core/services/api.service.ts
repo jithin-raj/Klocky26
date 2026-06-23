@@ -78,6 +78,22 @@ export class ApiService {
     return this.http.delete<T>(path, { context: options?.context });
   }
 
+  // ── GET (binary) ──────────────────────────────────────────────────────────
+
+  /**
+   * GET request expecting a binary body (file download) instead of JSON —
+   * e.g. an .xlsx template. Bypasses the `get<T>()` JSON typing on purpose;
+   * everything else (interceptors, base-url prefixing) still applies because
+   * this still goes through the same injected HttpClient.
+   */
+  getBlob(path: string, params?: PaginationParams | Record<string, unknown>, options?: ApiCallOptions): Observable<Blob> {
+    return this.http.get(path, {
+      params: this._buildParams(params),
+      context: options?.context,
+      responseType: 'blob',
+    });
+  }
+
   // ── File Upload ───────────────────────────────────────────────────────────
 
   /**

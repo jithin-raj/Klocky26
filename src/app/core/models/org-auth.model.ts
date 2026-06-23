@@ -165,3 +165,106 @@ export interface UpdateOrgDetailsRequest {
   phone?: string;
   accentColor?: string;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Comprehensive tenant settings — §1.5c (GET/PUT /api/tenant/settings)
+// Deliberately separate from register-complete (§1.5): this is the one
+// endpoint pair meant to back a full "Organisation Settings" screen.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type LeaveApplicability = 'all' | 'male' | 'female';
+export type HolidayType = 'national' | 'optional' | 'restricted';
+
+export interface LeaveTypeDto {
+  id: string | null;
+  name: string;
+  daysPerYear: number;
+  isPaid: boolean;
+  carryForward: boolean;
+  applicableTo: LeaveApplicability;
+  isSystemType?: boolean;
+}
+
+export interface HolidayDto {
+  id: string | null;
+  name: string;
+  month: number; // 1-12
+  day: number;   // 1-31
+  type: HolidayType;
+}
+
+/** GET /api/tenant/settings response (data) */
+export interface TenantSettings {
+  orgSlug: string;
+  orgUrlName: string;
+  companyName: string;
+  displayName: string;
+  legalName: string;
+  about: string;
+  companyType: string | null;
+  foundedYear: number | null;
+  primaryEmail: string;
+  phone: string;
+  website: string;
+  accentColor: string;
+  logoUrl: string | null;
+  secondaryEmails: string[];
+  billingEmail: string;
+  hrContactName: string;
+  hrContactEmail: string;
+  regNumber: string;
+  gstNumber: string;
+  panNumber: string;
+  esicNumber: string;
+  pfAccount: string;
+  industry: string;
+  companySize: CompanySize;
+  country: string;
+  defaultTimezone: string;
+  dateFormat: string;
+  currency: string;
+  clockInMethods: ClockInMethod[];
+  weekStartDay: string;
+  weekEndDay: string;
+  workHours: number;
+  checkInRuleType: CheckInRuleType;
+  checkInCustomMinutes: number | null;
+  halfDayThresholdHrs: number;
+  locationPolicy: LocationPolicy;
+  lateThresholdMins: number;
+  overtimeEnabled: boolean;
+  overtimeAfterHrs: number | null;
+  requirePhotoOnClockIn: boolean;
+  selfieVerificationEnabled: boolean;
+  ipRestrictionEnabled: boolean;
+  autoCheckoutEnabled: boolean;
+  autoCheckoutTime: string | null;
+  geoFencingEnabled: boolean;
+  geofencePingIntervalMinutes: number;
+  geofenceMissedPingGraceMinutes: number;
+  leaveYearStart: string | null;
+  annualLeaveDays: number | null;
+  sickLeaveDays: number | null;
+  casualLeaveDays: number | null;
+  carryForwardEnabled: boolean;
+  carryForwardMaxDays: number | null;
+  compOffEnabled: boolean;
+  lopEnabled: boolean;
+  encashmentEnabled: boolean;
+  leaveTypes: LeaveTypeDto[];
+  holidays: HolidayDto[];
+  isActive: boolean;
+  createdAt: string;
+}
+
+/**
+ * PUT /api/tenant/settings request — same shape minus the read-only fields
+ * (orgSlug/orgUrlName/primaryEmail/isActive/createdAt). Full replace, every
+ * field — always send the complete current settings, not a partial diff.
+ * leaveTypes/holidays are replace-all-on-save: entries with id:null are
+ * created, entries with an existing id are recreated with a new id.
+ */
+export type UpdateTenantSettingsRequest = Omit<
+  TenantSettings,
+  'orgSlug' | 'orgUrlName' | 'primaryEmail' | 'isActive' | 'createdAt'
+>;

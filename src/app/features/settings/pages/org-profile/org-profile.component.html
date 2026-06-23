@@ -685,11 +685,20 @@
         <div class="op-card">
           <div class="op-field-group-label">Check-In Rules</div>
 
-          <ui-toggle [row]="true"
-            label="Allow Remote Check-In"
-            hint="Employees can punch in from any location"
-            [(ngModel)]="remoteCheckinEnabled" (ngModelChange)="markDirty()">
-          </ui-toggle>
+          <div class="op-field">
+            <p class="op-field-label">Allowed Clock-In Methods</p>
+            <p class="op-field-desc">Choose which methods employees can use to punch in — options come from the server.</p>
+            <div class="op-lt-seg" style="flex-wrap: wrap;">
+              @for (method of clockInMethodOptions(); track method) {
+                <button type="button"
+                        [class.active]="isClockInMethodSelected(method)"
+                        (click)="toggleClockInMethod(method)">{{ clockInMethodLabel(method) }}</button>
+              }
+              @if (clockInMethodOptions().length === 0) {
+                <span class="op-field-desc">Loading available methods…</span>
+              }
+            </div>
+          </div>
 
           <ui-toggle [row]="true"
             label="Geo-Fencing"

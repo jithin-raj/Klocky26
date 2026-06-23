@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnDestroy, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnDestroy, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { IconBellComponent, IconSearchComponent } from '../../shared/icons';
@@ -32,6 +32,9 @@ export class HeaderComponent implements OnDestroy {
   /** Pending geo confirmation — true after location is found, before user confirms */
   geoConfirmPending = signal(false);
   private _pendingPosition: GeolocationPosition | null = null;
+
+  /** Admins manage the org, they don't punch in/out — hide the clock widget for them. */
+  readonly isAdmin = computed(() => !!this.appState.user()?.isAdmin);
 
   get isJv(): boolean { return !!this.orgName; }
   get accentColor(): string {

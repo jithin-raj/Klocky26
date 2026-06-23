@@ -23,6 +23,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'org-structure',
+    loadComponent: () =>
+      import('./pages/org-structure/org-structure.component').then(
+        m => m.OrgStructureComponent
+      ),
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./pages/employee-detail/employee-detail.component').then(

@@ -11,22 +11,25 @@
 <div class="ob-field">
   <p class="ob-label">Select all that apply <span class="ob-required">*</span></p>
   <div class="ob-chip-group">
-    @for (m of allClockInMethods; track m.label) {
+    @for (m of methodOptions; track m) {
       <button
         type="button"
         class="ob-chip"
-        [class.ob-chip-active]="isMethodSelected(m.label)"
-        (click)="toggleMethod(m.label)"
+        [class.ob-chip-active]="isMethodSelected(m)"
+        (click)="toggleMethod(m)"
       >
-        @if (isMethodSelected(m.label)) {
+        @if (isMethodSelected(m)) {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="3"
                stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
         }
-        {{ m.label }}
+        {{ methodLabel(m) }}
       </button>
+    }
+    @if (methodOptions.length === 0) {
+      <span class="ob-hint">Loading available methods…</span>
     }
   </div>
   <p class="ob-hint">Choose one or more methods. You can change this anytime.</p>

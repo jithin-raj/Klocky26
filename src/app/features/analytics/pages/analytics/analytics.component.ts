@@ -1,18 +1,25 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UiSelectComponent } from '../../../../shared/components';
 
 @Component({
   selector: 'app-analytics',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiSelectComponent],
   templateUrl: './analytics.component.html',
   styleUrl: './analytics.component.scss',
 })
 export class AnalyticsComponent {
   activeReport = signal<'headcount' | 'attendance' | 'leaves' | 'turnover'>('headcount');
   period       = signal('2026-Q2');
+
+  readonly periodOptions = [
+    { label: 'Q1 2026', value: '2026-Q1' },
+    { label: 'Q2 2026', value: '2026-Q2' },
+    { label: 'Q4 2025', value: '2025-Q4' },
+  ];
 
   readonly reportOptions = [
     { value: 'headcount',  label: 'Headcount',       icon: '👥' },

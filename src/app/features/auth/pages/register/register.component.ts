@@ -15,6 +15,7 @@ import { UiSelectComponent } from '../../../../shared/components/ui-select/ui-se
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
 import { UserAuthService } from '../../../../core/services/user-auth.service';
+import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import {
   INDUSTRIES,
   COMPANY_SIZES,
@@ -53,6 +54,7 @@ export class RegisterComponent implements OnInit {
   private orgTheme = inject(OrgThemeService);
   private orgAuth = inject(OrgAuthService);
   private userAuth = inject(UserAuthService);
+  private toast = inject(ToastService);
 
   ngOnInit(): void {
     this.orgTheme.reset();
@@ -176,6 +178,7 @@ export class RegisterComponent implements OnInit {
       error: (err) => {
         this.loading = false;
         this.error = err?.error?.message ?? 'Could not send the verification code. Please try again.';
+        this.toast.error('Could not send code', this.error);
       },
     });
   }
@@ -238,6 +241,7 @@ export class RegisterComponent implements OnInit {
       error: (err) => {
         this.loading = false;
         this.error = err?.error?.message ?? 'Registration failed. Please try again.';
+        this.toast.error('Could not create organisation', this.error);
       },
     });
   }

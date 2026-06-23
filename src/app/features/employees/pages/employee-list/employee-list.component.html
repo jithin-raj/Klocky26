@@ -7,6 +7,12 @@
       <span class="el-count">{{ filtered().length }} total</span>
     </div>
     <div class="el-header__right">
+      <button class="el-btn el-btn--ghost" (click)="openBulkImport()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Bulk Import</span>
+      </button>
       <button class="el-btn el-btn--ghost" (click)="viewOrgTree()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
@@ -22,6 +28,14 @@
       </button>
     </div>
   </div>
+
+  <!-- Loading / error states -->
+  @if (loading()) {
+    <div class="el-empty"><p>Loading employees…</p></div>
+  }
+  @if (loadError()) {
+    <div class="el-empty"><p>{{ loadError() }}</p></div>
+  }
 
   <!-- Toolbar -->
   <div class="el-toolbar">
@@ -44,7 +58,7 @@
     <div class="el-toolbar__filters">
       <select class="el-filter-select" [ngModel]="filterDept()" (ngModelChange)="setDept($event)">
         <option value="">All Departments</option>
-        @for (d of departments; track d) {
+        @for (d of departments(); track d) {
           <option [value]="d">{{ d }}</option>
         }
       </select>
@@ -79,6 +93,7 @@
   }
 
   <!-- Desktop Table -->
+  @if (!loading() && !loadError()) {
   <div class="el-table-wrap">
     <table class="el-table">
       <thead>
@@ -137,7 +152,11 @@
                     <button (click)="viewEmployee(emp.id)">View Profile</button>
                     <button (click)="editEmployee(emp.id)">Edit</button>
                     <button (click)="manageRole(emp)">Manage Role</button>
-                    <button class="danger" (click)="confirmDeactivate(emp)">Deactivate</button>
+                    @if (emp.isActive) {
+                      <button class="danger" (click)="confirmDeactivate(emp)">Deactivate</button>
+                    } @else {
+                      <button (click)="activateEmployee(emp)">Activate</button>
+                    }
                   </div>
                 }
               </div>
@@ -188,7 +207,11 @@
                   <button (click)="viewEmployee(emp.id)">View Profile</button>
                   <button (click)="editEmployee(emp.id)">Edit</button>
                   <button (click)="manageRole(emp)">Manage Role</button>
-                  <button class="danger" (click)="confirmDeactivate(emp)">Deactivate</button>
+                  @if (emp.isActive) {
+                    <button class="danger" (click)="confirmDeactivate(emp)">Deactivate</button>
+                  } @else {
+                    <button (click)="activateEmployee(emp)">Activate</button>
+                  }
                 </div>
               }
             </div>
@@ -256,6 +279,7 @@
       </div>
     </div>
   }
+  }
 
 </div>
 
@@ -274,11 +298,58 @@
 }
 
 <!-- Role permission modal -->
-<app-role-permission-modal 
-  [isOpen]="roleModalOpen()" 
+<app-role-permission-modal
+  [isOpen]="roleModalOpen()"
   [employeeName]="selectedEmployee()?.fullName || 'Employee'"
   [currentRole]="selectedEmployee()?.role || 'employee'"
   (close)="closeRoleModal()"
   (saveChanges)="onRoleChange($event)"
 ></app-role-permission-modal>
+
+<!-- Bulk import modal -->
+@if (bulkImportOpen()) {
+  <div class="el-modal-overlay" (click)="closeBulkImport()">
+    <div class="el-modal" (click)="$event.stopPropagation()">
+      <h3>Bulk Import Employees</h3>
+      <p>Upload an .xlsx or .csv file (max 10MB). Required columns: Email, FirstName, LastName.</p>
+
+      <div class="el-modal__actions" style="justify-content: flex-start; margin-bottom: 12px;">
+        <button class="el-btn el-btn--ghost el-btn--sm" (click)="downloadTemplate()">Download template</button>
+      </div>
+
+      <input type="file" accept=".xlsx,.csv" (change)="onBulkFileSelected($event)" [disabled]="bulkImporting()" />
+
+      @if (bulkImporting()) {
+        <p>Importing…</p>
+      }
+
+      @if (bulkImportError()) {
+        <p class="ea-error-msg">{{ bulkImportError() }}</p>
+      }
+
+      @if (bulkImportResult(); as result) {
+        <div class="el-bulk-result">
+          <p>
+            <strong>{{ result.totalRows }}</strong> rows —
+            <strong>{{ result.successCount }}</strong> imported,
+            <strong>{{ result.failureCount }}</strong> failed.
+          </p>
+          @if (result.failureCount > 0) {
+            <ul>
+              @for (r of result.results; track r.rowNumber) {
+                @if (!r.success) {
+                  <li>Row {{ r.rowNumber }} ({{ r.email }}): {{ r.errorMessage }}</li>
+                }
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      <div class="el-modal__actions">
+        <button class="el-btn el-btn--ghost" (click)="closeBulkImport()">Close</button>
+      </div>
+    </div>
+  </div>
+}
 

@@ -1,4 +1,3 @@
-import { ClockInMethod } from '../models/user.model';
 import { CheckInRuleType, CompanySize, LocationPolicy } from '../models/org-auth.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -6,21 +5,11 @@ import { CheckInRuleType, CompanySize, LocationPolicy } from '../models/org-auth
 // before the real API existed) onto the enums RegisterOrgRequest actually
 // expects. Kept separate from the wizard components themselves so the
 // mapping is auditable in one place.
+//
+// Clock-in methods are NOT mapped here — AttendanceSetupTabComponent now
+// works directly in the server's own enum values (sourced from
+// GET /api/tenant/options), so there's nothing to translate.
 // ─────────────────────────────────────────────────────────────────────────────
-
-const CLOCK_IN_METHOD_MAP: Record<string, ClockInMethod> = {
-  'Web Clock-in': 'web',
-  'Mobile App': 'mobile',
-  'Biometric Device': 'biometric',
-  'Face Recognition': 'face',
-  // 'QR Code Scan' has no equivalent in ClockInMethod — dropped, not mapped.
-};
-
-/** Drops any method with no API equivalent (e.g. QR code) rather than guessing. */
-export function mapClockInMethods(labels: string[]): ClockInMethod[] {
-  const mapped = labels.map((l) => CLOCK_IN_METHOD_MAP[l]).filter((m): m is ClockInMethod => !!m);
-  return mapped.length ? mapped : ['web'];
-}
 
 // AttendanceSetupTabComponent.timezones are "UTC+05:30 — India Standard Time"
 // style labels with no IANA id attached. Mapped by the same offsets used in

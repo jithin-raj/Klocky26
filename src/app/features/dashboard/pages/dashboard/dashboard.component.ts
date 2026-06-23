@@ -1,56 +1,27 @@
-﻿import { Component, ChangeDetectionStrategy, computed, OnDestroy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
-
-// ── API integration reference ──────────────────────────────────────────────
-// When wiring real data, inject these services:
-//
-//   private api      = inject(ApiService);        // core/services/api.service.ts
-//   private appState = inject(AppStateService);    // core/services/app-state.service.ts
-//   private loading  = inject(LoadingService);     // core/services/loading.service.ts
-//
-// Example — load dashboard stats from API:
-//   readonly stats$ = this.api.get<ApiResponse<DashboardStats>>('/dashboard/stats');
-//
-// Example — read current user from global state:
-//   readonly currentUser = this.appState.user;      // signal<User | null>
-//   readonly isAdmin     = computed(() => this.appState.userRole() === 'admin');
-//
-// Example — show global loader:
-//   @if (loading.isLoading()) { <klocky-ui-loader /> }
-// ──────────────────────────────────────────────────────────────────────────────
-
-interface DeptStat {
-  name: string;
-  count: number;
-  color: string;
-}
-
-interface LeaveRequest {
-  name: string;
-  initials: string;
-  type: string;
-  from: string;
-  to: string;
-  days: number;
-  status: 'pending' | 'approved' | 'rejected';
-}
+import { AppStateService } from '../../../../core/services/app-state.service';
+import { EmployeeService } from '../../../../core/services/employee.service';
+import { DepartmentService } from '../../../../core/services/department.service';
+import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { EmployeeResponse } from '../../../employees/models/employee-api.model';
+import { Department } from '../../../../core/models/department.model';
+import { TeamAttendanceItem } from '../../../../core/models/attendance.model';
+import { HolidayDto } from '../../../../core/models/org-auth.model';
 
 interface RecentActivity {
-  type: 'join' | 'exit' | 'leave-approved' | 'leave-rejected' | 'leave-pending';
   name: string;
   initials: string;
   detail: string;
   time: string;
 }
 
-interface Announcement {
-  title: string;
-  body: string;
+interface UpcomingHoliday {
+  name: string;
   date: string;
-  tag: string;
-  tagColor: string;
+  daysLeft: number;
 }
 
 @Component({
@@ -61,13 +32,17 @@ interface Announcement {
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
-export class DashboardComponent implements OnDestroy {
+export class DashboardComponent implements OnInit, OnDestroy {
 
-  constructor(private router: Router) {}
+  private readonly router      = inject(Router);
+  private readonly appState    = inject(AppStateService);
+  private readonly employeeSvc = inject(EmployeeService);
+  private readonly deptSvc     = inject(DepartmentService);
+  private readonly orgAuth     = inject(OrgAuthService);
 
   readonly attendanceSvc = inject(AttendanceStateService);
 
-  ngOnDestroy() { /* service manages its own lifecycle */ }
+  ngOnDestroy() { /* services manage their own lifecycle */ }
 
   today = new Date();
 
@@ -78,82 +53,151 @@ export class DashboardComponent implements OnDestroy {
     return 'Good evening';
   });
 
-  org = { name: 'Klocky Inc.', admin: 'Riya Sharma', role: 'HR Manager', initials: 'RS' };
+  get org() {
+    const u = this.appState.user();
+    const name = u?.companyName ?? '';
+    return {
+      name,
+      initials: name ? name.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() : 'ORG',
+      admin: u?.fullName ?? '',
+      role: u?.role ?? '',
+    };
+  }
 
-  stats = [
-    { label: 'Total Employees', value: '148', sub: '+3 this month',     icon: 'people', color: '#6366f1', bg: '#eef2ff' },
-    { label: 'Present Today',   value: '121', sub: '81.7% attendance',  icon: 'check',  color: '#22c55e', bg: '#f0fdf4' },
-    { label: 'On Leave Today',  value: '14',  sub: '9 approved',        icon: 'leaf',   color: '#f59e0b', bg: '#fffbeb' },
-    { label: 'Pending Requests',value: '7',   sub: 'Need your action',  icon: 'clock',  color: '#ef4444', bg: '#fef2f2' },
-  ];
+  // ── Employees (GET /api/employees) ─────────────────────────────────────
+  readonly employees       = signal<EmployeeResponse[]>([]);
+  readonly employeesLoading = signal(true);
+  readonly employeesError   = signal('');
 
-  attendance = { present: 121, late: 8, absent: 19, total: 148 };
-  get presentPct() { return Math.round((this.attendance.present / this.attendance.total) * 100); }
-  get latePct()    { return Math.round((this.attendance.late    / this.attendance.total) * 100); }
-  get absentPct()  { return Math.round((this.attendance.absent  / this.attendance.total) * 100); }
+  // ── Departments (GET /api/departments/getAllDepartments) ───────────────
+  readonly departments       = signal<Department[]>([]);
+  readonly departmentsLoading = signal(true);
+  readonly departmentsError   = signal('');
+
+  // ── Team attendance today (GET /api/attendance/team) ───────────────────
+  readonly team        = signal<TeamAttendanceItem[]>([]);
+  readonly teamLoading = signal(true);
+  readonly teamError    = signal('');
+
+  // ── Holidays (GET /api/tenant/settings — only if org-admin step-up already present) ─
+  readonly holidays        = signal<HolidayDto[]>([]);
+  readonly holidaysLoading = signal(false);
+  readonly holidaysGated   = computed(() => !this.appState.isOrgAdminAuthenticated());
+
+  ngOnInit(): void {
+    this.employeeSvc.getAll().subscribe({
+      next: (res) => { this.employees.set(res.data); this.employeesLoading.set(false); },
+      error: () => { this.employeesError.set('Could not load employees.'); this.employeesLoading.set(false); },
+    });
+
+    this.deptSvc.getAll().subscribe({
+      next: (res) => { this.departments.set(res.data); this.departmentsLoading.set(false); },
+      error: () => { this.departmentsError.set('Could not load departments.'); this.departmentsLoading.set(false); },
+    });
+
+    this.attendanceSvc.getTeamStatus().subscribe({
+      next: (res) => { this.team.set(res.data); this.teamLoading.set(false); },
+      error: () => { this.teamError.set('Could not load today\'s attendance.'); this.teamLoading.set(false); },
+    });
+
+    if (this.appState.isOrgAdminAuthenticated()) {
+      this.holidaysLoading.set(true);
+      this.orgAuth.getTenantSettings().subscribe({
+        next: (res) => { this.holidays.set(res.data.holidays ?? []); this.holidaysLoading.set(false); },
+        error: () => { this.holidaysLoading.set(false); },
+      });
+    }
+  }
+
+  // ── Stat cards — every value here is derived from a real API response ──
+  readonly stats = computed(() => [
+    { label: 'Total Employees', value: String(this.employees().length), sub: `${this.activeCount()} active`, icon: 'people', color: '#6366f1', bg: '#eef2ff' },
+    { label: 'Present Today',   value: String(this.presentCount()),     sub: `${this.presentPct()}% of team`, icon: 'check',  color: '#22c55e', bg: '#f0fdf4' },
+    { label: 'Departments',     value: String(this.departments().length), sub: 'across the org',  icon: 'leaf',  color: '#f59e0b', bg: '#fffbeb' },
+    { label: 'Inactive',        value: String(this.inactiveCount()),    sub: 'deactivated accounts', icon: 'clock', color: '#ef4444', bg: '#fef2f2' },
+  ]);
+
+  activeCount   = computed(() => this.employees().filter(e => e.isActive).length);
+  inactiveCount = computed(() => this.employees().filter(e => !e.isActive).length);
+
+  // ── Today's attendance donut — present | half-day | absent-or-off ──────
+  // The real AttendanceStatus enum has no "late" concept, only
+  // present|half|absent|leave|holiday|off — half-day is the closest
+  // server-backed equivalent to the old mock "late" segment.
+  presentCount  = computed(() => this.team().filter(t => t.today?.status === 'present').length);
+  halfDayCount  = computed(() => this.team().filter(t => t.today?.status === 'half').length);
+  totalTeam     = computed(() => this.team().length);
+  absentOrOffCount = computed(() => Math.max(0, this.totalTeam() - this.presentCount() - this.halfDayCount()));
+
+  presentPct = computed(() => this.totalTeam() ? Math.round((this.presentCount() / this.totalTeam()) * 100) : 0);
+  halfPct    = computed(() => this.totalTeam() ? Math.round((this.halfDayCount() / this.totalTeam()) * 100) : 0);
+  absentPct  = computed(() => this.totalTeam() ? Math.round((this.absentOrOffCount() / this.totalTeam()) * 100) : 0);
 
   readonly circ = 263.9;
-  get presentDash() { return (this.attendance.present / this.attendance.total) * this.circ; }
-  get lateDash()    { return (this.attendance.late    / this.attendance.total) * this.circ; }
-  get absentDash()  { return (this.attendance.absent  / this.attendance.total) * this.circ; }
-  get lateOffset()  { return -this.presentDash; }
-  get absentOffset(){ return -(this.presentDash + this.lateDash); }
+  presentDash  = computed(() => this.totalTeam() ? (this.presentCount() / this.totalTeam()) * this.circ : 0);
+  halfDash     = computed(() => this.totalTeam() ? (this.halfDayCount() / this.totalTeam()) * this.circ : 0);
+  absentDash   = computed(() => this.totalTeam() ? (this.absentOrOffCount() / this.totalTeam()) * this.circ : 0);
+  halfOffset   = computed(() => -this.presentDash());
+  absentOffset = computed(() => -(this.presentDash() + this.halfDash()));
 
-  departments: DeptStat[] = [
-    { name: 'Engineering', count: 52, color: '#6366f1' },
-    { name: 'Design',      count: 18, color: '#ec4899' },
-    { name: 'Marketing',   count: 24, color: '#f59e0b' },
-    { name: 'Sales',       count: 30, color: '#22c55e' },
-    { name: 'Operations',  count: 14, color: '#14b8a6' },
-    { name: 'Finance',     count: 10, color: '#8b5cf6' },
-  ];
+  // ── Headcount by department — real member counts straight from the API ─
+  maxDeptCount = computed(() => Math.max(1, ...this.departments().map(d => d.memberCount)));
+  deptBarWidth(d: Department): number {
+    return Math.round((d.memberCount / this.maxDeptCount()) * 100);
+  }
 
-  totalEmployees = 148;
-  deptBarWidth(d: DeptStat) { return Math.round((d.count / this.totalEmployees) * 100); }
+  // ── Recent activity — most recently joined employees (closest honest
+  // substitute for a "who joined/left today" feed; there's no activity-log API) ─
+  recentActivity = computed<RecentActivity[]>(() => {
+    return [...this.employees()]
+      .filter(e => !!e.dateOfJoining)
+      .sort((a, b) => (b.dateOfJoining! > a.dateOfJoining! ? 1 : -1))
+      .slice(0, 6)
+      .map(e => ({
+        name: e.fullName,
+        initials: e.fullName.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase(),
+        detail: `Joined · ${e.departmentName ?? 'Unassigned'}`,
+        time: new Date(e.dateOfJoining!).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      }));
+  });
 
-  leaveRequests: LeaveRequest[] = [
-    { name: 'Arjun Mehta',  initials: 'AM', type: 'Casual Leave', from: 'May 2',  to: 'May 3',  days: 2, status: 'pending' },
-    { name: 'Priya Nair',   initials: 'PN', type: 'Sick Leave',   from: 'Apr 28', to: 'Apr 28', days: 1, status: 'pending' },
-    { name: 'Rohan Desai',  initials: 'RD', type: 'Earned Leave', from: 'May 5',  to: 'May 9',  days: 5, status: 'pending' },
-    { name: 'Sneha Kapoor', initials: 'SK', type: 'Casual Leave', from: 'May 1',  to: 'May 1',  days: 1, status: 'pending' },
-    { name: 'Vivek Sharma', initials: 'VS', type: 'Comp Off',     from: 'Apr 29', to: 'Apr 29', days: 1, status: 'pending' },
-  ];
-
-  activities: RecentActivity[] = [
-    { type: 'join',           name: 'Kavya Iyer',    initials: 'KI', detail: 'Joined · Design',         time: 'Today'     },
-    { type: 'leave-approved', name: 'Arjun Mehta',   initials: 'AM', detail: 'Leave approved · 2 days', time: 'Today'     },
-    { type: 'leave-pending',  name: 'Priya Nair',    initials: 'PN', detail: 'Sick leave · 1 day',      time: 'Yesterday' },
-    { type: 'exit',           name: 'Rahul Tiwari',  initials: 'RT', detail: 'Last working day',        time: 'Apr 25'    },
-    { type: 'leave-rejected', name: 'Meera Joshi',   initials: 'MJ', detail: 'Leave rejected',          time: 'Apr 24'    },
-    { type: 'join',           name: 'Siddharth Rao', initials: 'SR', detail: 'Joined · Engineering',    time: 'Apr 22'    },
-  ];
-
-  upcomingHolidays = [
-    { name: 'Labour Day',       date: 'May 1, Thu',  daysLeft: 4   },
-    { name: 'Eid al-Adha',      date: 'Jun 7, Sat',  daysLeft: 41  },
-    { name: 'Independence Day', date: 'Aug 15, Sat', daysLeft: 110 },
-  ];
-
-  announcements: Announcement[] = [
-    { title: 'Q2 All-Hands Meeting', body: 'Join us on May 5th for the company-wide Q2 all-hands. Calendar invite sent.', date: 'Apr 26', tag: 'Event',   tagColor: '#6366f1' },
-    { title: 'New WFH Policy',       body: 'Updated work-from-home guidelines effective May 1st. Review the HR portal.',  date: 'Apr 22', tag: 'Policy',  tagColor: '#f59e0b' },
-    { title: 'Holiday: Labour Day',  body: 'May 1st is a national holiday. All offices will be closed.',                  date: 'Apr 20', tag: 'Holiday', tagColor: '#22c55e' },
-  ];
+  // ── Upcoming holidays — next occurrence of each month/day, soonest first ─
+  upcomingHolidays = computed<UpcomingHoliday[]>(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return this.holidays()
+      .map(h => {
+        let next = new Date(now.getFullYear(), h.month - 1, h.day);
+        if (next < startOfToday) next = new Date(now.getFullYear() + 1, h.month - 1, h.day);
+        const daysLeft = Math.round((next.getTime() - startOfToday.getTime()) / 86_400_000);
+        return {
+          name: h.name,
+          date: next.toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' }),
+          daysLeft,
+        };
+      })
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+      .slice(0, 5);
+  });
 
   quickActions = [
-    { label: 'Add Employee',   icon: '➕', accent: '#6366f1' },
-    { label: 'Approve Leaves', icon: '✅', accent: '#22c55e' },
-    { label: 'Run Payroll',    icon: '💳', accent: '#f59e0b' },
-    { label: 'Send Notice',    icon: '📢', accent: '#ec4899' },
+    { label: 'Add Employee',   icon: '➕', accent: '#6366f1', action: 'add-employee' },
+    { label: 'Departments & Roles', icon: '🏷️', accent: '#22c55e', action: 'org-structure' },
+    { label: 'Geo-fencing',    icon: '📍', accent: '#f59e0b', action: 'geofence' },
+    { label: 'Org Settings',   icon: '⚙️', accent: '#ec4899', action: 'settings' },
   ];
 
-  activityColor: Record<RecentActivity['type'], string> = {
-    'join':           '#22c55e',
-    'exit':           '#ef4444',
-    'leave-approved': '#6366f1',
-    'leave-rejected': '#ef4444',
-    'leave-pending':  '#f59e0b',
-  };
+  onQuickAction(action: string): void {
+    const org = this.appState.orgUrlName();
+    const routes: Record<string, string> = {
+      'add-employee':  `/${org}/app/employees/add`,
+      'org-structure': `/${org}/app/employees/org-structure`,
+      'geofence':       `/${org}/app/attendance/geofence`,
+      'settings':       `/${org}/app/settings/org-profile`,
+    };
+    const route = routes[action];
+    if (route) this.router.navigate([route]);
+  }
 
   goLanding() { this.router.navigate(['/']); }
 }

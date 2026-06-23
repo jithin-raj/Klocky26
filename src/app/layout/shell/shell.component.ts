@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, computed } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
-import { UiToastContainerComponent, UiModalOutletComponent } from '../../shared/components';
+import { UiModalOutletComponent } from '../../shared/components';
 import { Subscription, filter } from 'rxjs';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
@@ -12,7 +12,7 @@ import { AttendanceStateService } from '../../core/services/attendance-state.ser
 @Component({
   selector: 'klocky-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent, UiToastContainerComponent, UiModalOutletComponent],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, UiModalOutletComponent],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss'],
 })

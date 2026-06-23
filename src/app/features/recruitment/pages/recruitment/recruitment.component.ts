@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UiSelectComponent } from '../../../../shared/components';
 
 type CandidateStage = 'applied' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected';
 
@@ -34,7 +35,7 @@ const CANDIDATES: Candidate[] = [
   selector: 'app-recruitment',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiSelectComponent],
   templateUrl: './recruitment.component.html',
   styleUrl: './recruitment.component.scss',
 })
@@ -43,6 +44,10 @@ export class RecruitmentComponent {
   selectedJob  = signal<string>('');
 
   readonly jobs       = JOBS;
+  readonly jobOptions = [
+    { label: 'All Jobs', value: '' },
+    ...JOBS.map(j => ({ label: j.title, value: j.id })),
+  ];
   readonly stages: CandidateStage[] = ['applied','screening','interview','offer','hired','rejected'];
   readonly stageLabel: Record<CandidateStage, string> = {
     applied:'Applied', screening:'Screening', interview:'Interview',

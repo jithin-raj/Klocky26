@@ -22,14 +22,38 @@
     </div>
   </div>
 
-  <!-- Tree -->
-  <div class="ot-tree-wrap">
-    <div class="ot-tree-vertical">
-      @for (node of roots(); track node.emp.id) {
-        <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: node, level: 0 }"></ng-container>
-      }
-    </div>
-  </div>
+  @if (loading()) {
+    <div class="ot-tree-wrap"><p>Loading org chart…</p></div>
+  }
+  @if (loadError()) {
+    <div class="ot-tree-wrap"><p>{{ loadError() }}</p></div>
+  }
+
+  @if (!loading() && !loadError()) {
+    <!-- Department groups -->
+    @for (group of departmentGroups(); track group.departmentId) {
+      <div class="ot-tree-wrap">
+        <h2 class="ot-title" style="font-size: 16px; margin-bottom: 8px;" [style.color]="group.color || null">{{ group.name }}</h2>
+        <div class="ot-tree-vertical">
+          @for (node of group.roots; track node.emp.employeeId) {
+            <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: node, level: 0 }"></ng-container>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Unassigned employees (no department) -->
+    @if (unassignedRoots().length > 0) {
+      <div class="ot-tree-wrap">
+        <h2 class="ot-title" style="font-size: 16px; margin-bottom: 8px;">Unassigned</h2>
+        <div class="ot-tree-vertical">
+          @for (node of unassignedRoots(); track node.emp.employeeId) {
+            <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: node, level: 0 }"></ng-container>
+          }
+        </div>
+      </div>
+    }
+  }
 
 </div>
 
@@ -37,30 +61,28 @@
 <app-role-permission-modal
   [isOpen]="roleModalOpen()"
   [employeeName]="selectedEmployee()?.fullName || 'Employee'"
-  [currentRole]="selectedEmployee()?.role || 'employee'"
+  [currentRole]="selectedEmployeeModalRole()"
   (close)="closeRoleModal()"
   (saveChanges)="onRoleChange($event)"
 />
 
 <ng-template #treeNodeTpl let-node="node" let-level="level">
   <div class="ot-node-container" [class.ot-root]="level === 0" [attr.data-level]="level">
-    
+
     <!-- The Employee Card -->
     <div class="ot-node-card" [class.ot-has-children]="node.children.length > 0" [class.ot-collapsed]="!node.expanded">
-      
+
       <!-- Avatar -->
-      <div class="ot-card-avatar" [style.background]="node.emp.avatarColor">
-        {{ node.emp.initials }}
+      <div class="ot-card-avatar" [style.background]="avatarColor(node.emp)">
+        {{ initials(node.emp) }}
       </div>
 
       <!-- Info -->
       <div class="ot-card-info">
         <h4 class="ot-card-name">{{ node.emp.fullName }}</h4>
-        <p class="ot-card-title">{{ node.emp.designation }}</p>
+        <p class="ot-card-title">{{ node.emp.designationTitle || node.emp.role }}</p>
         @if (node.children.length > 0) {
           <p class="ot-card-dept">{{ node.children.length }} Direct Report{{ node.children.length !== 1 ? 's' : '' }}</p>
-        } @else {
-          <p class="ot-card-dept">{{ node.emp.department }}</p>
         }
       </div>
 
@@ -87,7 +109,7 @@
       <div class="ot-children-wrapper" [attr.data-child-count]="node.children.length">
         <!-- Children displayed horizontally -->
         <div class="ot-children-row" [class.ot-single]="node.children.length === 1">
-          @for (child of node.children; track child.emp.id; let first = $first; let last = $last) {
+          @for (child of node.children; track child.emp.employeeId; let first = $first; let last = $last) {
             <div class="ot-child-slot" [class.ot-first]="first" [class.ot-last]="last">
               <!-- Vertical line from sibling connector to child -->
               <div class="ot-drop-line"></div>

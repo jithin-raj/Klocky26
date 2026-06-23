@@ -2,11 +2,7 @@
   <div class="an-header">
     <div><h1>HR Analytics & Reports</h1><p>Insights to drive better people decisions</p></div>
     <div class="an-header__right">
-      <select class="an-select" [ngModel]="period()" (ngModelChange)="period.set($event)">
-        <option value="2026-Q1">Q1 2026</option>
-        <option value="2026-Q2">Q2 2026</option>
-        <option value="2025-Q4">Q4 2025</option>
-      </select>
+      <ui-select [options]="periodOptions" [ngModel]="period()" (ngModelChange)="period.set($event)"></ui-select>
       <button class="an-btn an-btn--primary" (click)="exportReport()">↓ Export</button>
     </div>
   </div>

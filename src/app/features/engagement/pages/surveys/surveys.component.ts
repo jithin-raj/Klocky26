@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { UiSelectComponent, UiDatePickerComponent } from '../../../../shared/components';
 
 type SurveyStatus = 'active' | 'draft' | 'closed';
 
@@ -21,13 +22,20 @@ interface Survey {
   selector: 'app-surveys',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent],
   templateUrl: './surveys.component.html',
   styleUrl: './surveys.component.scss',
 })
 export class SurveysComponent {
   activeTab = signal<'surveys' | 'results' | 'new'>('surveys');
   filterStatus = signal<string>('');
+
+  readonly filterStatusOptions = [
+    { label: 'All', value: '' },
+    { label: 'Active', value: 'active' },
+    { label: 'Draft', value: 'draft' },
+    { label: 'Closed', value: 'closed' },
+  ];
 
   private _surveys = signal<Survey[]>([
     { id:'1', title:'Q2 Pulse Survey',          description:'Bi-quarterly employee engagement check-in',       status:'active', questions:10, responses:14, total:20, dueDate:'2026-05-10', avgScore:3.9, category:'Engagement' },
@@ -51,6 +59,7 @@ export class SurveysComponent {
   created     = signal(false);
 
   readonly categories = ['Engagement','Culture','Leadership','Onboarding','Compensation','Wellbeing','DEI'];
+  readonly categoryOptions = this.categories.map(c => ({ label: c, value: c }));
 
   responseRate(s: Survey) { return s.total > 0 ? Math.round((s.responses / s.total) * 100) : 0; }
 

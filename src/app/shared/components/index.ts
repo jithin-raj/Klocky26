@@ -11,6 +11,7 @@ export type { MultiSelectOption } from './ui-multiselect/ui-multiselect.componen
 export { UiRadioGroupComponent } from './ui-radio/ui-radio-group.component';
 export type { RadioOption } from './ui-radio/ui-radio-group.component';
 export { UiToggleComponent } from './ui-toggle/ui-toggle.component';
+export { UiDatePickerComponent } from './ui-datepicker/ui-datepicker.component';
 
 // Display
 export { UiChipComponent } from './ui-chip/ui-chip.component';

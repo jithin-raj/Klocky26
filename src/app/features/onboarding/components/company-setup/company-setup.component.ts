@@ -5,6 +5,7 @@ import {
 import { OrgSetupTabComponent, OrgSetupData } from '../org-setup-tab/org-setup-tab.component';
 import { AttendanceSetupTabComponent, AttendanceSetupData } from '../attendance-setup-tab/attendance-setup-tab.component';
 import { SetupPreviewTabComponent } from '../setup-preview-tab/setup-preview-tab.component';
+import { UiLoaderComponent } from '../../../../shared/components/ui-loader/ui-loader.component';
 
 type SetupTab = 'org' | 'attendance' | 'preview';
 
@@ -12,12 +13,16 @@ type SetupTab = 'org' | 'attendance' | 'preview';
   selector: 'ob-company-setup',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [OrgSetupTabComponent, AttendanceSetupTabComponent, SetupPreviewTabComponent],
+  imports: [OrgSetupTabComponent, AttendanceSetupTabComponent, SetupPreviewTabComponent, UiLoaderComponent],
   templateUrl: './company-setup.component.html',
   styleUrl: './company-setup.component.scss',
 })
 export class CompanySetupComponent {
   @Input() adminEmail = '';
+  /** True while the final POST /api/org/auth/register call is in flight — disables the button and swaps its label. */
+  @Input() submitting = false;
+  /** Valid clock-in methods from GET /api/tenant/options — forwarded to the attendance tab, never hardcoded here. */
+  @Input() methodOptions: string[] = [];
   @Input() set orgName(name: string) {
     if (name) {
       this.orgData = { ...this.orgData, orgName: name, displayName: name };
@@ -84,6 +89,7 @@ export class CompanySetupComponent {
   }
 
   complete(): void {
+    if (this.submitting) return;
     this.completed.emit({ org: this.orgData, attendance: this.attendanceData });
   }
 }

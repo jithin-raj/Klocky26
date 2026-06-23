@@ -1,0 +1,331 @@
+<div class="el-page">
+
+  <!-- Page Header -->
+  <div class="el-header">
+    <div class="el-header__left">
+      <h1 class="el-title">Departments &amp; Roles</h1>
+      <span class="el-count">Manage org structure</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="os-tabs">
+    <button
+      class="os-tab"
+      [class.os-tab--active]="activeTab() === 'departments'"
+      (click)="setTab('departments')"
+      type="button">
+      Departments
+    </button>
+    <button
+      class="os-tab"
+      [class.os-tab--active]="activeTab() === 'designations'"
+      (click)="setTab('designations')"
+      type="button">
+      Designations
+    </button>
+    <button
+      class="os-tab"
+      [class.os-tab--active]="activeTab() === 'roles'"
+      (click)="setTab('roles')"
+      type="button">
+      Custom Roles
+    </button>
+  </div>
+
+  <!-- ═══════════ Departments panel ═══════════ -->
+  @if (activeTab() === 'departments') {
+    <div class="os-panel">
+      <div class="os-panel__header">
+        <h2 class="os-panel__title">Departments</h2>
+        <button class="el-btn el-btn--primary" (click)="openAddDepartment()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Add Department</span>
+        </button>
+      </div>
+
+      @if (departmentsLoading()) {
+        <div class="el-empty"><p>Loading departments…</p></div>
+      }
+      @if (departmentsError()) {
+        <div class="el-empty"><p>{{ departmentsError() }}</p></div>
+      }
+
+      @if (!departmentsLoading() && !departmentsError()) {
+        <div class="el-table-wrap">
+          <table class="el-table">
+            <thead>
+              <tr>
+                <th class="el-th">Department</th>
+                <th class="el-th">Manager</th>
+                <th class="el-th">Members</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (dept of departments(); track dept.departmentId) {
+                <tr class="el-row">
+                  <td class="el-td">
+                    <div class="os-name-cell">
+                      <span class="os-color-swatch" [style.background]="dept.color || '#94a3b8'"></span>
+                      <span class="el-cell-primary">{{ dept.name }}</span>
+                    </div>
+                  </td>
+                  <td class="el-td">{{ dept.managerFullName || '—' }}</td>
+                  <td class="el-td">{{ dept.memberCount }}</td>
+                </tr>
+              }
+              @if (departments().length === 0) {
+                <tr>
+                  <td colspan="3" class="el-empty">
+                    <p>No departments yet</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══════════ Designations panel ═══════════ -->
+  @if (activeTab() === 'designations') {
+    <div class="os-panel">
+      <div class="os-panel__header">
+        <h2 class="os-panel__title">Designations</h2>
+        <button class="el-btn el-btn--primary" (click)="openAddDesignation()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Add Designation</span>
+        </button>
+      </div>
+
+      @if (designationsLoading()) {
+        <div class="el-empty"><p>Loading designations…</p></div>
+      }
+      @if (designationsError()) {
+        <div class="el-empty"><p>{{ designationsError() }}</p></div>
+      }
+
+      @if (!designationsLoading() && !designationsError()) {
+        <div class="el-table-wrap">
+          <table class="el-table">
+            <thead>
+              <tr>
+                <th class="el-th">Title</th>
+                <th class="el-th">Members</th>
+                <th class="el-th"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of designations(); track d.designationId) {
+                <tr class="el-row">
+                  <td class="el-td">{{ d.title }}</td>
+                  <td class="el-td">{{ d.memberCount }}</td>
+                  <td class="el-td el-td--actions">
+                    <button class="el-btn el-btn--ghost el-btn--sm" (click)="deleteDesignation(d)">Delete</button>
+                  </td>
+                </tr>
+              }
+              @if (designations().length === 0) {
+                <tr>
+                  <td colspan="3" class="el-empty">
+                    <p>No designations yet</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══════════ Custom Roles panel ═══════════ -->
+  @if (activeTab() === 'roles') {
+    <div class="os-panel">
+      <div class="os-panel__header">
+        <h2 class="os-panel__title">Custom Roles</h2>
+        <button class="el-btn el-btn--primary" (click)="openAddRole()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Add Role</span>
+        </button>
+      </div>
+
+      @if (orgRolesLoading()) {
+        <div class="el-empty"><p>Loading roles…</p></div>
+      }
+      @if (orgRolesError()) {
+        <div class="el-empty"><p>{{ orgRolesError() }}</p></div>
+      }
+
+      @if (!orgRolesLoading() && !orgRolesError()) {
+        <div class="el-table-wrap">
+          <table class="el-table">
+            <thead>
+              <tr>
+                <th class="el-th">Role</th>
+                <th class="el-th">Hierarchy Level</th>
+                <th class="el-th">Members</th>
+                <th class="el-th"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (role of orgRoles(); track role.id) {
+                <tr class="el-row">
+                  <td class="el-td">
+                    <span class="el-cell-primary">{{ role.name }}</span>
+                    @if (role.isSystemDefault) {
+                      <span class="os-badge os-badge--system">System</span>
+                    }
+                  </td>
+                  <td class="el-td">{{ role.hierarchyLevel }}</td>
+                  <td class="el-td">{{ role.memberCount }}</td>
+                  <td class="el-td el-td--actions">
+                    @if (!role.isSystemDefault) {
+                      <button class="el-btn el-btn--ghost el-btn--sm" (click)="deleteOrgRole(role)">Delete</button>
+                    }
+                  </td>
+                </tr>
+              }
+              @if (orgRoles().length === 0) {
+                <tr>
+                  <td colspan="4" class="el-empty">
+                    <p>No custom roles yet</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- Add Department modal -->
+@if (showAddDepartment()) {
+  <div class="el-modal-overlay" (click)="cancelAddDepartment()">
+    <div class="el-modal" (click)="$event.stopPropagation()">
+      <h3>Add Department</h3>
+
+      <div class="os-form-field">
+        <label>Name *</label>
+        <input
+          type="text"
+          class="os-input"
+          placeholder="e.g. Engineering"
+          [ngModel]="newDepartmentName()"
+          (ngModelChange)="newDepartmentName.set($event)"
+        />
+      </div>
+
+      <div class="os-form-field">
+        <label>Color</label>
+        <input
+          type="color"
+          class="os-color-input"
+          [ngModel]="newDepartmentColor()"
+          (ngModelChange)="newDepartmentColor.set($event)"
+        />
+      </div>
+
+      <div class="os-form-field">
+        <label>Manager ID <span class="os-optional">(optional)</span></label>
+        <input
+          type="text"
+          class="os-input"
+          placeholder="Manager's user ID"
+          [ngModel]="newDepartmentManagerId()"
+          (ngModelChange)="newDepartmentManagerId.set($event)"
+        />
+      </div>
+
+      <div class="el-modal__actions">
+        <button class="el-btn el-btn--ghost" (click)="cancelAddDepartment()">Cancel</button>
+        <button
+          class="el-btn el-btn--primary"
+          [disabled]="!newDepartmentName().trim() || savingDepartment()"
+          (click)="submitAddDepartment()">
+          {{ savingDepartment() ? 'Saving…' : 'Add Department' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Add Designation modal -->
+@if (showAddDesignation()) {
+  <div class="el-modal-overlay" (click)="cancelAddDesignation()">
+    <div class="el-modal" (click)="$event.stopPropagation()">
+      <h3>Add Designation</h3>
+
+      <div class="os-form-field">
+        <label>Title *</label>
+        <input
+          type="text"
+          class="os-input"
+          placeholder="e.g. Senior Software Engineer"
+          [ngModel]="newDesignationTitle()"
+          (ngModelChange)="newDesignationTitle.set($event)"
+        />
+      </div>
+
+      <div class="el-modal__actions">
+        <button class="el-btn el-btn--ghost" (click)="cancelAddDesignation()">Cancel</button>
+        <button
+          class="el-btn el-btn--primary"
+          [disabled]="!newDesignationTitle().trim() || savingDesignation()"
+          (click)="submitAddDesignation()">
+          {{ savingDesignation() ? 'Saving…' : 'Add Designation' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Add Role modal -->
+@if (showAddRole()) {
+  <div class="el-modal-overlay" (click)="cancelAddRole()">
+    <div class="el-modal" (click)="$event.stopPropagation()">
+      <h3>Add Custom Role</h3>
+
+      <div class="os-form-field">
+        <label>Name *</label>
+        <input
+          type="text"
+          class="os-input"
+          placeholder="e.g. Team Lead"
+          [ngModel]="newRoleName()"
+          (ngModelChange)="newRoleName.set($event)"
+        />
+      </div>
+
+      <div class="os-form-field">
+        <label>Hierarchy Level</label>
+        <input
+          type="number"
+          class="os-input"
+          [ngModel]="newRoleHierarchyLevel()"
+          (ngModelChange)="newRoleHierarchyLevel.set(+$event)"
+        />
+      </div>
+
+      <div class="el-modal__actions">
+        <button class="el-btn el-btn--ghost" (click)="cancelAddRole()">Cancel</button>
+        <button
+          class="el-btn el-btn--primary"
+          [disabled]="!newRoleName().trim() || savingRole()"
+          (click)="submitAddRole()">
+          {{ savingRole() ? 'Saving…' : 'Add Role' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
