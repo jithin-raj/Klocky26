@@ -79,11 +79,7 @@
           <input class="ad-search" type="text" placeholder="Search orgs…"
                  [value]="search()" (input)="onSearch($event)" />
         </div>
-        <select class="ad-filter" [value]="statusFilter()" (change)="onStatusFilter($event)">
-          <option value="all">All statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Deactivated</option>
-        </select>
+        <ui-select [options]="statusFilterOptions" [ngModel]="statusFilter()" (ngModelChange)="onStatusFilter($event)"></ui-select>
       </div>
     </div>
 

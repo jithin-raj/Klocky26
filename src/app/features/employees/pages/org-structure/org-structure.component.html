@@ -1,0 +1,201 @@
+<div class="el-page">
+
+  <!-- Page Header -->
+  <div class="el-header">
+    <div class="el-header__left">
+      <h1 class="el-title">Departments &amp; Roles</h1>
+      <span class="el-count">Manage org structure</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="os-tabs">
+    <button
+      class="os-tab"
+      [class.os-tab--active]="activeTab() === 'departments'"
+      (click)="setTab('departments')"
+      type="button">
+      Departments
+    </button>
+    <button
+      class="os-tab"
+      [class.os-tab--active]="activeTab() === 'roles'"
+      (click)="setTab('roles')"
+      type="button">
+      Custom Roles
+    </button>
+  </div>
+
+  <!-- ═══════════ Departments panel ═══════════ -->
+  @if (activeTab() === 'departments') {
+    <div class="os-panel">
+      <div class="os-panel__header">
+        <h2 class="os-panel__title">Departments</h2>
+        <button class="el-btn el-btn--primary" (click)="openAddDepartment()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Add Department</span>
+        </button>
+      </div>
+
+      @if (departmentsLoading()) {
+        <div class="el-empty"><p>Loading departments…</p></div>
+      }
+      @if (departmentsError()) {
+        <div class="el-empty"><p>{{ departmentsError() }}</p></div>
+      }
+
+      @if (!departmentsLoading() && !departmentsError()) {
+        <div class="os-table-wrap">
+          <ui-data-grid
+            [columns]="departmentColumns"
+            [rows]="deptPaged()"
+            [trackBy]="departmentTrackBy"
+            [emptyMessage]="'No departments yet'"
+            [loading]="departmentsLoading()"
+          >
+            <ng-template gridColumn="actions" let-row>
+              <div class="os-row-actions">
+                <button class="os-icon-btn" type="button" title="Edit department" (click)="editDepartment(row)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="os-icon-btn os-icon-btn--danger" type="button" title="Delete department" (click)="deleteDepartment(row)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </ng-template>
+          </ui-data-grid>
+
+          <ui-pagination
+            [currentPage]="deptCurrentPage()"
+            [totalPages]="deptTotalPages()"
+            [pageSize]="deptPageSize()"
+            [pageSizeOptions]="pageSizeOptions"
+            [resultLabel]="departments().length + ' total department' + (departments().length !== 1 ? 's' : '')"
+            (pageChange)="setDeptPage($event)"
+            (pageSizeChange)="setDeptPageSize($event)"
+          ></ui-pagination>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ═══════════ Custom Roles panel ═══════════ -->
+  @if (activeTab() === 'roles') {
+    <div class="os-panel">
+      <div class="os-panel__header">
+        <h2 class="os-panel__title">Custom Roles</h2>
+        <button class="el-btn el-btn--primary" (click)="openAddRole()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Add Role</span>
+        </button>
+      </div>
+
+      @if (orgRolesLoading()) {
+        <div class="el-empty"><p>Loading roles…</p></div>
+      }
+      @if (orgRolesError()) {
+        <div class="el-empty"><p>{{ orgRolesError() }}</p></div>
+      }
+
+      @if (!orgRolesLoading() && !orgRolesError()) {
+        <div class="os-table-wrap">
+          <ui-data-grid
+            [columns]="roleColumns"
+            [rows]="rolePaged()"
+            [trackBy]="roleTrackBy"
+            [emptyMessage]="'No custom roles yet'"
+            [loading]="orgRolesLoading()"
+          >
+            <ng-template gridColumn="actions" let-row>
+              @if (!row.isSystemDefault) {
+                <div class="os-row-actions">
+                  <button class="os-icon-btn" type="button" title="Edit role" (click)="editRole(row)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="os-icon-btn os-icon-btn--danger" type="button" title="Delete role" (click)="deleteOrgRole(row)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              } @else {
+                <span class="os-badge os-badge--system">System</span>
+              }
+            </ng-template>
+          </ui-data-grid>
+
+          <ui-pagination
+            [currentPage]="roleCurrentPage()"
+            [totalPages]="roleTotalPages()"
+            [pageSize]="rolePageSize()"
+            [pageSizeOptions]="pageSizeOptions"
+            [resultLabel]="orgRoles().length + ' total role' + (orgRoles().length !== 1 ? 's' : '')"
+            (pageChange)="setRolePage($event)"
+            (pageSizeChange)="setRolePageSize($event)"
+          ></ui-pagination>
+        </div>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- Add / Edit Department modal -->
+<ui-form-modal
+  [open]="showAddDepartment()"
+  [title]="editingDeptId() ? 'Edit department' : 'Add department'"
+  subtitle="Group employees and apply a shared clock-in policy."
+  [submitLabel]="editingDeptId() ? 'Save changes' : 'Create department'"
+  size="md"
+  [busy]="savingDepartment()"
+  [submitDisabled]="!newDepartmentName().trim()"
+  (submit)="submitAddDepartment()"
+  (cancel)="cancelAddDepartment()"
+>
+  <ui-form-grid [columns]="1">
+    <ui-form-field label="Name" [required]="true">
+      <ui-input placeholder="e.g. Engineering"
+        [ngModel]="newDepartmentName()" (ngModelChange)="newDepartmentName.set($event)" />
+    </ui-form-field>
+    <ui-form-field label="Color">
+      <input type="color" class="os-color-input"
+        [ngModel]="newDepartmentColor()" (ngModelChange)="newDepartmentColor.set($event)" />
+    </ui-form-field>
+    @if (editingDeptId()) {
+      <ui-form-field label="Manager" hint="Pick the department's manager.">
+        <ui-select [options]="managerOptions()" placeholder="No manager"
+          [ngModel]="newDepartmentManagerId()" (ngModelChange)="newDepartmentManagerId.set($event)" />
+      </ui-form-field>
+    }
+  </ui-form-grid>
+</ui-form-modal>
+
+<!-- Add / Edit Role modal -->
+<ui-form-modal
+  [open]="showAddRole()"
+  [title]="editingRoleId() ? 'Edit role' : 'Add custom role'"
+  subtitle="Define a hierarchy role for org-chart classification."
+  [submitLabel]="editingRoleId() ? 'Save changes' : 'Create role'"
+  size="md"
+  [busy]="savingRole()"
+  [submitDisabled]="!newRoleName().trim()"
+  (submit)="submitAddRole()"
+  (cancel)="cancelAddRole()"
+>
+  <ui-form-grid [columns]="2">
+    <ui-form-field label="Name" [required]="true" [full]="true">
+      <ui-input placeholder="e.g. Team Lead"
+        [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)" />
+    </ui-form-field>
+    <ui-form-field label="Hierarchy level" hint="Positive rank — 1 = most senior.">
+      <ui-input type="number" inputmode="numeric" [min]="1"
+        [ngModel]="newRoleHierarchyLevel()" (ngModelChange)="setRoleLevel($event)" />
+    </ui-form-field>
+    <ui-form-field label="Department" hint="Optional — map this role to a department.">
+      <ui-select [options]="departmentRoleOptions()" placeholder="No department"
+        [ngModel]="newRoleDepartmentId()" (ngModelChange)="newRoleDepartmentId.set($event)" />
+    </ui-form-field>
+  </ui-form-grid>
+</ui-form-modal>

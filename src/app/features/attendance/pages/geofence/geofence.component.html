@@ -1,7 +1,7 @@
 <div class="gf-page">
   <div class="gf-header">
     <div><h1>Geo-fence Zones</h1><p>Define office perimeters for location-based attendance check-in</p></div>
-    <button class="gf-btn gf-btn--primary" (click)="showAddForm.set(true)">+ Add Zone</button>
+    <button class="gf-btn gf-btn--primary" (click)="showAddForm.set(true)">+ Add Office</button>
   </div>
 
   <!-- Privacy notice -->
@@ -10,35 +10,56 @@
     <span>Location data is only used to verify attendance. Precise coordinates are never shared with third parties and are encrypted at rest.</span>
   </div>
 
-  <!-- Zone list -->
+  @if (officesError()) {
+    <div class="gf-error-banner">{{ officesError() }}</div>
+  }
+
+  @if (loadingOffices()) {
+    <div class="gf-loading">Loading offices…</div>
+  }
+
+  <!-- Office list -->
   <div class="gf-zones">
-    @for (z of zones(); track z.id) {
-      <div class="gf-zone" [class.inactive]="!z.active">
-        <!-- Visual radius circle -->
+    @for (o of offices(); track o.id) {
+      <div class="gf-zone">
+        <!-- Visual radius radar -->
         <div class="gf-diagram">
-          <div class="gf-circle gf-circle--outer" [style.width.px]="radiusCircle(z.radiusMeters)" [style.height.px]="radiusCircle(z.radiusMeters)" [style.border-color]="z.active ? 'var(--accent,#6366f1)' : '#e5e7eb'">
-            <div class="gf-circle gf-circle--inner"></div>
-            <span class="gf-circle-label">{{ z.radiusMeters }}m</span>
+          <div class="gf-radar">
+            <span class="gf-radar__grid gf-radar__grid--1"></span>
+            <span class="gf-radar__grid gf-radar__grid--2"></span>
+            <span class="gf-radar__sweep"></span>
+            <div class="gf-radar__fence" [style.width.px]="radiusCircle(o.geoRadiusM)" [style.height.px]="radiusCircle(o.geoRadiusM)">
+              <span class="gf-radar__ping"></span>
+              <span class="gf-radar__core"></span>
+            </div>
           </div>
+          <span class="gf-radius-badge">{{ o.geoRadiusM ?? '—' }} m radius</span>
         </div>
 
-        <!-- Zone info -->
+        <!-- Office info -->
         <div class="gf-zone__info">
           <div class="gf-zone__top">
-            <span class="gf-zone__name">{{ z.name }}</span>
-            <span class="gf-zone__status" [class.active]="z.active">{{ z.active ? 'Active' : 'Inactive' }}</span>
+            <span class="gf-zone__name">{{ o.name }}</span>
           </div>
-          <div class="gf-zone__address">{{ z.address }}</div>
-          <div class="gf-zone__coords">Lat {{ z.lat }}, Lng {{ z.lng }} · Radius {{ z.radiusMeters }} m</div>
+          @if (o.address) { <div class="gf-zone__address">{{ o.address }}</div> }
+          <div class="gf-zone__coords">
+            @if (o.latitude !== null && o.longitude !== null) {
+              Lat {{ o.latitude }}, Lng {{ o.longitude }} · Radius {{ o.geoRadiusM }} m
+            } @else {
+              No geofence coordinates set
+            }
+          </div>
         </div>
 
         <!-- Actions -->
         <div class="gf-zone__actions">
-          <button class="gf-btn gf-btn--ghost gf-btn--sm" (click)="editZone(z)">Edit</button>
-          <button class="gf-btn gf-btn--ghost gf-btn--sm" (click)="toggleActive(z.id)">{{ z.active ? 'Disable' : 'Enable' }}</button>
-          <button class="gf-btn gf-btn--danger gf-btn--sm" (click)="deleteZone(z.id)">Delete</button>
+          <button class="gf-btn gf-btn--ghost gf-btn--sm" (click)="editZone(o)">Edit</button>
+          <button class="gf-btn gf-btn--danger gf-btn--sm" (click)="deleteZone(o.id)">Delete</button>
         </div>
       </div>
+    }
+    @if (!loadingOffices() && offices().length === 0) {
+      <div class="gf-empty">No offices configured yet.</div>
     }
   </div>
 
@@ -46,10 +67,10 @@
   @if (showAddForm()) {
     <div class="gf-overlay" (click)="resetForm()">
       <div class="gf-modal" (click)="$event.stopPropagation()">
-        <h2>{{ editId() ? 'Edit Zone' : 'New Zone' }}</h2>
+        <h2>{{ editId() ? 'Edit Office' : 'New Office' }}</h2>
 
         <div class="gf-form-row">
-          <label for="gf-name">Zone Name <span class="req">*</span></label>
+          <label for="gf-name">Office Name <span class="req">*</span></label>
           <input id="gf-name" class="gf-input" [ngModel]="newZone().name" (ngModelChange)="patchName($event)" placeholder="e.g. Headquarters" />
         </div>
 
@@ -61,11 +82,11 @@
         <div class="gf-form-row-2">
           <div class="gf-form-row">
             <label for="gf-lat">Latitude <span class="req">*</span></label>
-            <input id="gf-lat" class="gf-input" type="number" step="0.000001" [ngModel]="newZone().lat" (ngModelChange)="patchLat($event)" placeholder="e.g. 12.9716" />
+            <input id="gf-lat" class="gf-input" type="number" step="0.000001" [ngModel]="newZone().latitude" (ngModelChange)="patchLat($event)" placeholder="e.g. 12.9716" />
           </div>
           <div class="gf-form-row">
             <label for="gf-lng">Longitude <span class="req">*</span></label>
-            <input id="gf-lng" class="gf-input" type="number" step="0.000001" [ngModel]="newZone().lng" (ngModelChange)="patchLng($event)" placeholder="e.g. 77.5946" />
+            <input id="gf-lng" class="gf-input" type="number" step="0.000001" [ngModel]="newZone().longitude" (ngModelChange)="patchLng($event)" placeholder="e.g. 77.5946" />
           </div>
         </div>
 
@@ -79,21 +100,79 @@
 
         <div class="gf-form-row">
           <label for="gf-radius">Radius (metres) <span class="req">*</span></label>
-          <input id="gf-radius" class="gf-input" type="number" min="10" max="5000" [ngModel]="newZone().radiusMeters" (ngModelChange)="patchRadius($event)" />
+          <input id="gf-radius" class="gf-input" type="number" min="10" max="5000" [ngModel]="newZone().geoRadiusM" (ngModelChange)="patchRadius($event)" />
         </div>
 
-        <div class="gf-form-row gf-form-row--check">
-          <label class="gf-checkbox-label">
-            <input type="checkbox" [ngModel]="newZone().active" (ngModelChange)="patchActive($event)" />
-            Zone active
-          </label>
-        </div>
+        @if (saveError()) {
+          <div class="gf-error-banner">{{ saveError() }}</div>
+        }
 
         <div class="gf-modal__actions">
           <button class="gf-btn gf-btn--ghost" (click)="resetForm()">Cancel</button>
-          <button class="gf-btn gf-btn--primary" (click)="saveZone()">Save Zone</button>
+          <button class="gf-btn gf-btn--primary" [disabled]="saving()" (click)="saveZone()">{{ saving() ? 'Saving…' : 'Save Office' }}</button>
         </div>
       </div>
     </div>
   }
+
+  <!-- Department clock-in policy -->
+  <div class="gf-policy">
+    <div class="gf-header">
+      <div><h2>Department Clock-in Policy</h2><p>Restrict a department's clock-in methods and tie it to an office geofence</p></div>
+    </div>
+
+    @if (departmentsError()) {
+      <div class="gf-error-banner">{{ departmentsError() }}</div>
+    }
+    @if (policyError()) {
+      <div class="gf-error-banner">{{ policyError() }}</div>
+    }
+    @if (loadingDepartments()) {
+      <div class="gf-loading">Loading departments…</div>
+    }
+
+    <div class="gf-dept-list">
+      @for (d of departments(); track d.departmentId) {
+        <div class="gf-dept-row">
+          <div class="gf-dept-row__name">{{ d.name }}</div>
+
+          <div class="gf-dept-row__methods">
+            @for (m of clockInMethods; track m) {
+              <label class="gf-checkbox-label">
+                <input
+                  type="checkbox"
+                  [ngModel]="isMethodChecked(d.departmentId, m)"
+                  (ngModelChange)="toggleMethod(d.departmentId, m, $event)" />
+                {{ m }}
+              </label>
+            }
+          </div>
+
+          <div class="gf-dept-row__office">
+            <select
+              class="gf-input"
+              [ngModel]="draftRequiredOfficeId(d.departmentId)"
+              (ngModelChange)="patchRequiredOffice(d.departmentId, $event)">
+              <option [value]="''">No geofence</option>
+              @for (o of offices(); track o.id) {
+                <option [value]="o.id">{{ o.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="gf-dept-row__actions">
+            <button
+              class="gf-btn gf-btn--primary gf-btn--sm"
+              [disabled]="savingPolicyId() === d.departmentId"
+              (click)="saveDepartmentPolicy(d.departmentId)">
+              {{ savingPolicyId() === d.departmentId ? 'Saving…' : 'Save' }}
+            </button>
+          </div>
+        </div>
+      }
+      @if (!loadingDepartments() && departments().length === 0) {
+        <div class="gf-empty">No departments found.</div>
+      }
+    </div>
+  </div>
 </div>

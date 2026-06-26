@@ -16,6 +16,19 @@ export interface ApiResponse<T = unknown> {
 /** Field-level validation error payload, found at `error.error.data.error` on a 400 response. */
 export type ApiValidationErrors = Record<string, string[]>;
 
+/**
+ * Paged list payload — what the global envelope's `data` holds for the paginated
+ * list endpoints (employees, org-roles, departments). i.e. the full response is
+ * `ApiResponse<Paged<T>>` and rows live at `response.data.data`.
+ */
+export interface Paged<T> {
+  data: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
 /** Query params for paginated list endpoints */
 export interface PaginationParams {
   page?: number;

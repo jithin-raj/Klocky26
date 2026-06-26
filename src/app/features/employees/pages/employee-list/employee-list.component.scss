@@ -12,6 +12,46 @@
   gap: 16px;
 }
 
+/* ─── Filter dropdowns (ui-select) ──────────────────────── */
+.el-filter-ctl { width: 170px; }
+
+/* ─── Stable loading / error area (no layout jump) ──────── */
+.el-grid-state {
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1.5px solid #eef1f5;
+  background: rgba(255,255,255,0.6);
+}
+.el-state-err { color: #dc2626; font-size: 14px; }
+
+/* ─── Guest identity chip (spec §3) ─────────────────────── */
+.el-guest-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+.el-type-dash { color: #cbd5e1; }
+
+/* ─── Masked basic salary ───────────────────────────────── */
+.el-salary { display: inline-flex; align-items: center; gap: 8px; }
+.el-salary-val { font-variant-numeric: tabular-nums; letter-spacing: 0.5px; color: #1e293b; }
+.el-salary-eye {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0;
+  border: none; background: transparent; color: #94a3b8; cursor: pointer;
+  border-radius: 7px; transition: background .12s, color .12s;
+  &:hover { background: #f1f5f9; color: var(--accent, #6366f1); }
+}
+
 /* ─── Header ────────────────────────────────────────────── */
 .el-header {
   display: flex;
@@ -164,189 +204,6 @@
   font-weight: 600;
 }
 
-/* ─── Table ─────────────────────────────────────────────── */
-.el-table-wrap {
-  overflow-x: auto;
-  border-radius: 12px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-}
-
-.el-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-
-.el-th {
-  padding: 11px 14px;
-  text-align: left;
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: #f8fafc;
-  border-bottom: 1.5px solid #e5e7eb;
-  white-space: nowrap;
-
-  &--check { width: 40px; }
-  &--sortable { cursor: pointer; user-select: none; &:hover { color: #334155; } }
-}
-
-.el-sort-icon {
-  display: inline-block;
-  width: 12px;
-  text-align: center;
-  font-style: normal;
-  color: #94a3b8;
-
-  &::after { content: '↕'; }
-  &--asc::after { content: '↑'; color: var(--accent, #6366f1); }
-  &--desc::after { content: '↓'; color: var(--accent, #6366f1); }
-}
-
-.el-row {
-  transition: background 0.1s;
-  &:hover { background: #f8fafc; }
-  &--selected { background: color-mix(in srgb, var(--accent, #6366f1) 5%, #fff); }
-}
-
-.el-td {
-  padding: 12px 14px;
-  border-bottom: 1px solid #f1f5f9;
-  vertical-align: middle;
-  color: #334155;
-
-  &--check { width: 40px; }
-  &--person { min-width: 220px; }
-  &--date { white-space: nowrap; }
-  &--actions { width: 50px; }
-}
-
-.el-td--person {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* ─── Avatar ────────────────────────────────────────────── */
-.el-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-/* ─── Person info ───────────────────────────────────────── */
-.el-person-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.el-person-name {
-  font-weight: 600;
-  color: #1e293b;
-  font-size: 13.5px;
-}
-
-.el-person-sub {
-  font-size: 12px;
-  color: #64748b;
-}
-
-.el-person-code {
-  font-size: 11px;
-  color: #94a3b8;
-  font-family: monospace;
-}
-
-.el-cell-primary { font-weight: 500; color: #1e293b; }
-.el-cell-sub     { font-size: 12px; color: #64748b; }
-
-/* ─── Badges ────────────────────────────────────────────── */
-.el-status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-
-  &--active   { background: #dcfce7; color: #16a34a; }
-  &--inactive { background: #fee2e2; color: #dc2626; }
-  &--on_leave { background: #fef9c3; color: #b45309; }
-}
-
-.el-role-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border-radius: 20px;
-  font-size: 11.5px;
-  font-weight: 600;
-
-  &--admin    { background: #ede9fe; color: #7c3aed; }
-  &--hr       { background: #fce7f3; color: #db2777; }
-  &--manager  { background: #dbeafe; color: #2563eb; }
-  &--employee { background: #f1f5f9; color: #475569; }
-}
-
-/* ─── Action menu ───────────────────────────────────────── */
-.el-action-menu {
-  position: relative;
-}
-
-.el-action-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  color: #94a3b8;
-  padding: 4px 8px;
-  border-radius: 6px;
-  line-height: 1;
-
-  &:hover { background: #f1f5f9; color: #334155; }
-}
-
-.el-action-dropdown {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  z-index: 100;
-  background: #fff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-  min-width: 150px;
-  overflow: hidden;
-
-  &--left { right: auto; left: 0; }
-
-  button {
-    display: block;
-    width: 100%;
-    padding: 9px 14px;
-    text-align: left;
-    background: none;
-    border: none;
-    font-size: 13.5px;
-    color: #374151;
-    cursor: pointer;
-
-    &:hover { background: #f8fafc; }
-    &.danger { color: #dc2626; &:hover { background: #fef2f2; } }
-  }
-}
-
 /* ─── Empty state ───────────────────────────────────────── */
 .el-empty {
   text-align: center;
@@ -362,53 +219,6 @@
 
   svg { opacity: 0.35; }
   p { margin: 0; font-size: 14.5px; }
-}
-
-/* ─── Pagination ────────────────────────────────────────── */
-.el-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 6px 2px;
-}
-
-.el-pagination__info {
-  font-size: 13px;
-  color: #64748b;
-}
-
-.el-pagination__controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.el-page-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 34px;
-  height: 34px;
-  padding: 0 8px;
-  border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #fff;
-  font-size: 13px;
-  color: #374151;
-  cursor: pointer;
-  transition: background 0.1s, border-color 0.1s;
-
-  &:hover:not(:disabled) { background: #f1f5f9; }
-  &--active {
-    background: var(--accent, #6366f1);
-    border-color: var(--accent, #6366f1);
-    color: #fff;
-    font-weight: 700;
-  }
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 /* ─── Confirm modal ─────────────────────────────────────── */
@@ -441,85 +251,11 @@
   justify-content: flex-end;
 }
 
-/* ─── Mobile card list ──────────────────────────────────── */
-.el-card-list {
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.el-card {
-  background: #fff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: border-color 0.15s;
-
-  &--selected { border-color: var(--accent, #6366f1); }
-}
-
-.el-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.el-card__left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.el-card__right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.el-card__body {
-  padding: 10px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.el-card__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.el-card__label {
-  font-size: 11.5px;
-  color: #94a3b8;
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-.el-card__value {
-  font-size: 13px;
-  color: #334155;
-  text-align: right;
-}
-
-.el-card__actions {
-  display: flex;
-  gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid #f1f5f9;
-}
-
 /* ─── Responsive ────────────────────────────────────────── */
 @media (max-width: 768px) {
   .el-page { padding: 16px 14px 32px; }
-  .el-table-wrap { display: none; }
-  .el-card-list { display: flex; }
   .el-toolbar { flex-direction: column; align-items: stretch; }
   .el-toolbar__filters { flex-wrap: wrap; }
   .el-filter-select { flex: 1; min-width: 130px; }
   .el-header { gap: 10px; }
-  .el-pagination { flex-direction: column; align-items: flex-start; }
 }

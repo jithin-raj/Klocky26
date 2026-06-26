@@ -62,7 +62,7 @@ import { NgIf } from '@angular/common';
     .track {
       position: relative; display: inline-flex; align-items: center;
       width: 44px; height: 24px; border-radius: 12px;
-      border: none; background: rgba(255,255,255,.12); padding: 0;
+      border: none; background: var(--ui-toggle-track, rgba(255,255,255,.12)); padding: 0;
       flex-shrink: 0;
       cursor: pointer; transition: background .2s;
     }

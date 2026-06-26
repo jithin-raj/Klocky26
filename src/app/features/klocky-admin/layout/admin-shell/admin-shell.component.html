@@ -1,5 +1,10 @@
 <div class="as-layout" [class.sidebar-collapsed]="!sidebarOpen()">
 
+  <!-- Global API loading bar -->
+  @if (isApiLoading()) {
+    <div class="app-loading-bar"><span class="app-loading-bar__inner"></span></div>
+  }
+
   <!-- ── Sidebar ─────────────────────────────────────────────────── -->
   <aside class="as-sidebar">
     <div class="as-sidebar-header">

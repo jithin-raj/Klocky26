@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthShellComponent } from '../../components/auth-shell/auth-shell.component';
@@ -8,6 +9,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { UserAuthService } from '../../../../core/services/user-auth.service';
+import { PermissionService } from '../../../../core/services/permission.service';
 import { RealtimeService } from '../../../../core/services/realtime.service';
 import { UiModalComponent } from '../../../../shared/components/ui-modal/ui-modal.component';
 
@@ -197,6 +199,7 @@ export class LoginComponent implements OnInit {
   private orgTheme  = inject(OrgThemeService);
   private appState  = inject(AppStateService);
   private userAuth  = inject(UserAuthService);
+  private permissions = inject(PermissionService);
   private realtime  = inject(RealtimeService);
   private fb        = inject(FormBuilder);
 
@@ -282,6 +285,9 @@ export class LoginComponent implements OnInit {
 
   private async finishLogin(): Promise<void> {
     this.loginSuccess = true;
+    // Resolve the permission map before routing so the shell renders gated UI
+    // correctly on first paint (the permissionGuard also lazy-loads as a fallback).
+    try { await firstValueFrom(this.permissions.load()); } catch { /* guard re-loads on demand */ }
     await this.delay(600);
     await this.router.navigate([`/${this.orgUrlNameForNav}/app/dashboard`]);
   }

@@ -67,7 +67,11 @@ import { ModalService } from './modal.service';
     .ui-modal-box {
       background: #fff; border-radius: 16px; width: 100%; max-width: 480px;
       box-shadow: 0 20px 60px rgba(0,0,0,.18);
-      animation: scale-in .2s cubic-bezier(.34,1.56,.64,1) both;
+      /* NOTE: no 'both' fill-mode — a retained transform (scale 1) would make
+         this box a containing block for any position:fixed descendant (e.g. the
+         ui-select dropdown panel), shifting/clipping it. Letting the transform
+         revert to none after the entrance keeps fixed panels viewport-anchored. */
+      animation: scale-in .2s cubic-bezier(.34,1.56,.64,1);
       overflow: hidden;
     }
     /* Size variants */

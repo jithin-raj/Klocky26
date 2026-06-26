@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DemoRequest } from '../../models/demo-request.model';
+import { UiSelectComponent } from '../../../../shared/components';
 
 const MOCK_REQUESTS: DemoRequest[] = [
   { id: '1',  fullName: 'Priya Sharma',      workEmail: 'priya@teksolve.in',      phone: '+91 98700 11222', companyName: 'TekSolve India',       teamSize: '51 – 200',   message: 'Looking for geo-fenced attendance with payroll export.',              submittedAt: '2026-04-27T09:14:00Z', status: 'new'       },
@@ -23,7 +24,7 @@ const STATUS_ORDER: DemoStatus[] = ['new', 'contacted', 'scheduled', 'completed'
   selector: 'klocky-admin-demo-requests',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, UiSelectComponent],
   templateUrl: './admin-demo-requests.component.html',
   styleUrl: './admin-demo-requests.component.scss',
 })
@@ -35,6 +36,13 @@ export class AdminDemoRequestsComponent {
   readonly selected     = signal<DemoRequest | null>(null);
 
   readonly statuses = STATUS_ORDER;
+
+  readonly statusFilterOptions = computed(() => [
+    { label: 'All statuses', value: 'all' },
+    ...this.statuses.map(s => ({ label: this.statusLabel(s), value: s })),
+  ]);
+
+  readonly statusOptions = this.statuses.map(s => ({ label: this.statusLabel(s), value: s }));
 
   // ── Stats ─────────────────────────────────────────────────────
   readonly totalReqs      = computed(() => this.requests().length);
@@ -69,8 +77,8 @@ export class AdminDemoRequestsComponent {
   }
 
   // ── Helpers ───────────────────────────────────────────────────
-  onSearch(e: Event): void       { this.search.set((e.target as HTMLInputElement).value); }
-  onStatusFilter(e: Event): void { this.statusFilter.set((e.target as HTMLSelectElement).value as any); }
+  onSearch(e: Event): void          { this.search.set((e.target as HTMLInputElement).value); }
+  onStatusFilter(value: string): void { this.statusFilter.set(value as any); }
 
   statusLabel(s: DemoStatus): string {
     return { new: 'New', contacted: 'Contacted', scheduled: 'Scheduled', completed: 'Completed', declined: 'Declined' }[s];

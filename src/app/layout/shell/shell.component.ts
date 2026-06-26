@@ -2,23 +2,28 @@ import { Component, OnInit, OnDestroy, computed } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
-import { UiToastContainerComponent, UiModalOutletComponent } from '../../shared/components';
+import { UiModalOutletComponent } from '../../shared/components';
 import { Subscription, filter } from 'rxjs';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { RealtimeService } from '../../core/services/realtime.service';
 import { AttendanceStateService } from '../../core/services/attendance-state.service';
+import { LoadingService } from '../../core/services/loading.service';
 
 @Component({
   selector: 'klocky-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent, UiToastContainerComponent, UiModalOutletComponent],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, UiModalOutletComponent],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss'],
 })
 export class ShellComponent implements OnInit, OnDestroy {
   isSidebarOpen = false;
   private _routerSub?: Subscription;
+
+  /** True while any HTTP request is in flight — drives the global top loading bar. */
+  readonly isApiLoading = computed(() => this.loading.isLoading());
 
   // Human-facing org name — prefer the real displayName from GET /me (§3.3).
   // Only fall back to guessing one from the URL slug before /me has loaded
@@ -46,8 +51,10 @@ export class ShellComponent implements OnInit, OnDestroy {
     private router: Router,
     private orgTheme: OrgThemeService,
     private appState: AppStateService,
+    private permissions: PermissionService,
     private realtime: RealtimeService,
     private attendance: AttendanceStateService,
+    private loading: LoadingService,
   ) {}
 
   ngOnInit() {
@@ -60,6 +67,12 @@ export class ShellComponent implements OnInit, OnDestroy {
 
     // Source of truth for "am I currently clocked in" — SignalR keeps it live after this.
     this.attendance.refreshToday();
+
+    // On a hard refresh / deep link the login flow's load() never ran — resolve
+    // the permission map so the sidebar and *hasPermission gating are correct.
+    if (!this.permissions.loaded()) {
+      this.permissions.load().subscribe({ error: () => { /* guard re-loads on demand */ } });
+    }
 
     this._routerSub = this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))

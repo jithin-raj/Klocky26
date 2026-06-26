@@ -33,6 +33,10 @@ export interface EmployeeRow {
   email: string;
   phone: string;
   role: EmployeeRole;
+  /** Org/hierarchy role name (e.g. CEO, Manager) — shown in the grid instead of the system role. */
+  orgRoleName?: string | null;
+  /** Employment type (full_time, part_time, permanent, contract, intern). */
+  employmentType?: string | null;
   department: string;
   designation: string;
   reportingManagerId: string | null;
@@ -44,70 +48,12 @@ export interface EmployeeRow {
   avatarColor: string;
   isActive: boolean;
   status: EmployeeStatus;
-}
-
-// Simplified interface for org chart display
-export interface OrgChartNode {
-  id: string;
-  name: string;
-  designation: string;
-  initials: string;
-  avatarColor: string;
-  reportingManagerId: string | null;
-  directReportsCount: number;
-  level: number;
-}
-
-// Mapper function to convert employees to org chart nodes
-export function mapToOrgChartNodes(employees: EmployeeRow[]): OrgChartNode[] {
-  // Create a map to count direct reports for each employee
-  const directReportsMap = new Map<string, number>();
-  
-  employees.forEach(emp => {
-    if (emp.reportingManagerId) {
-      const count = directReportsMap.get(emp.reportingManagerId) || 0;
-      directReportsMap.set(emp.reportingManagerId, count + 1);
-    }
-  });
-
-  // Create a map to calculate levels
-  const levelMap = new Map<string, number>();
-  
-  function calculateLevel(empId: string, visited = new Set<string>()): number {
-    if (levelMap.has(empId)) {
-      return levelMap.get(empId)!;
-    }
-    
-    if (visited.has(empId)) {
-      return 0; // Circular reference protection
-    }
-    
-    const emp = employees.find(e => e.id === empId);
-    if (!emp || !emp.reportingManagerId) {
-      levelMap.set(empId, 0);
-      return 0;
-    }
-    
-    visited.add(empId);
-    const level = calculateLevel(emp.reportingManagerId, visited) + 1;
-    levelMap.set(empId, level);
-    return level;
-  }
-
-  // Calculate levels for all employees
-  employees.forEach(emp => calculateLevel(emp.id));
-
-  // Map to org chart nodes
-  return employees.map(emp => ({
-    id: emp.id,
-    name: emp.fullName,
-    designation: emp.designation,
-    initials: emp.initials,
-    avatarColor: emp.avatarColor,
-    reportingManagerId: emp.reportingManagerId,
-    directReportsCount: directReportsMap.get(emp.id) || 0,
-    level: levelMap.get(emp.id) || 0,
-  }));
+  /** Identity flag (spec §3/§7) — render a "Guest" badge when true. */
+  isGuest?: boolean;
+  /** Payroll figures — null unless the caller is admin/HR (spec §3). */
+  basicSalary?: number | null;
+  allowances?: number | null;
+  otherDeductions?: number | null;
 }
 
 export const DEPARTMENTS = [

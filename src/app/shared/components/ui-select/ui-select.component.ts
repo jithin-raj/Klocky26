@@ -87,10 +87,10 @@ export type SelectOption = string | { label: string; value: any };
           <div class="ui-options-list">
           @for (o of filteredOptions(); track optionValue(o)) {
             <button type="button" class="ui-option"
-                    [class.selected]="value === optionValue(o)"
+                    [class.selected]="hasValue() && value === optionValue(o)"
                     (click)="select(optionValue(o))">
               <span class="ui-option-label">{{ optionLabel(o) }}</span>
-              @if (value === optionValue(o)) {
+              @if (hasValue() && value === optionValue(o)) {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2.8"
                      stroke-linecap="round" stroke-linejoin="round">

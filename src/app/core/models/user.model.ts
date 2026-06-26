@@ -62,6 +62,8 @@ export interface EmployeeUser {
   isAdmin: boolean;
   isManager: boolean;
   isHr: boolean;
+  /** Identity flag (spec §12) — badge/limit a guest user's own shell as needed. */
+  isGuest: boolean;
   /** 1=view only, 2=add+edit, 3=full access — gate write actions on this, not role strings */
   permissionLevel: 1 | 2 | 3;
   allowedClockInMethods: ClockInMethod[] | null;

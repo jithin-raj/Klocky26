@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MOCK_EMPLOYEES } from '../../../employees/models/employee.model';
+import { UiSelectComponent } from '../../../../shared/components';
 
 interface Review {
   id: string;
@@ -54,13 +55,30 @@ const GOALS: Goal[] = [
   selector: 'app-performance',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiSelectComponent],
   templateUrl: './performance.component.html',
   styleUrl: './performance.component.scss',
 })
 export class PerformanceComponent {
   activeTab = signal<'reviews' | 'goals' | 'kpis'>('reviews');
   filterStatus = signal('');
+
+  readonly reviewStatusOptions = [
+    { label: 'All Status', value: '' },
+    { label: 'Pending', value: 'pending' },
+    { label: 'In Progress', value: 'in_progress' },
+    { label: 'Completed', value: 'completed' },
+  ];
+  readonly goalStatusOptions = [
+    { label: 'All Status', value: '' },
+    { label: 'On Track', value: 'on_track' },
+    { label: 'At Risk', value: 'at_risk' },
+    { label: 'Behind', value: 'behind' },
+    { label: 'Completed', value: 'completed' },
+  ];
+  readonly filterStatusOptions = computed(() =>
+    this.activeTab() === 'reviews' ? this.reviewStatusOptions : this.goalStatusOptions
+  );
 
   readonly reviews = REVIEWS;
   readonly goals   = GOALS;

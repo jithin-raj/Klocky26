@@ -1,0 +1,198 @@
+<div class="el-page">
+
+  <!-- Page Header -->
+  <div class="el-header">
+    <div class="el-header__left">
+      <h1 class="el-title">Roles &amp; Permissions</h1>
+      <span class="el-count">Set access (None / View / Add-Edit / Full) per feature, by role, department or employee</span>
+    </div>
+  </div>
+
+  <!-- Axis switch -->
+  <div class="pm-axis-row">
+    <span class="pm-axis-label">Configure by:</span>
+    <div class="pm-axis-switch">
+      <button
+        type="button"
+        class="pm-axis-btn"
+        [class.pm-axis-btn--active]="axis() === 'role'"
+        (click)="setAxis('role')">
+        Role
+      </button>
+      <button
+        type="button"
+        class="pm-axis-btn"
+        [class.pm-axis-btn--active]="axis() === 'department'"
+        (click)="setAxis('department')">
+        Department
+      </button>
+      <button
+        type="button"
+        class="pm-axis-btn"
+        [class.pm-axis-btn--active]="axis() === 'employee'"
+        (click)="setAxis('employee')">
+        Employee
+      </button>
+    </div>
+
+    <div class="pm-subject-picker">
+      @if (axis() === 'role') {
+        <ui-select
+          placeholder="Select a role…"
+          [searchable]="true"
+          [options]="roleOptions()"
+          [disabled]="orgRolesLoading()"
+          [ngModel]="selectedSubjectId()"
+          (ngModelChange)="onSubjectChange($event)">
+        </ui-select>
+      } @else if (axis() === 'department') {
+        <ui-select
+          placeholder="Select a department…"
+          [searchable]="true"
+          [options]="departmentOptions()"
+          [disabled]="departmentsLoading()"
+          [ngModel]="selectedSubjectId()"
+          (ngModelChange)="onSubjectChange($event)">
+        </ui-select>
+      } @else {
+        <ui-select
+          placeholder="Select an employee…"
+          [searchable]="true"
+          [options]="employeeOptions()"
+          [disabled]="employeesLoading()"
+          [ngModel]="selectedSubjectId()"
+          (ngModelChange)="onSubjectChange($event)">
+        </ui-select>
+      }
+    </div>
+
+    @if (axis() === 'role' && !orgRolesLoading() && roleOptions().length === 0) {
+      <span class="pm-picker-hint">No custom roles found — create one under “Departments &amp; Roles” first.</span>
+    }
+    @if (axis() === 'department' && !departmentsLoading() && departmentOptions().length === 0) {
+      <span class="pm-picker-hint">No departments found — create one under “Departments &amp; Roles” first.</span>
+    }
+  </div>
+
+  <!-- Catalog loading / error -->
+  @if (catalogLoading()) {
+    <div class="el-empty"><p>Loading permission catalog…</p></div>
+  }
+  @if (catalogError()) {
+    <div class="el-empty"><p>{{ catalogError() }}</p></div>
+  }
+
+  @if (!catalogLoading() && !catalogError()) {
+
+    <!-- No subject selected yet -->
+    @if (!selectedSubjectId()) {
+      <div class="el-empty">
+        <p>Select a role, department or employee to configure its permissions</p>
+      </div>
+    }
+
+    @if (selectedSubjectId()) {
+
+      @if (subjectLoading()) {
+        <div class="el-empty"><p>Loading permissions…</p></div>
+      }
+      @if (subjectError()) {
+        <div class="el-empty"><p>{{ subjectError() }}</p></div>
+      }
+
+      @if (!subjectLoading() && !subjectError()) {
+
+        @if (subjectUnavailable()) {
+          <div class="pm-soft-note">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span>Showing catalog defaults — this backend doesn’t expose saved per-{{ axis() }} overrides yet.</span>
+          </div>
+        }
+
+        @if (isSubjectReadOnly()) {
+          <div class="pm-admin-note">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span><strong>Full access (system).</strong> The Admin role always has complete access and can't be restricted.</span>
+          </div>
+        }
+
+        <div class="pm-modules">
+          @for (group of moduleGroups(); track group.module) {
+            <div class="pm-module">
+              <div class="pm-module__header">
+                <h2 class="pm-module__title">{{ group.module }}</h2>
+                @if (!group.enforced) {
+                  <span class="pm-pill-soon">Coming soon</span>
+                }
+              </div>
+
+              <!-- Permission grid: one row per feature, a radio per access level -->
+              <div class="pm-grid-wrap">
+                <table class="pm-grid">
+                  <thead>
+                    <tr>
+                      <th class="pm-grid-feature">Feature</th>
+                      @for (choice of accessLevelChoices; track choice.value) {
+                        <th class="pm-grid-lvl">{{ choice.label }}</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (feature of group.features; track feature.key) {
+                      <tr class="pm-grid-row">
+                        <td class="pm-grid-feature">
+                          <span class="pm-feature-label">{{ feature.label }}</span>
+                          @if (!isSubjectReadOnly() && isRowOverridden(feature.key)) {
+                            <span class="pm-badge-override" title="Customized away from the default access level">Customized</span>
+                          }
+                          @if (!isSubjectReadOnly() && isCapped(feature.key)) {
+                            <span class="pm-badge-cap" title="Capped by the department ceiling — higher levels are disabled">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                              Dept cap
+                            </span>
+                          }
+                        </td>
+
+                        @if (isSubjectReadOnly()) {
+                          <td class="pm-readonly-cell" [attr.colspan]="accessLevelChoices.length">Full access (system)</td>
+                        } @else {
+                          @for (choice of accessLevelChoices; track choice.value) {
+                            <td class="pm-grid-lvl">
+                              <label class="pm-radio-wrap" [attr.aria-label]="feature.label + ': ' + choice.label">
+                                <input
+                                  type="radio"
+                                  class="pm-radio-input"
+                                  [name]="'perm_' + feature.key"
+                                  [checked]="levelFor(feature.key) === choice.value"
+                                  [disabled]="choice.value > maxSelectableFor(feature.key)"
+                                  (change)="setAccessLevel(feature.key, choice.value)" />
+                              </label>
+                            </td>
+                          }
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+
+      }
+    }
+  }
+
+  <!-- Floating save bar — appears only when the matrix has unsaved changes -->
+  <ui-save-bar
+    [visible]="isDirty() && !isSubjectReadOnly()"
+    [saving]="saving()"
+    (save)="save()"
+    (discard)="discardChanges()"
+  ></ui-save-bar>
+
+</div>

@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, tap }    from 'rxjs';
 import { ApiService }         from './api.service';
 import { AppStateService }    from './app-state.service';
+import { PermissionService }  from './permission.service';
 import { RealtimeService }    from './realtime.service';
 import { ApiResponse }        from '../models/api-response.model';
 import {
@@ -31,6 +32,7 @@ export class UserAuthService {
 
   private readonly api      = inject(ApiService);
   private readonly appState = inject(AppStateService);
+  private readonly permissions = inject(PermissionService);
   private readonly realtime = inject(RealtimeService);
 
   /** POST /api/users/auth/login — persists tokens, does NOT fetch /me (call getMe() after). */
@@ -76,6 +78,7 @@ export class UserAuthService {
    */
   async logout(): Promise<void> {
     this.realtime.disconnect();
+    this.permissions.clear();
     await this.appState.clearState();
   }
 }

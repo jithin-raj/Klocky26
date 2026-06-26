@@ -70,8 +70,8 @@ import { ToastService, Toast } from './toast.service';
   `,
   styles: [`
     .toast-container {
-      position: fixed; bottom: 24px; right: 24px;
-      display: flex; flex-direction: column; gap: 10px;
+      position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
       z-index: 10000; pointer-events: none;
     }
     .toast {
@@ -130,8 +130,8 @@ import { ToastService, Toast } from './toast.service';
     .toast-close:hover { color: #374151; background: #f3f4f6; }
 
     @keyframes slide-in {
-      from { transform: translateX(100%); opacity: 0; }
-      to   { transform: translateX(0);   opacity: 1; }
+      from { transform: translateY(-18px); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
     }
     @keyframes shrink {
       from { transform: scaleX(1); transform-origin: left; }

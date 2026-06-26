@@ -13,6 +13,91 @@ $accent: #0d9488;
   position: relative;
 }
 
+/* ── Shared-grid card (dark, matches the admin surface) ─────────────── */
+.ao-grid-card {
+  background: $surface;
+  border-radius: 16px;
+  border: 1px solid $border;
+  padding: 14px;
+  margin-top: 4px;
+}
+.ao-grid-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.ao-grid-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+  padding: 0 12px;
+  height: 40px;
+  border: 1.5px solid $border;
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.4);
+  &:focus-within { border-color: $accent; background: rgba(255,255,255,.06); }
+  input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-size: 14px; color: $text; min-width: 0;
+  }
+  input::placeholder { color: rgba(255,255,255,.3); }
+}
+.ao-grid-filter { width: 200px; }
+.ao-grid-foot {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: $text-muted;
+  text-align: right;
+}
+
+/* ── Edit modal helpers (light UiFormModal) ────────────────────────── */
+.ao-rename-row { display: flex; gap: 10px; align-items: center; }
+.ao-rename-input { flex: 1; }
+.ao-inline-btn {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: var(--accent, #0d9488);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--accent, #0d9488) 8%, #fff); border-color: color-mix(in srgb, var(--accent, #0d9488) 40%, #e2e8f0); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
+}
+.ao-num-input {
+  width: 100%; box-sizing: border-box;
+  height: 42px; padding: 0 12px;
+  border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 14px; color: #1e293b; outline: none;
+  &:focus { border-color: var(--accent, #0d9488); }
+}
+.ao-toggle-field {
+  --ui-toggle-label: #1e293b;
+  --ui-toggle-hint: #94a3b8;
+  --ui-toggle-track: #cbd5e1;
+  border: 1.5px solid #eef1f5; border-radius: 12px; padding: 2px 16px; background: #fbfcfe;
+}
+.ao-modal-hint { margin: 8px 0 0; font-size: 12px; color: #94a3b8; }
+.ao-modal-warn { color: #b45309; }
+.ao-slug-suffix { font-size: 14px; font-weight: 600; color: #64748b; white-space: nowrap; }
+.ao-modal-err { margin: 8px 0 0; font-size: 13px; color: #dc2626; font-weight: 500; }
+.ao-modal-banner {
+  font-family: ui-monospace, monospace; font-size: 14px; font-weight: 600;
+  background: color-mix(in srgb, var(--accent, #0d9488) 10%, #fff);
+  border: 1.5px dashed color-mix(in srgb, var(--accent, #0d9488) 40%, #e5e7eb);
+  color: #0f172a; padding: 10px 14px; border-radius: 10px;
+}
+
 // ── Header ────────────────────────────────────────────────────────────
 .ao-header {
   display: flex;
@@ -319,6 +404,55 @@ $accent: #0d9488;
 
 @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
+// ── Large centered modal (Edit Organisation) ───────────────────────────
+// Distinct from the slim slide-in drawers above — this one needs room for
+// a lot of fields, so it gets a proper large, centered modal treatment.
+.ao-modal {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(820px, calc(100vw - 48px));
+  max-height: min(88vh, 920px);
+  background: linear-gradient(180deg, #0f2238, #0a1830);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 22px;
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 90px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
+  animation: modalIn .22s cubic-bezier(.16, 1, .3, 1);
+  --accent: #0d9488;
+
+  @media (max-width: 760px) {
+    width: calc(100vw - 24px);
+    max-height: 92vh;
+    border-radius: 16px;
+  }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(.95); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+// Combined-class selector (higher specificity than .ao-drawer-body alone)
+// so this wins regardless of declaration order in the stylesheet.
+.ao-drawer-body.ao-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-content: start;
+
+  // Sections that should span the full modal width regardless of the grid
+  > .ao-drawer-action,
+  > .ao-error-text,
+  > .ao-divider { grid-column: 1 / -1; }
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr;
+  }
+}
+
 .ao-drawer-head {
   display: flex;
   align-items: center;
@@ -374,11 +508,17 @@ $accent: #0d9488;
   font-size: 13px;
   color: $text;
   gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+
+  &:last-child { border-bottom: none; }
 
   &--col {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+    border-bottom: none;
+    padding: 0;
   }
 }
 
@@ -415,6 +555,175 @@ $accent: #0d9488;
     border-color: rgba(13,148,136,.4);
     color: #5eead4;
   }
+}
+
+// ── Sectioned drawer body (Edit/Detail) ────────────────────────────────
+.ao-section {
+  border: 1px solid $border;
+  background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ao-section--placeholder {
+  border-style: dashed;
+  border-color: rgba(245,158,11,.3);
+  background: rgba(245,158,11,.035);
+}
+
+.ao-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ao-section-icon {
+  width: 30px; height: 30px; border-radius: 9px;
+  display: grid; place-items: center; flex-shrink: 0;
+  background: rgba($accent, .16); color: #5eead4;
+}
+
+.ao-section--placeholder .ao-section-icon { background: rgba(245,158,11,.16); color: #fcd34d; }
+
+.ao-section-title {
+  font-size: 13px; font-weight: 700; color: $text; margin: 0;
+}
+
+.ao-section-note {
+  font-size: 11px; color: $text-muted; margin: 1px 0 0;
+}
+
+.ao-pill-soon {
+  margin-left: auto;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 3px 8px; border-radius: 20px;
+  background: rgba(245,158,11,.16); color: #fcd34d;
+  white-space: nowrap;
+}
+
+.ao-field {
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.ao-field-row {
+  display: flex; gap: 12px;
+  > .ao-field { flex: 1; min-width: 0; }
+}
+
+.ao-field-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: $text-muted;
+}
+
+.ao-field-input {
+  background: rgba(255,255,255,.05);
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: $text;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s, background .15s;
+  width: 100%;
+
+  &::placeholder { color: $text-muted; }
+  &:focus { border-color: $accent; background: rgba(255,255,255,.07); }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+
+  option { background: #111827; }
+}
+
+.ao-field-hint {
+  font-size: 11px; color: $text-muted; margin: 0;
+}
+
+// ── Toggle switch (replaces raw checkboxes) ────────────────────────────
+.ao-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 38px; height: 22px;
+  flex-shrink: 0;
+
+  input {
+    position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1;
+  }
+
+  .ao-toggle-track {
+    width: 100%; height: 100%; border-radius: 20px;
+    background: rgba(255,255,255,.12);
+    border: 1px solid $border;
+    transition: background .15s, border-color .15s;
+  }
+
+  .ao-toggle-thumb {
+    position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff;
+    transition: transform .18s;
+  }
+
+  input:checked ~ .ao-toggle-track {
+    background: rgba($accent, .55);
+    border-color: $accent;
+  }
+  input:checked ~ .ao-toggle-track .ao-toggle-thumb {
+    transform: translateX(16px);
+  }
+}
+
+.ao-toggle-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+
+// ── Segmented control (subscription status) ───────────────────────────
+.ao-segmented {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+
+.ao-segmented-opt {
+  padding: 7px 13px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid $border;
+  background: rgba(255,255,255,.04);
+  color: $text-muted;
+  transition: all .15s;
+
+  &:hover { background: rgba(255,255,255,.08); color: $text; }
+
+  &.is-active {
+    background: rgba($accent, .2);
+    border-color: rgba($accent, .45);
+    color: #5eead4;
+  }
+}
+
+.ao-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+  border: none;
+  margin: 4px 0;
+}
+
+.ao-result-banner {
+  border: 1px solid rgba($accent, .3);
+  background: rgba($accent, .08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: $text;
+}
+
+.ao-error-text {
+  font-size: 12px; color: #fca5a5; margin: 0;
 }
 
 .ao-drawer-footer {

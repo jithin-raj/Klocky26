@@ -1,0 +1,323 @@
+/* ═══════════════════════════════════════════════════════════
+   Org Structure (Departments / Designations / Custom Roles)
+   Class names mirror the `el-*` conventions in employee-list —
+   component styles are view-encapsulated so they're redeclared here.
+═══════════════════════════════════════════════════════════ */
+:host { display: block; }
+
+.el-page {
+  padding: 24px 28px 40px;
+  max-width: 1320px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ─── Header ────────────────────────────────────────────── */
+.el-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.el-header__left { display: flex; align-items: center; gap: 10px; }
+
+.el-title {
+  font-size: 22px;
+  font-weight: 750;
+  color: #0f172a;
+  margin: 0;
+}
+
+.el-count {
+  font-size: 13px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 10px;
+  border-radius: 20px;
+}
+
+/* ─── Tabs ──────────────────────────────────────────────── */
+.os-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1.5px solid #e5e7eb;
+}
+
+.os-tab {
+  padding: 10px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover { color: #334155; }
+
+  &--active {
+    color: var(--accent, #6366f1);
+    border-bottom-color: var(--accent, #6366f1);
+  }
+}
+
+/* ─── Panel ─────────────────────────────────────────────── */
+.os-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.os-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.os-panel__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* ─── Buttons ───────────────────────────────────────────── */
+.el-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+
+  &--primary {
+    background: var(--accent, #6366f1);
+    color: #fff;
+    &:hover { background: color-mix(in srgb, var(--accent, #6366f1) 85%, #000); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+  &--ghost {
+    background: #fff;
+    color: #374151;
+    border-color: #e5e7eb;
+    &:hover { background: #f9fafb; }
+  }
+  &--danger {
+    background: #ef4444;
+    color: #fff;
+    &:hover { background: #dc2626; }
+  }
+  &--sm { padding: 5px 10px; font-size: 12.5px; }
+}
+
+/* ─── Table ─────────────────────────────────────────────── */
+.el-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+}
+
+.el-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.el-th {
+  padding: 11px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #f8fafc;
+  border-bottom: 1.5px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.el-row {
+  transition: background 0.1s;
+  &:hover { background: #f8fafc; }
+}
+
+.el-td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  color: #334155;
+
+  &--actions { width: 100px; }
+}
+
+.el-cell-primary { font-weight: 500; color: #1e293b; }
+
+/* ─── Department name + color swatch ───────────────────── */
+.os-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.os-color-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+/* ─── Row action icon buttons ───────────────────────────── */
+.os-row-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.os-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1.5px solid #e7ebf1;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, box-shadow .15s;
+
+  &:hover {
+    color: var(--accent, #6366f1);
+    border-color: color-mix(in srgb, var(--accent, #6366f1) 45%, #e7ebf1);
+    background: color-mix(in srgb, var(--accent, #6366f1) 7%, #fff);
+  }
+  &:active { transform: translateY(0.5px); }
+
+  &--danger:hover {
+    color: #dc2626;
+    border-color: #fecaca;
+    background: #fef2f2;
+  }
+}
+
+/* ─── Badges ────────────────────────────────────────────── */
+.os-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+
+  &--system { background: #ede9fe; color: #7c3aed; }
+}
+
+/* ─── Empty state ───────────────────────────────────────── */
+.el-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: #94a3b8;
+}
+
+/* ─── Modal ─────────────────────────────────────────────── */
+.el-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.el-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+
+  h3 { margin: 0 0 16px; font-size: 18px; color: #0f172a; }
+}
+
+.el-modal__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* ─── Form fields ───────────────────────────────────────── */
+.os-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+
+  label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #374151;
+  }
+}
+
+.os-optional {
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+.os-input {
+  padding: 8px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  font-size: 13.5px;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+  width: 100%;
+
+  &:focus { border-color: var(--accent, #6366f1); }
+  &::placeholder { color: #94a3b8; }
+}
+
+.os-color-input {
+  width: 56px;
+  height: 36px;
+  padding: 2px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+/* ─── Table wrapper with pagination ─────────────────────── */
+.os-table-wrap {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* ─── Responsive ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .el-page { padding: 16px 14px 32px; }
+  .os-tabs { overflow-x: auto; }
+}

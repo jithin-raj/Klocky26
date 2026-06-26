@@ -9,12 +9,7 @@
     <button [class.active]="activeTab() === 'results'" (click)="activeTab.set('results')">eNPS & Insights</button>
     <button [class.active]="activeTab() === 'new'"     (click)="activeTab.set('new')">Create Survey</button>
     @if (activeTab() === 'surveys') {
-      <select class="sv-filter" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
-        <option value="">All</option>
-        <option value="active">Active</option>
-        <option value="draft">Draft</option>
-        <option value="closed">Closed</option>
-      </select>
+      <ui-select [options]="filterStatusOptions" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"></ui-select>
     }
   </div>
 
@@ -98,12 +93,12 @@
       <div class="sv-field"><label>Survey Title *</label><input class="sv-input" type="text" placeholder="e.g. Q3 Pulse Survey" [ngModel]="newTitle()" (ngModelChange)="newTitle.set($event)" /></div>
       <div class="sv-field"><label>Description</label><textarea class="sv-textarea" rows="3" placeholder="What is this survey about?" [ngModel]="newDesc()" (ngModelChange)="newDesc.set($event)"></textarea></div>
       <div class="sv-row">
-        <div class="sv-field"><label>Category</label>
-          <select class="sv-select" [ngModel]="newCategory()" (ngModelChange)="newCategory.set($event)">
-            @for (c of categories; track c) { <option [value]="c">{{ c }}</option> }
-          </select>
+        <div class="sv-field">
+          <ui-select label="Category" [options]="categoryOptions" [ngModel]="newCategory()" (ngModelChange)="newCategory.set($event)"></ui-select>
         </div>
-        <div class="sv-field"><label>Due Date</label><input class="sv-input" type="date" [ngModel]="newDue()" (ngModelChange)="newDue.set($event)" /></div>
+        <div class="sv-field">
+          <ui-datepicker label="Due Date" [ngModel]="newDue()" (ngModelChange)="newDue.set($event)"></ui-datepicker>
+        </div>
       </div>
       <div class="sv-actions">
         <button class="sv-btn sv-btn--ghost" (click)="activeTab.set('surveys')">Cancel</button>

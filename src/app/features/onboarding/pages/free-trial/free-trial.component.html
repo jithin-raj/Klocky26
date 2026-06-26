@@ -22,12 +22,11 @@
   }
 
   @case ('setup') {
-    @if (setupError()) {
-      <p class="lk-error-msg" style="text-align:center; margin-bottom: 8px;">{{ setupError() }}</p>
-    }
     <ob-company-setup
       [adminEmail]="adminEmail()"
       [orgName]="orgName()"
+      [submitting]="setupSubmitting()"
+      [methodOptions]="methodOptions()"
       (completed)="onSetupComplete($event)"
     />
   }

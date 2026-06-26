@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { PlatformAdminService } from '../../../../core/services/platform-admin.service';
+import { LoadingService } from '../../../../core/services/loading.service';
 import { UiModalComponent } from '../../../../shared/components/ui-modal/ui-modal.component';
 import { UiInputComponent } from '../../../../shared/components/ui-input/ui-input.component';
 
@@ -15,6 +16,10 @@ import { UiInputComponent } from '../../../../shared/components/ui-input/ui-inpu
   styleUrl: './admin-shell.component.scss',
 })
 export class AdminShellComponent {
+  private loading = inject(LoadingService);
+  /** True while any HTTP request is in flight — drives the global top loading bar. */
+  readonly isApiLoading = computed(() => this.loading.isLoading());
+
   readonly sidebarOpen = signal(true);
 
   readonly changePasswordOpen = signal(false);

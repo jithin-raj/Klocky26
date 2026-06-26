@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MOCK_EMPLOYEES } from '../../../employees/models/employee.model';
+import { UiSelectComponent } from '../../../../shared/components';
 
 interface Notification {
   id: string;
@@ -21,7 +22,7 @@ interface Notification {
   selector: 'app-notifications',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiSelectComponent],
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.scss',
 })
@@ -49,6 +50,15 @@ export class NotificationsComponent {
 
   readonly departments = ['Engineering','Design','HR','Sales','Marketing','Finance','Operations'];
   readonly employees   = MOCK_EMPLOYEES;
+
+  readonly departmentOptions = [
+    { label: 'Select department', value: '' },
+    ...this.departments.map(d => ({ label: d, value: d })),
+  ];
+  readonly employeeOptions = [
+    { label: 'Select employee', value: '' },
+    ...this.employees.map(e => ({ label: `${e.fullName} – ${e.department}`, value: e.id })),
+  ];
 
   private _history = signal<Notification[]>([
     { id:'1', title:'Holiday Notice',           body:'Office closed on May 1st – Labour Day.',          channel:'in_app', audience:'all',        target:'All Employees',  sentAt:'2026-04-28 10:00', status:'sent' },

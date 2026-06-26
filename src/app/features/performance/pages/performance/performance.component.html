@@ -22,19 +22,7 @@
     <button [class.active]="activeTab() === 'goals'"   (click)="activeTab.set('goals')">Goals & OKRs</button>
     <button [class.active]="activeTab() === 'kpis'"    (click)="activeTab.set('kpis')">KPI Dashboard</button>
 
-    <select class="pf-filter" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)">
-      <option value="">All Status</option>
-      @if (activeTab() === 'reviews') {
-        <option value="pending">Pending</option>
-        <option value="in_progress">In Progress</option>
-        <option value="completed">Completed</option>
-      } @else {
-        <option value="on_track">On Track</option>
-        <option value="at_risk">At Risk</option>
-        <option value="behind">Behind</option>
-        <option value="completed">Completed</option>
-      }
-    </select>
+    <ui-select [options]="filterStatusOptions()" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"></ui-select>
   </div>
 
   <!-- Reviews tab -->

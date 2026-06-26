@@ -28,8 +28,21 @@
   &:hover { color: var(--accent, #6366f1); }
 }
 
+.ea-header__main { display: flex; align-items: center; gap: 14px; }
+
+.ea-header__icon {
+  width: 46px; height: 46px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(135deg,
+    var(--accent, #6366f1),
+    color-mix(in srgb, var(--accent, #6366f1) 70%, #000));
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent, #6366f1) 35%, transparent);
+}
+
 .ea-header__title {
-  h1 { margin: 0 0 4px; font-size: 22px; font-weight: 750; color: #0f172a; }
+  h1 { margin: 0 0 2px; font-size: 23px; font-weight: 780; color: #0f172a; letter-spacing: -0.4px; }
   p  { margin: 0; font-size: 13.5px; color: #64748b; }
 }
 
@@ -87,6 +100,112 @@
   }
 }
 
+/* ── Tabs ───────────────────────────────────────────────── */
+.ea-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  width: fit-content;
+  margin-bottom: 18px;
+}
+.ea-tab {
+  padding: 9px 18px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: background .15s, color .15s, box-shadow .15s;
+
+  &:hover:not(.ea-tab--active) { color: #334155; }
+  &--active {
+    background: #fff;
+    color: var(--accent, #6366f1);
+    box-shadow: 0 1px 3px rgba(15,23,42,0.1);
+  }
+}
+
+/* ── Payroll tab ────────────────────────────────────────── */
+.ea-pay-state { padding: 28px; text-align: center; color: #64748b; font-size: 14px; }
+.ea-pay-state--err { color: #dc2626; }
+
+.ea-calc {
+  margin-top: 16px; padding: 16px; border-radius: 12px;
+  border: 1.5px solid #eef1f5; background: #fbfcfe;
+}
+.ea-calc-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+.ea-calc-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.ea-calc-sel, .ea-calc-yr {
+  padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-size: 14px; color: #1e293b; background: #fff; outline: none;
+}
+.ea-calc-sel:focus, .ea-calc-yr:focus { border-color: var(--accent, #6366f1); }
+.ea-calc-yr { width: 100px; }
+.ea-calc-result { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.ea-calc-line { display: flex; justify-content: space-between; font-size: 13.5px; color: #475569; }
+.ea-calc-line strong { color: #0f172a; }
+.ea-calc-line--net {
+  border-top: 1.5px dashed #e2e8f0; padding-top: 8px; margin-top: 2px; font-size: 15px;
+}
+.ea-calc-line--net strong { color: var(--accent, #6366f1); font-size: 16px; }
+
+.ea-classify-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ea-classify-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* ui-toggle is built for dark surfaces — re-theme its label/hint for the light form. */
+.ea-guest-toggle {
+  --ui-toggle-label: #1e293b;
+  --ui-toggle-hint: #94a3b8;
+  --ui-toggle-track: #cbd5e1;   /* visible off-state on the light form */
+  border: 1.5px solid #eef1f5;
+  border-radius: 12px;
+  padding: 4px 16px;
+  background: #fbfcfe;
+}
+
+.ea-seg {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.ea-seg__opt {
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+
+  &--active {
+    background: #fff;
+    color: #1e293b;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+  }
+
+  &:hover:not(&--active) { color: #334155; }
+}
+
 .ea-input, .ea-select {
   padding: 9px 12px;
   border: 1.5px solid #e5e7eb;
@@ -127,6 +246,14 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  position: sticky;
+  bottom: 0;
+  margin: 8px -28px -48px;
+  padding: 16px 28px;
+  background: color-mix(in srgb, #f8fafc 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-top: 1.5px solid #eef1f5;
+  z-index: 2;
 }
 
 .ea-btn {

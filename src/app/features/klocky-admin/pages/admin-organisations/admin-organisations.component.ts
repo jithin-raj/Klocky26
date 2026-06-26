@@ -2,12 +2,25 @@ import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } 
 import { FormsModule } from '@angular/forms';
 import { PlatformAdminService } from '../../../../core/services/platform-admin.service';
 import { PlatformOrgListItem, SubscriptionStatus, OrgEmailType } from '../../../../core/models/platform-auth.model';
+import {
+  UiSelectComponent, UiDatePickerComponent, SelectOption,
+  UiDataGridComponent, GridColumn, GridAction,
+  UiFormModalComponent, UiFormSectionComponent, UiFormGridComponent, UiFormFieldComponent,
+  UiInputComponent, UiToggleComponent,
+} from '../../../../shared/components';
+
+const ORG_AVATAR_COLORS = ['#0d9488','#6366f1','#ec4899','#f59e0b','#22c55e','#8b5cf6','#0ea5e9','#ef4444'];
 
 @Component({
   selector: 'klocky-admin-organisations',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [
+    FormsModule, UiSelectComponent, UiDatePickerComponent,
+    UiDataGridComponent,
+    UiFormModalComponent, UiFormSectionComponent, UiFormGridComponent, UiFormFieldComponent,
+    UiInputComponent, UiToggleComponent,
+  ],
   templateUrl: './admin-organisations.component.html',
   styleUrl: './admin-organisations.component.scss',
 })
@@ -20,6 +33,62 @@ export class AdminOrganisationsComponent implements OnInit {
 
   readonly search             = signal('');
   readonly subscriptionFilter = signal<'all' | SubscriptionStatus>('all');
+
+  readonly subscriptionFilterOptions: SelectOption[] = [
+    { label: 'All subscriptions', value: 'all' },
+    { label: 'Trial', value: 'trial' },
+    { label: 'Active', value: 'active' },
+    { label: 'Expired', value: 'expired' },
+    { label: 'Cancelled', value: 'cancelled' },
+  ];
+  readonly subscriptionSelectOptions: SelectOption[] = [
+    { label: 'Trial', value: 'trial' },
+    { label: 'Active', value: 'active' },
+    { label: 'Expired', value: 'expired' },
+    { label: 'Cancelled', value: 'cancelled' },
+  ];
+
+  // ── Shared grid config ────────────────────────────────────────────
+  orgInitials(o: PlatformOrgListItem) { return o.companyName.slice(0, 2).toUpperCase(); }
+  orgColor(o: PlatformOrgListItem) {
+    let h = 0;
+    for (let i = 0; i < o.orgSlug.length; i++) h = (h * 31 + o.orgSlug.charCodeAt(i)) >>> 0;
+    return ORG_AVATAR_COLORS[h % ORG_AVATAR_COLORS.length];
+  }
+  readonly orgTrackBy = (o: PlatformOrgListItem) => o.orgSlug;
+
+  readonly orgColumns: GridColumn<PlatformOrgListItem>[] = [
+    {
+      key: 'companyName', label: 'Organisation', sortable: true, type: 'avatar',
+      avatarInitials: (o) => this.orgInitials(o),
+      avatarColor: (o) => this.orgColor(o),
+      primaryText: (o) => o.companyName,
+      secondaryText: (o) => `/${o.orgUrlName}/app`,
+    },
+    { key: 'primaryEmail', label: 'Admin', sortable: true, type: 'text', value: (o) => o.primaryEmail },
+    { key: 'industry', label: 'Industry', type: 'text', value: (o) => o.industry || '—' },
+    {
+      key: 'subscriptionStatus', label: 'Subscription', type: 'badge',
+      value: (o) => o.subscriptionStatus,
+      badgeLabel: (v) => this.subscriptionLabel(v as SubscriptionStatus),
+      badgeBg: (v) => v === 'active' ? '#dcfce7' : v === 'trial' ? '#fef9c3' : '#fee2e2',
+      badgeColor: (v) => v === 'active' ? '#16a34a' : v === 'trial' ? '#b45309' : '#dc2626',
+    },
+    {
+      key: 'isActive', label: 'Status', type: 'badge',
+      value: (o) => o.isActive ? 'active' : 'deactivated',
+      badgeBg: (v) => v === 'active' ? '#dcfce7' : '#fee2e2',
+      badgeColor: (v) => v === 'active' ? '#16a34a' : '#dc2626',
+    },
+    { key: 'createdAt', label: 'Registered', sortable: true, type: 'date', value: (o) => o.createdAt },
+  ];
+
+  readonly orgActions: GridAction<PlatformOrgListItem>[] = [
+    { label: 'View details', click: (o) => this.viewOrg(o) },
+    { label: 'Edit', click: (o) => this.openEdit(o) },
+    { label: 'Deactivate', danger: true, visible: (o) => o.isActive, click: (o) => this.toggleActive(o) },
+    { label: 'Activate', visible: (o) => !o.isActive, click: (o) => this.toggleActive(o) },
+  ];
 
   readonly selectedOrg  = signal<PlatformOrgListItem | null>(null);
 
@@ -39,6 +108,7 @@ export class AdminOrganisationsComponent implements OnInit {
   editCompanyName = '';
   editAccentColor = '';
   editIsActive = true;
+  readonly subscriptionStatusOptions: SubscriptionStatus[] = ['trial', 'active', 'expired', 'cancelled'];
   editSubscriptionStatus: SubscriptionStatus = 'trial';
   editSubscriptionPlan = '';
   editTrialEndsAt = '';
@@ -57,6 +127,11 @@ export class AdminOrganisationsComponent implements OnInit {
   readonly renameError      = signal('');
   editOrgUrlName = '';
 
+  // ── Change orgSlug (login code) — Klock-admin-only; signs out current sessions ──
+  readonly slugSubmitting = signal(false);
+  readonly slugError      = signal('');
+  editOrgSlug = '';
+
   // ── Database configuration — UI shell only, NOT wired to any backend.
   // No endpoint exists for this anywhere in INTEGRATION_GUIDE.md, and tenant
   // DB credentials shouldn't transit a web UI at all (see SERVER_CHANGES_REQUEST.md
@@ -71,6 +146,11 @@ export class AdminOrganisationsComponent implements OnInit {
   // UI shell only, no backend endpoint exists yet (SERVER_CHANGES_REQUEST.md §0).
   readonly agentStatusNotice = signal('');
   agentStatus: 'active' | 'pending' | 'inactive' = 'pending';
+  readonly agentStatusOptions = [
+    { label: 'Active',   value: 'active'   },
+    { label: 'Pending',  value: 'pending'  },
+    { label: 'Inactive', value: 'inactive' },
+  ];
 
   // ── Send email — REQUESTED endpoint, not live yet (SERVER_CHANGES_REQUEST.md §0d) ──
   readonly emailSubmitting = signal(false);
@@ -79,6 +159,12 @@ export class AdminOrganisationsComponent implements OnInit {
   emailType: OrgEmailType = 'resend_welcome';
   emailCustomSubject = '';
   emailCustomMessage = '';
+  readonly emailTypeOptions = [
+    { label: 'Resend Welcome Email',          value: 'resend_welcome'     },
+    { label: 'Resend Verification Code',      value: 'resend_otp'         },
+    { label: 'Subscription / Payment Alert',  value: 'subscription_alert' },
+    { label: 'Custom Message',                value: 'custom'             },
+  ];
 
   ngOnInit(): void {
     this.refresh();
@@ -182,6 +268,9 @@ export class AdminOrganisationsComponent implements OnInit {
 
     this.renameError.set('');
     this.editOrgUrlName = org.orgUrlName;
+    this.slugError.set('');
+    // `.klock` is a fixed suffix — edit only the prefix.
+    this.editOrgSlug = org.orgSlug.replace(/\.klock$/i, '');
 
     this.editCompanyName = org.companyName;
     this.editAccentColor = org.accentColor ?? '';
@@ -259,6 +348,39 @@ export class AdminOrganisationsComponent implements OnInit {
           err?.status === 409
             ? 'That name is already taken by another organisation.'
             : (err?.error?.message ?? 'Could not rename — check the format (lowercase letters/numbers/hyphens, 2-40 chars).'),
+        );
+      },
+    });
+  }
+
+  /**
+   * PUT /api/platform/organisations/{slug} { orgSlug } — changes the org's login
+   * code (Klock-admin only). Anyone currently logged into the org keeps a token
+   * with the old slug, so they're effectively signed out until they log in again.
+   */
+  submitSlug(): void {
+    const org = this.editingOrg();
+    // Only the prefix is editable; `.klock` is appended as a constant suffix.
+    const prefix = this.editOrgSlug.trim().replace(/\.klock$/i, '');
+    const next = prefix ? `${prefix}.klock` : '';
+    if (!org || this.slugSubmitting() || !next || next === org.orgSlug) return;
+    this.slugError.set('');
+    this.slugSubmitting.set(true);
+
+    this.platformAdmin.updateOrganisation(org.orgSlug, { orgSlug: next }).subscribe({
+      next: (res) => {
+        this.slugSubmitting.set(false);
+        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? res.data : o));
+        this.editingOrg.set(res.data);
+        this.editOrgSlug = res.data.orgSlug.replace(/\.klock$/i, '');
+        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(res.data);
+      },
+      error: (err) => {
+        this.slugSubmitting.set(false);
+        this.slugError.set(
+          err?.status === 409
+            ? 'That login code is already in use by another organisation.'
+            : (err?.error?.message ?? 'Could not change the login code — check the format (lowercase letters/numbers/hyphens/dots).'),
         );
       },
     });

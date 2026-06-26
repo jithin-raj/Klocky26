@@ -10,8 +10,10 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 100vh;
-  overflow: hidden;
+  // Natural page height — the old fixed 100vh + overflow:hidden combined with
+  // multiple flex:1 department boxes squeezed each one into a tiny scrollable
+  // sliver (visible scrollbar arrows). One tree now flows with the page.
+  min-height: 100%;
 }
 
 /* ─── Header ────────────────────────────────────────────── */
@@ -76,6 +78,32 @@
   align-items: center;
 }
 
+/* My view / Full org segmented switch (spec §9) */
+.ot-viewseg {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.ot-viewseg__opt {
+  padding: 6px 13px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: background .15s, color .15s, box-shadow .15s;
+
+  &--active {
+    background: #fff;
+    color: var(--accent, #6366f1);
+    box-shadow: 0 1px 3px rgba(15,23,42,0.1);
+  }
+}
+
 .ot-btn {
   display: inline-flex;
   align-items: center;
@@ -115,8 +143,7 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 40px 24px;
-  overflow: auto;
-  flex: 1;
+  overflow-x: auto;
   position: relative;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
@@ -125,10 +152,27 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  gap: 28px;
   width: 100%;
   min-width: fit-content;
   position: relative;
+}
+
+.ot-state {
+  text-align: center;
+  font-size: 13.5px;
+  color: #94a3b8;
+  padding: 24px 0;
+
+  &--error { color: #ef4444; }
+}
+
+.ot-reports-tag {
+  margin: 4px 0 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-align: center;
 }
 
 /* ─── Node Container (vertical layout) ─────────────────────── */
@@ -159,16 +203,16 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 6px;
+  gap: 9px;
+  padding: 7px 12px 7px 8px;
+  border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--accent, #6366f1) 35%, transparent);
-  background: linear-gradient(135deg, 
+  background: linear-gradient(135deg,
     color-mix(in srgb, var(--accent, #6366f1) 25%, #1a1a1a) 0%,
     color-mix(in srgb, var(--accent, #6366f1) 18%, #0f0f0f) 100%);
   box-shadow: 0 2px 6px color-mix(in srgb, var(--accent, #6366f1) 15%, rgba(0, 0, 0, 0.3));
-  min-width: 180px;
-  max-width: 200px;
+  min-width: 150px;
+  max-width: 184px;
   position: relative;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -186,12 +230,17 @@
   }
 
   &:hover {
-    background: linear-gradient(135deg, 
+    background: linear-gradient(135deg,
       color-mix(in srgb, var(--accent, #6366f1) 32%, #1a1a1a) 0%,
       color-mix(in srgb, var(--accent, #6366f1) 25%, #0f0f0f) 100%);
     border-color: color-mix(in srgb, var(--accent, #6366f1) 50%, transparent);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--accent, #6366f1) 25%, rgba(0, 0, 0, 0.4));
     transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent, #6366f1);
+    outline-offset: 2px;
   }
 
   &.ot-has-children {
@@ -200,43 +249,59 @@
 
   /* Root card (selected employee) */
   .ot-node-container[data-level="0"] & {
-    min-width: 220px;
-    max-width: 240px;
-    padding: 10px 14px;
-    background: linear-gradient(135deg, 
+    min-width: 176px;
+    max-width: 206px;
+    padding: 8px 14px 8px 9px;
+    background: linear-gradient(135deg,
       color-mix(in srgb, var(--accent, #6366f1) 35%, #1a1a1a) 0%,
       color-mix(in srgb, var(--accent, #6366f1) 28%, #0f0f0f) 100%);
     border-color: color-mix(in srgb, var(--accent, #6366f1) 45%, transparent);
     box-shadow: 0 3px 10px color-mix(in srgb, var(--accent, #6366f1) 20%, rgba(0, 0, 0, 0.35));
-    
+
     .ot-card-avatar {
-      width: 44px;
-      height: 44px;
-      font-size: 17px;
+      width: 38px;
+      height: 38px;
+      font-size: 15px;
     }
-    
+
     .ot-card-name {
-      font-size: 13px;
+      font-size: 12.5px;
     }
     
     &:hover {
-      background: linear-gradient(135deg, 
+      background: linear-gradient(135deg,
         color-mix(in srgb, var(--accent, #6366f1) 42%, #1a1a1a) 0%,
         color-mix(in srgb, var(--accent, #6366f1) 35%, #0f0f0f) 100%);
       border-color: color-mix(in srgb, var(--accent, #6366f1) 60%, transparent);
       box-shadow: 0 5px 16px color-mix(in srgb, var(--accent, #6366f1) 30%, rgba(0, 0, 0, 0.4));
     }
   }
+
+  /* Leadership tiers — org-role hierarchyLevel 1 (CEO-tier) and 2 (VP/CTO/COO-tier) get a
+     distinct accent treatment so the chart visually reads "more senior" at a glance,
+     independent of where they happen to sit in the tree. */
+  &.ot-tier-1 {
+    border-color: #fbbf24;
+    box-shadow: 0 2px 10px rgba(251, 191, 36, .35);
+
+    &:hover { border-color: #fcd34d; box-shadow: 0 4px 14px rgba(251, 191, 36, .45); }
+  }
+  &.ot-tier-2 {
+    border-color: #94a3b8;
+    box-shadow: 0 2px 8px rgba(148, 163, 184, .3);
+
+    &:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(148, 163, 184, .4); }
+  }
 }
 
 .ot-card-avatar {
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -313,21 +378,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 3px;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
 
-  svg { 
+  svg {
     transition: transform 0.2s;
     stroke-width: 2.5;
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
 
   &:hover {
@@ -384,149 +449,223 @@
   &--on_leave { background: #f59e0b; }
 }
 
-/* ─── Tree Connectors ──────────────────────────────────────── */
-/* Vertical line from parent card to horizontal sibling line */
+/* ─── Tree connectors ──────────────────────────────────────── */
+/* Vertical stub dropping from a parent card down to the horizontal sibling bar. */
 .ot-parent-connector {
-  width: 1px;
-  height: 24px;
-  background: #d1d5db;
+  width: 2px;
+  height: 22px;
+  background: #cbd5e1;
+  border-radius: 2px;
   margin: 0 auto;
-  position: relative;
   animation: drawLine 0.3s ease-out;
-  
+
   @keyframes drawLine {
-    from {
-      height: 0;
-      opacity: 0;
-    }
-    to {
-      height: 24px;
-      opacity: 1;
-    }
+    from { height: 0;    opacity: 0; }
+    to   { height: 22px; opacity: 1; }
   }
 }
 
-/* Container for all children and their connecting lines */
 .ot-children-wrapper {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 0;
-
-  /* Draw horizontal line connecting siblings using pseudo-element */
-  &[data-child-count]:not([data-child-count="1"])::before {
-    content: '';
-    position: absolute;
-    top: 22px;
-    height: 1px;
-    background: #d1d5db;
-    z-index: 1;
-    animation: expandLine 0.4s ease-out;
-    
-    @keyframes expandLine {
-      from {
-        transform: scaleX(0);
-        opacity: 0;
-      }
-      to {
-        transform: scaleX(1);
-        opacity: 1;
-      }
-    }
-  }
-
-  /* 2 children */
-  &[data-child-count="2"]::before {
-    left: calc(50% - 105px);
-    right: calc(50% - 105px);
-  }
-
-  /* 3 children */
-  &[data-child-count="3"]::before {
-    left: calc(50% - 210px);
-    right: calc(50% - 210px);
-  }
-
-  /* 4 children */
-  &[data-child-count="4"]::before {
-    left: calc(50% - 315px);
-    right: calc(50% - 315px);
-  }
-
-  /* 5 children */
-  &[data-child-count="5"]::before {
-    left: calc(50% - 420px);
-    right: calc(50% - 420px);
-  }
-  
-  /* 6+ children - general formula */
-  &[data-child-count="6"]::before,
-  &[data-child-count="7"]::before,
-  &[data-child-count="8"]::before {
-    left: 8%;
-    right: 8%;
-  }
 }
 
-/* Row containing all child nodes horizontally */
+/*
+ * Connectors are drawn per child-slot so they always line up with the actual
+ * card centres — regardless of card width or how many children there are:
+ *   ::before = the vertical line dropping into the child card (centred on it)
+ *   ::after  = the horizontal bar, extended by half the row gap on each side so
+ *              neighbouring slots join up into one continuous, seamless line.
+ */
 .ot-children-row {
+  --ot-gap: 28px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 20px;
-  flex-wrap: nowrap;
+  gap: var(--ot-gap);
   position: relative;
-  z-index: 2;
-  margin-top: 0;
-  
-  &.ot-single {
-    gap: 0;
-    
-    .ot-drop-line {
-      display: block;
-    }
-  }
 }
 
-/* Individual child slot */
 .ot-child-slot {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
+  padding-top: 22px;          /* connector zone above each child */
   flex-shrink: 0;
-  margin-top: 0;
 }
 
-/* Vertical line dropping from sibling line to child card */
-.ot-drop-line {
-  width: 1px;
+.ot-child-slot::before {       /* vertical drop into this child */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
   height: 22px;
-  background: #d1d5db;
-  margin: 0;
-  position: relative;
-  z-index: 3;
-  flex-shrink: 0;
-  animation: dropLine 0.3s ease-out 0.1s backwards;
-  
-  @keyframes dropLine {
-    from {
-      height: 0;
-      opacity: 0;
-    }
-    to {
-      height: 22px;
-      opacity: 1;
-    }
-  }
+  background: #cbd5e1;
+  border-radius: 2px;
+  transform: translateX(-50%);
 }
 
-/* Calculate horizontal line positioning */
-.ot-children-row:not(.ot-single) .ot-sibling-line {
-  /* Line spans from center of first child to center of last child */
-  left: 0;
+.ot-child-slot::after {        /* horizontal bar across the top of the slot */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(var(--ot-gap) * -0.5);
+  right: calc(var(--ot-gap) * -0.5);
+  height: 2px;
+  background: #cbd5e1;
+}
+.ot-child-slot:first-child::after { left: 50%; border-radius: 2px 0 0 2px; }
+.ot-child-slot:last-child::after  { right: 50%; border-radius: 0 2px 2px 0; }
+.ot-child-slot:only-child::after  { display: none; }   /* single child → no horizontal bar */
+
+/* Legacy drop-line div — superseded by .ot-child-slot::before. */
+.ot-drop-line { display: none; }
+
+/* ─── Detail panel (opened by clicking a card) ─────────────── */
+.ot-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  animation: ot-fade-in 0.18s ease;
+}
+@keyframes ot-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.ot-detail-panel {
+  position: fixed;
+  top: 0;
   right: 0;
+  bottom: 0;
+  width: 360px;
+  max-width: 100vw;
+  background: #fff;
+  border-left: 1px solid #e5e7eb;
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px;
+  overflow-y: auto;
+  box-shadow: -8px 0 32px rgba(15, 23, 42, 0.12);
+  animation: ot-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes ot-slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.ot-detail-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: #e2e8f0; color: #1e293b; }
+}
+
+.ot-detail-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 20px;
+}
+
+.ot-detail-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.ot-detail-name { margin: 0; font-size: 17px; font-weight: 750; color: #0f172a; }
+.ot-detail-title { margin: 0; font-size: 13px; color: #64748b; }
+.ot-detail-dept {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent, #6366f1) 14%, transparent);
+  color: var(--accent, #6366f1);
+}
+
+.ot-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ot-detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #1e293b;
+  padding: 10px 0;
+  border-bottom: 1px solid #f8fafc;
+
+  &:last-child { border-bottom: none; }
+}
+
+.ot-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.ot-status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #f0fdf4;
+  color: #16a34a;
+
+  &--inactive { background: #fef2f2; color: #ef4444; }
+}
+
+.ot-detail-edit-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 11px 0;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent, #6366f1);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover { opacity: 0.88; }
+}
+
+@media (max-width: 480px) {
+  .ot-detail-panel { width: 100%; }
 }
 
 /* ─── Responsive ────────────────────────────────────────── */
@@ -545,7 +684,7 @@
   }
 
   .ot-children-row {
-    gap: 32px;
+    --ot-gap: 32px;
   }
 
   .ot-node-card {
@@ -573,27 +712,6 @@
     }
   }
 
-  /* Adjust horizontal line for smaller gaps */
-  .ot-children-wrapper[data-child-count="2"]::before {
-    left: calc(50% - 105px);
-    right: calc(50% - 105px);
-  }
-
-  .ot-children-wrapper[data-child-count="3"]::before {
-    left: calc(50% - 210px);
-    right: calc(50% - 210px);
-  }
-
-  .ot-children-wrapper[data-child-count="4"]::before {
-    left: calc(50% - 315px);
-    right: calc(50% - 315px);
-  }
-  
-  .ot-children-wrapper[data-child-count="5"]::before,
-  .ot-children-wrapper[data-child-count="6"]::before {
-    left: 10%;
-    right: 10%;
-  }
 }
 
 @media (max-width: 480px) {
@@ -612,7 +730,7 @@
   }
   
   .ot-children-row {
-    gap: 18px;
+    --ot-gap: 18px;
     flex-wrap: nowrap;
     overflow-x: auto;
     padding: 0 16px;
@@ -666,46 +784,6 @@
     }
   }
   
-  .ot-parent-connector {
-    height: 24px;
-  }
-  
-  .ot-drop-line {
-    height: 24px;
-    
-    @keyframes dropLine {
-      from {
-        height: 0;
-        opacity: 0;
-      }
-      to {
-        height: 24px;
-        opacity: 1;
-      }
-    }
-  }
-  
-  .ot-children-wrapper[data-child-count]:not([data-child-count="1"])::before {
-    top: 22px;
-  }
-  
-  /* Adjust for smaller gaps on mobile */
-  .ot-children-wrapper[data-child-count="2"]::before {
-    left: calc(50% - 100px);
-    right: calc(50% - 100px);
-  }
-
-  .ot-children-wrapper[data-child-count="3"]::before {
-    left: 12%;
-    right: 12%;
-  }
-
-  .ot-children-wrapper[data-child-count="4"]::before,
-  .ot-children-wrapper[data-child-count="5"]::before {
-    left: 8%;
-    right: 8%;
-  }
-
   /* For mobile, allow horizontal scrolling */
   .ot-tree-wrap {
     overflow-x: auto;

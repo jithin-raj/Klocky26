@@ -19,6 +19,8 @@ import {
   OrgLoginRequest,
   OrgDetails,
   UpdateOrgDetailsRequest,
+  TenantSettings,
+  UpdateTenantSettingsRequest,
 } from '../models/org-auth.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,5 +110,20 @@ export class OrgAuthService {
   /** PUT /api/tenant/register-complete — org-wide attendance/policy defaults. */
   registerComplete(payload: RegisterCompleteRequest): Observable<ApiResponse<null>> {
     return this.api.put<ApiResponse<null>>('/tenant/register-complete', payload, ORG_SCOPE);
+  }
+
+  /**
+   * GET /api/tenant/settings — §1.5c, the comprehensive settings screen
+   * (compliance numbers, branding, contacts, leave types, holidays) on top
+   * of everything register-complete already exposes. Separate from
+   * register-complete by design — registration flow stays untouched.
+   */
+  getTenantSettings(): Observable<ApiResponse<TenantSettings>> {
+    return this.api.get<ApiResponse<TenantSettings>>('/tenant/settings', undefined, ORG_SCOPE);
+  }
+
+  /** PUT /api/tenant/settings — full replace, always send the complete current settings. */
+  updateTenantSettings(payload: UpdateTenantSettingsRequest): Observable<ApiResponse<TenantSettings>> {
+    return this.api.put<ApiResponse<TenantSettings>>('/tenant/settings', payload, ORG_SCOPE);
   }
 }

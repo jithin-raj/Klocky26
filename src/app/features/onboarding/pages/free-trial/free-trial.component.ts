@@ -9,8 +9,8 @@ import { AuthShellComponent } from '../../../auth/components/auth-shell/auth-she
 import { AuthStateService } from '../../../auth/services/auth-state.service';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import {
-  mapClockInMethods,
   mapTimezoneLabel,
   normalizeCompanySize,
   mapLocationRule,
@@ -33,10 +33,14 @@ export class FreeTrialComponent implements OnInit {
   private authState = inject(AuthStateService);
   private orgTheme = inject(OrgThemeService);
   private orgAuth = inject(OrgAuthService);
+  private toast   = inject(ToastService);
 
   step       = signal<TrialStep>('email');
   adminEmail = signal('');
   orgName    = signal('');
+
+  /** GET /api/tenant/options clockInMethods — fetched once, forwarded to the attendance setup tab. Never hardcoded. */
+  methodOptions = signal<string[]>([]);
 
   /** Surfaced on the email step if send-otp fails (e.g. org/email already taken). */
   emailStepError = signal('');
@@ -51,6 +55,12 @@ export class FreeTrialComponent implements OnInit {
 
   ngOnInit(): void {
     this.orgTheme.reset();
+    this.orgAuth.getTenantOptions().subscribe({
+      next: (res) => {
+        if (res.data.clockInMethods?.length) this.methodOptions.set(res.data.clockInMethods);
+      },
+      error: () => { /* attendance tab shows "loading available methods" until this resolves */ },
+    });
   }
 
   onEmailSubmitted(data: TrialStartData): void {
@@ -69,7 +79,9 @@ export class FreeTrialComponent implements OnInit {
       },
       error: (err) => {
         this.emailStepSubmitting.set(false);
-        this.emailStepError.set(err?.error?.message ?? 'Could not send the verification code. Please try again.');
+        const message = err?.error?.message ?? 'Could not send the verification code. Please try again.';
+        this.emailStepError.set(message);
+        this.toast.error('Could not send code', message);
       },
     });
   }
@@ -99,7 +111,7 @@ export class FreeTrialComponent implements OnInit {
       emailDomain: org.emailDomain || this.adminEmail().split('@')[1] || '',
       website: org.website || undefined,
 
-      clockInMethods: mapClockInMethods(attendance.clockInMethods),
+      clockInMethods: attendance.clockInMethods as any,
       weekStartDay: attendance.workWeekStart.toLowerCase(),
       weekEndDay: attendance.workWeekEnd.toLowerCase(),
       workHours: attendance.workHoursPerDay,
@@ -121,7 +133,9 @@ export class FreeTrialComponent implements OnInit {
       },
       error: (err) => {
         this.setupSubmitting.set(false);
-        this.setupError.set(err?.error?.message ?? 'Registration failed. Please try again.');
+        const message = err?.error?.message ?? 'Registration failed. Please try again.';
+        this.setupError.set(message);
+        this.toast.error('Could not create organisation', message);
       },
     });
   }

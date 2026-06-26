@@ -1,4 +1,9 @@
 <div class="layout" [style.--accent]="orgAccentColor || '#0d9488'">
+  <!-- Global API loading bar — animates while any HTTP request is in flight -->
+  @if (isApiLoading()) {
+    <div class="app-loading-bar"><span class="app-loading-bar__inner"></span></div>
+  }
+
   <!-- Mobile backdrop -->
   <div class="mobile-backdrop" [class.visible]="isSidebarOpen" (click)="closeSidebar()"></div>
 
@@ -13,6 +18,5 @@
   </div>
 </div>
 
-<!-- Global overlays -->
-<ui-toast-container></ui-toast-container>
+<!-- Global overlays — ui-toast-container lives at the app root (app.component.html) so toasts work outside the authenticated shell too -->
 <ui-modal-outlet></ui-modal-outlet>

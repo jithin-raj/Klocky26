@@ -8,7 +8,9 @@ import {
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
 import { UserAuthService } from '../../core/services/user-auth.service';
+import { PermissionService } from '../../core/services/permission.service';
 import { UserRole } from '../../core/models/user.model';
+import { AccessLevel } from '../../core/models/permission.model';
 
 interface MenuItem {
   label: string;
@@ -17,6 +19,9 @@ interface MenuItem {
   exact?: boolean;
   /** Omit to show to everyone. Matches the roles used by the route's own roleGuard, where one exists. */
   roles?: UserRole[];
+  /** Optional permission gate (spec §1) — hidden unless the resolved /me level for this key ≥ permLevel. */
+  permKey?: string;
+  permLevel?: AccessLevel;
 }
 
 interface MenuSection {
@@ -49,6 +54,7 @@ export class SidebarComponent {
   private orgTheme  = inject(OrgThemeService);
   private appState  = inject(AppStateService);
   private userAuth  = inject(UserAuthService);
+  private permissions = inject(PermissionService);
 
   // Track current URL reactively
   currentUrl = signal<string>(this.router.url);
@@ -90,9 +96,11 @@ export class SidebarComponent {
       icon: 'employees',
       expanded: false,
       items: [
-        { label: 'Employees', route: 'app/employees', icon: 'employees', exact: true, roles: MANAGEMENT_ROLES },
+        { label: 'Employees', route: 'app/employees', icon: 'employees', exact: true, roles: MANAGEMENT_ROLES, permKey: 'employees.view', permLevel: 1 },
         { label: 'Org Tree', route: 'app/employees/tree', icon: 'tree', roles: MANAGEMENT_ROLES },
-        { label: 'Roles & Permissions', route: 'app/roles', icon: 'roles', roles: ADMIN_ONLY_ROLES },
+        { label: 'Departments & Roles', route: 'app/employees/org-structure', icon: 'employees', roles: ADMIN_ONLY_ROLES },
+        // Single canonical Roles & Permissions editor (the old duplicate "Permissions" link was removed).
+        { label: 'Roles & Permissions', route: 'app/roles', icon: 'roles', roles: ADMIN_ONLY_ROLES, permKey: 'permissions.manage', permLevel: 3 },
       ]
     },
     {
@@ -145,11 +153,18 @@ export class SidebarComponent {
     const prefix = this.orgPrefix();
     const role = this.appState.userRole();
 
+    // Touch permission signals so the menu recomputes once /me resolves.
+    this.permissions.loaded();
+    this.permissions.isAdmin();
+
     return this.baseMenuSections
       .map(section => ({
         ...section,
         items: section.items
           .filter(item => !item.roles || (role && item.roles.includes(role)))
+          // Permission gate (spec §1): when a key is set, hide unless the
+          // resolved access level meets it. Admin/super_admin always pass.
+          .filter(item => !item.permKey || this.permissions.can(item.permKey, item.permLevel ?? 1))
           .map(item => ({ ...item, route: `${prefix}/${item.route}` })),
       }))
       .filter(section => section.items.length > 0);

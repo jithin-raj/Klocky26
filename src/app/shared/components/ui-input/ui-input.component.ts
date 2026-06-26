@@ -1,7 +1,7 @@
 import {
-  Component, Input, forwardRef, ChangeDetectionStrategy
+  Component, Input, forwardRef, ChangeDetectionStrategy, ChangeDetectorRef, inject
 } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
 import { NgIf } from '@angular/common';
 
 @Component({
@@ -30,6 +30,8 @@ import { NgIf } from '@angular/common';
           [attr.inputmode]="inputmode || null"
           [attr.autocomplete]="autocomplete || null"
           [attr.pattern]="pattern || null"
+          [attr.min]="min ?? null"
+          [attr.max]="max ?? null"
           [(ngModel)]="value"
           (ngModelChange)="onChange($event)"
           (blur)="onTouched()"
@@ -95,14 +97,19 @@ export class UiInputComponent implements ControlValueAccessor {
   @Input() inputmode = '';
   @Input() autocomplete = '';
   @Input() pattern = '';
+  @Input() min: number | null = null;
+  @Input() max: number | null = null;
+
+  private cdr = inject(ChangeDetectorRef);
 
   value: any = '';
 
   onChange = (_: any) => {};
   onTouched = () => {};
 
-  writeValue(val: any) { this.value = val ?? ''; }
+  // markForCheck so an externally-corrected value (e.g. a clamped number) re-renders under OnPush.
+  writeValue(val: any) { this.value = val ?? ''; this.cdr.markForCheck(); }
   registerOnChange(fn: any) { this.onChange = fn; }
   registerOnTouched(fn: any) { this.onTouched = fn; }
-  setDisabledState(d: boolean) { this.disabled = d; }
+  setDisabledState(d: boolean) { this.disabled = d; this.cdr.markForCheck(); }
 }

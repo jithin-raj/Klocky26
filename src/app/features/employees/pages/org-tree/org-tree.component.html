@@ -11,63 +11,136 @@
       </button>
       <h1 class="ot-title">Organisation Chart</h1>
       <div class="ot-meta">
+        <span>{{ viewMode() === 'my' ? 'My view' : 'Full organisation' }}</span>
+        <span class="ot-dot"></span>
         <span>{{ totalCount() }} people</span>
         <span class="ot-dot"></span>
-        <span>{{ deptCount() }} departments</span>
+        <span>{{ roots().length }} at the top level</span>
       </div>
     </div>
     <div class="ot-header__right">
+      <!-- Default view is "my view" (always allowed); expand to org-wide on demand (spec §9).
+           Hidden for admins — they're omitted from my-view, so they only get the full org. -->
+      @if (!isAdmin) {
+        <div class="ot-viewseg">
+          <button type="button" class="ot-viewseg__opt" [class.ot-viewseg__opt--active]="viewMode() === 'my'" (click)="viewMyOrg()">My view</button>
+          <button type="button" class="ot-viewseg__opt" [class.ot-viewseg__opt--active]="viewMode() === 'full'" (click)="viewFullOrg()">Full org</button>
+        </div>
+      }
       <button class="ot-btn ot-btn--ghost" (click)="collapseAll()">Collapse All</button>
       <button class="ot-btn ot-btn--ghost" (click)="expandAll()">Expand All</button>
     </div>
   </div>
 
-  <!-- Tree -->
-  <div class="ot-tree-wrap">
-    <div class="ot-tree-vertical">
-      @for (node of roots(); track node.emp.id) {
-        <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: node, level: 0 }"></ng-container>
+  @if (loading()) {
+    <div class="ot-tree-wrap"><p class="ot-state">Loading org chart…</p></div>
+  }
+  @if (loadError()) {
+    <div class="ot-tree-wrap"><p class="ot-state ot-state--error">{{ loadError() }}</p></div>
+  }
+
+  @if (!loading() && !loadError()) {
+    <div class="ot-tree-wrap">
+      @if (roots().length === 0) {
+        <p class="ot-state">No employees found.</p>
+      } @else {
+        <div class="ot-tree-vertical">
+          @for (node of roots(); track node.emp.employeeId) {
+            <ng-container *ngTemplateOutlet="treeNodeTpl; context: { node: node, level: 0 }"></ng-container>
+          }
+        </div>
       }
     </div>
-  </div>
+  }
 
 </div>
 
-<!-- Role & Permission Modal -->
-<app-role-permission-modal
-  [isOpen]="roleModalOpen()"
-  [employeeName]="selectedEmployee()?.fullName || 'Employee'"
-  [currentRole]="selectedEmployee()?.role || 'employee'"
-  (close)="closeRoleModal()"
-  (saveChanges)="onRoleChange($event)"
-/>
+<!-- Detail panel — opened by clicking any card -->
+@if (detailNode()) {
+  <div class="ot-detail-overlay" (click)="closeDetail()"></div>
+  <aside class="ot-detail-panel" aria-label="Employee details">
+    <button class="ot-detail-close" type="button" (click)="closeDetail()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="ot-detail-head">
+      <div class="ot-detail-avatar" [style.background]="avatarColor(detailNode()!.emp)">
+        {{ initials(detailNode()!.emp) }}
+      </div>
+      <h2 class="ot-detail-name">{{ detailNode()!.emp.fullName }}</h2>
+      <p class="ot-detail-title">{{ detailNode()!.emp.orgRoleName || detailNode()!.emp.designationTitle || detailNode()!.emp.role }}</p>
+      @if (detailFull()?.departmentName) {
+        <span class="ot-detail-dept">{{ detailFull()!.departmentName }}</span>
+      }
+    </div>
+
+    @if (detailLoading()) {
+      <p class="ot-state">Loading details…</p>
+    } @else if (detailError()) {
+      <p class="ot-state ot-state--error">{{ detailError() }}</p>
+    } @else if (detailFull()) {
+      <div class="ot-detail-body">
+        <div class="ot-detail-row"><span class="ot-detail-label">Employee Code</span><span>{{ detailFull()!.employeeCode || '—' }}</span></div>
+        <div class="ot-detail-row"><span class="ot-detail-label">Email</span><span>{{ detailFull()!.email }}</span></div>
+        @if (detailFull()!.phone) {
+          <div class="ot-detail-row"><span class="ot-detail-label">Phone</span><span>{{ detailFull()!.phone }}</span></div>
+        }
+        <div class="ot-detail-row">
+          <span class="ot-detail-label">Reporting Manager</span>
+          <span>{{ detailNode()!.managerName || 'No manager' }}</span>
+        </div>
+        @if (detailNode()!.emp.orgRoleName) {
+          <div class="ot-detail-row">
+            <span class="ot-detail-label">Org Role</span>
+            <span>{{ detailNode()!.emp.orgRoleName }} (L{{ detailNode()!.emp.orgRoleHierarchyLevel }})</span>
+          </div>
+        }
+        <div class="ot-detail-row">
+          <span class="ot-detail-label">Direct Reports</span>
+          <span>{{ detailNode()!.children.length }}</span>
+        </div>
+        <div class="ot-detail-row">
+          <span class="ot-detail-label">Status</span>
+          <span class="ot-status-pill" [class.ot-status-pill--inactive]="!detailFull()!.isActive">
+            {{ detailFull()!.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+      </div>
+
+      <button class="ot-detail-edit-btn" type="button" (click)="editFromDetail()">Edit Employee</button>
+    }
+  </aside>
+}
 
 <ng-template #treeNodeTpl let-node="node" let-level="level">
   <div class="ot-node-container" [class.ot-root]="level === 0" [attr.data-level]="level">
-    
+
     <!-- The Employee Card -->
-    <div class="ot-node-card" [class.ot-has-children]="node.children.length > 0" [class.ot-collapsed]="!node.expanded">
-      
+    <div class="ot-node-card" [class.ot-has-children]="node.children.length > 0" [class.ot-collapsed]="!node.expanded"
+         [class]="tierClass(node.emp)"
+         (click)="openDetail(node, $event)" (keydown.enter)="openDetail(node, $event)" (keydown.space)="openDetail(node, $event)"
+         role="button" tabindex="0">
+
       <!-- Avatar -->
-      <div class="ot-card-avatar" [style.background]="node.emp.avatarColor">
-        {{ node.emp.initials }}
+      <div class="ot-card-avatar" [style.background]="avatarColor(node.emp)">
+        {{ initials(node.emp) }}
       </div>
 
       <!-- Info -->
       <div class="ot-card-info">
         <h4 class="ot-card-name">{{ node.emp.fullName }}</h4>
-        <p class="ot-card-title">{{ node.emp.designation }}</p>
-        @if (node.children.length > 0) {
-          <p class="ot-card-dept">{{ node.children.length }} Direct Report{{ node.children.length !== 1 ? 's' : '' }}</p>
-        } @else {
-          <p class="ot-card-dept">{{ node.emp.department }}</p>
+        <p class="ot-card-title">{{ node.emp.orgRoleName || node.emp.designationTitle || node.emp.role }}</p>
+        @if (node.emp.orgRoleName && node.emp.designationTitle) {
+          <p class="ot-card-dept">{{ node.emp.designationTitle }}</p>
         }
       </div>
 
       <!-- Actions -->
       <div class="ot-card-actions">
         @if (node.children.length > 0) {
-          <button class="ot-card-action-btn ot-card-action-btn--expand" (click)="toggleNode(node)" [title]="node.expanded ? 'Collapse' : 'Expand'">
+          <button class="ot-card-action-btn ot-card-action-btn--expand" (click)="toggleNode(node, $event)" [title]="node.expanded ? 'Collapse' : 'Expand'">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
               [style.transform]="node.expanded ? 'rotate(180deg)' : 'rotate(0deg)'">
               <polyline points="6 9 12 15 18 9"/>
@@ -76,6 +149,10 @@
         }
       </div>
     </div>
+
+    @if (node.children.length > 0) {
+      <p class="ot-reports-tag">{{ node.children.length }} report{{ node.children.length !== 1 ? 's' : '' }}</p>
+    }
 
     <!-- Connector Line from parent to children -->
     @if (node.expanded && node.children.length > 0) {
@@ -87,7 +164,7 @@
       <div class="ot-children-wrapper" [attr.data-child-count]="node.children.length">
         <!-- Children displayed horizontally -->
         <div class="ot-children-row" [class.ot-single]="node.children.length === 1">
-          @for (child of node.children; track child.emp.id; let first = $first; let last = $last) {
+          @for (child of node.children; track child.emp.employeeId; let first = $first; let last = $last) {
             <div class="ot-child-slot" [class.ot-first]="first" [class.ot-last]="last">
               <!-- Vertical line from sibling connector to child -->
               <div class="ot-drop-line"></div>

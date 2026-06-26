@@ -4,6 +4,35 @@
   overflow: hidden;
 }
 
+/* ── Global API loading bar ──────────────────────────────────────────
+   Thin indeterminate progress bar pinned to the top while any HTTP
+   request is in flight (LoadingService.isLoading()). */
+.app-loading-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 6000;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent, #0d9488) 18%, transparent);
+  pointer-events: none;
+}
+.app-loading-bar__inner {
+  display: block;
+  height: 100%;
+  width: 40%;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--accent, #0d9488),
+    color-mix(in srgb, var(--accent, #0d9488) 60%, #fff));
+  animation: app-loading-slide 1.1s ease-in-out infinite;
+}
+@keyframes app-loading-slide {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(120%); }
+  100% { transform: translateX(260%); }
+}
+
 /* RIGHT SIDE */
 .main {
   flex: 1;
@@ -16,7 +45,13 @@
 .content {
   flex: 1;
   padding: 20px;
-  background: var(--app-bg, #edf1f7);
+  /* Elegant, org-themed canvas: a faint accent glow in the corners over a soft
+     neutral gradient — replaces the flat grey for a more premium feel. */
+  background:
+    radial-gradient(900px 360px at 100% -8%, color-mix(in srgb, var(--accent, #6366f1) 9%, transparent), transparent 62%),
+    radial-gradient(700px 320px at -5% 105%, color-mix(in srgb, var(--accent, #6366f1) 6%, transparent), transparent 60%),
+    linear-gradient(180deg, #f7f9fd 0%, var(--app-bg, #eef2f8) 100%);
+  background-attachment: local, local, fixed;
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 0;

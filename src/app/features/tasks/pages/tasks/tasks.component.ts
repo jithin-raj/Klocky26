@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MOCK_EMPLOYEES } from '../../../employees/models/employee.model';
+import { UiSelectComponent, UiDatePickerComponent } from '../../../../shared/components';
 
 type TaskStatus   = 'todo' | 'in_progress' | 'review' | 'done';
 type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
@@ -38,7 +39,7 @@ const MOCK_TASKS: Task[] = [
   selector: 'app-tasks',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent],
   templateUrl: './tasks.component.html',
   styleUrl: './tasks.component.scss',
 })
@@ -104,6 +105,16 @@ export class TasksComponent {
   }
 
   readonly priorities = ['low','medium','high','critical'] as const;
+
+  readonly priorityOptions = this.priorities.map(p => ({ label: p.charAt(0).toUpperCase() + p.slice(1), value: p }));
+  readonly filterPrioOptions = [
+    { label: 'All Priorities', value: '' },
+    ...this.priorityOptions,
+  ];
+  readonly assigneeOptions = [
+    { label: 'Unassigned', value: '' },
+    ...this.employees.map(e => ({ label: `${e.fullName} – ${e.department}`, value: e.id })),
+  ];
 
   prioColor(p: string) {
     return { low: '#22c55e', medium: '#f59e0b', high: '#ef4444', critical: '#7c3aed' }[p] ?? '#94a3b8';

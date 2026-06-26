@@ -1,4 +1,4 @@
-﻿<div class="db-page">
+<div class="db-page">
 
   <!-- HEADER -->
   <div class="db-header">
@@ -29,7 +29,7 @@
 
   <!-- STAT CARDS -->
   <div class="db-stats">
-    @for (s of stats; track s.label) {
+    @for (s of stats(); track s.label) {
       <div class="db-stat-card" [style.--sc]="s.color" [style.--sb]="s.bg">
         <div class="db-stat-icon">
           @if (s.icon === 'people') {
@@ -66,108 +66,90 @@
           <h2 class="db-card-title">Today's Attendance</h2>
           <span class="db-card-sub">{{ today | date:'MMMM d' }}</span>
         </div>
-        <div class="db-att-layout">
-          <div class="db-donut-wrap">
-            <svg viewBox="0 0 100 100" class="db-donut">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" stroke-width="12"/>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="#22c55e" stroke-width="12"
-                [attr.stroke-dasharray]="presentDash + ' ' + circ"
-                stroke-dashoffset="0" stroke-linecap="butt" transform="rotate(-90 50 50)"/>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="#f59e0b" stroke-width="12"
-                [attr.stroke-dasharray]="lateDash + ' ' + circ"
-                [attr.stroke-dashoffset]="lateOffset"
-                stroke-linecap="butt" transform="rotate(-90 50 50)"/>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="#ef4444" stroke-width="12"
-                [attr.stroke-dasharray]="absentDash + ' ' + circ"
-                [attr.stroke-dashoffset]="absentOffset"
-                stroke-linecap="butt" transform="rotate(-90 50 50)"/>
-              <text x="50" y="46" text-anchor="middle" class="db-donut-pct">{{ presentPct }}%</text>
-              <text x="50" y="58" text-anchor="middle" class="db-donut-label">Present</text>
-            </svg>
+
+        @if (teamLoading()) {
+          <p class="db-card-state">Loading…</p>
+        } @else if (teamError()) {
+          <p class="db-card-state db-card-state--error">{{ teamError() }}</p>
+        } @else if (totalTeam() === 0) {
+          <p class="db-card-state">No team members found.</p>
+        } @else {
+          <div class="db-att-layout">
+            <div class="db-donut-wrap">
+              <svg viewBox="0 0 100 100" class="db-donut">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" stroke-width="12"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#22c55e" stroke-width="12"
+                  [attr.stroke-dasharray]="presentDash() + ' ' + circ"
+                  stroke-dashoffset="0" stroke-linecap="butt" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#f59e0b" stroke-width="12"
+                  [attr.stroke-dasharray]="halfDash() + ' ' + circ"
+                  [attr.stroke-dashoffset]="halfOffset()"
+                  stroke-linecap="butt" transform="rotate(-90 50 50)"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#ef4444" stroke-width="12"
+                  [attr.stroke-dasharray]="absentDash() + ' ' + circ"
+                  [attr.stroke-dashoffset]="absentOffset()"
+                  stroke-linecap="butt" transform="rotate(-90 50 50)"/>
+                <text x="50" y="46" text-anchor="middle" class="db-donut-pct">{{ presentPct() }}%</text>
+                <text x="50" y="58" text-anchor="middle" class="db-donut-label">Present</text>
+              </svg>
+            </div>
+            <div class="db-att-breakdown">
+              <div class="db-att-row present">
+                <span class="db-att-dot"></span>
+                <span class="db-att-name">Present</span>
+                <span class="db-att-count">{{ presentCount() }}</span>
+                <span class="db-att-pct">{{ presentPct() }}%</span>
+              </div>
+              <div class="db-att-row late">
+                <span class="db-att-dot"></span>
+                <span class="db-att-name">Half-day</span>
+                <span class="db-att-count">{{ halfDayCount() }}</span>
+                <span class="db-att-pct">{{ halfPct() }}%</span>
+              </div>
+              <div class="db-att-row absent">
+                <span class="db-att-dot"></span>
+                <span class="db-att-name">Absent / Off</span>
+                <span class="db-att-count">{{ absentOrOffCount() }}</span>
+                <span class="db-att-pct">{{ absentPct() }}%</span>
+              </div>
+              <div class="db-att-total">
+                <span>Total workforce</span>
+                <strong>{{ totalTeam() }}</strong>
+              </div>
+            </div>
           </div>
-          <div class="db-att-breakdown">
-            <div class="db-att-row present">
-              <span class="db-att-dot"></span>
-              <span class="db-att-name">Present</span>
-              <span class="db-att-count">{{ attendance.present }}</span>
-              <span class="db-att-pct">{{ presentPct }}%</span>
-            </div>
-            <div class="db-att-row late">
-              <span class="db-att-dot"></span>
-              <span class="db-att-name">Late</span>
-              <span class="db-att-count">{{ attendance.late }}</span>
-              <span class="db-att-pct">{{ latePct }}%</span>
-            </div>
-            <div class="db-att-row absent">
-              <span class="db-att-dot"></span>
-              <span class="db-att-name">Absent</span>
-              <span class="db-att-count">{{ attendance.absent }}</span>
-              <span class="db-att-pct">{{ absentPct }}%</span>
-            </div>
-            <div class="db-att-total">
-              <span>Total workforce</span>
-              <strong>{{ attendance.total }}</strong>
-            </div>
-          </div>
-        </div>
+        }
       </div>
 
       <!-- Department headcount -->
       <div class="db-card">
         <div class="db-card-header">
           <h2 class="db-card-title">Headcount by Department</h2>
-          <span class="db-card-sub">{{ totalEmployees }} total</span>
+          <span class="db-card-sub">{{ employees().length }} total</span>
         </div>
-        <div class="db-depts">
-          @for (d of departments; track d.name) {
-            <div class="db-dept-row">
-              <div class="db-dept-meta">
-                <span class="db-dept-dot" [style.background]="d.color"></span>
-                <span class="db-dept-name">{{ d.name }}</span>
-                <span class="db-dept-count">{{ d.count }}</span>
-              </div>
-              <div class="db-dept-bar">
-                <div class="db-dept-fill" [style.width.%]="deptBarWidth(d)" [style.background]="d.color"></div>
-              </div>
-            </div>
-          }
-        </div>
-      </div>
 
-      <!-- Pending leave requests -->
-      <div class="db-card">
-        <div class="db-card-header">
-          <h2 class="db-card-title">Pending Leave Requests</h2>
-          <span class="db-badge-count">{{ leaveRequests.length }}</span>
-        </div>
-        <div class="db-leave-table">
-          <div class="db-lt-head">
-            <span>Employee</span>
-            <span>Type</span>
-            <span>Dates</span>
-            <span>Days</span>
-            <span>Action</span>
+        @if (departmentsLoading()) {
+          <p class="db-card-state">Loading…</p>
+        } @else if (departmentsError()) {
+          <p class="db-card-state db-card-state--error">{{ departmentsError() }}</p>
+        } @else if (departments().length === 0) {
+          <p class="db-card-state">No departments yet.</p>
+        } @else {
+          <div class="db-depts">
+            @for (d of departments(); track d.departmentId) {
+              <div class="db-dept-row">
+                <div class="db-dept-meta">
+                  <span class="db-dept-dot" [style.background]="d.color ?? '#6366f1'"></span>
+                  <span class="db-dept-name">{{ d.name }}</span>
+                  <span class="db-dept-count">{{ d.memberCount }}</span>
+                </div>
+                <div class="db-dept-bar">
+                  <div class="db-dept-fill" [style.width.%]="deptBarWidth(d)" [style.background]="d.color ?? '#6366f1'"></div>
+                </div>
+              </div>
+            }
           </div>
-          @for (r of leaveRequests; track r.name) {
-            <div class="db-lt-row">
-              <div class="db-lt-emp">
-                <div class="db-emp-avatar">{{ r.initials }}</div>
-                <span class="db-emp-name">{{ r.name }}</span>
-              </div>
-              <span class="db-lt-type">{{ r.type }}</span>
-              <span class="db-lt-dates">{{ r.from }} – {{ r.to }}</span>
-              <span class="db-lt-days">{{ r.days }}d</span>
-              <div class="db-lt-actions">
-                <button class="db-action-btn approve" aria-label="Approve">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </button>
-                <button class="db-action-btn reject" aria-label="Reject">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-            </div>
-          }
-        </div>
+        }
       </div>
 
     </div>
@@ -182,7 +164,7 @@
         </div>
         <div class="db-quicklinks">
           @for (q of quickActions; track q.label) {
-            <button class="db-ql-btn" [style.--ql]="q.accent">
+            <button class="db-ql-btn" [style.--ql]="q.accent" (click)="onQuickAction(q.action)">
               <span class="db-ql-icon">{{ q.icon }}</span>
               <span class="db-ql-label">{{ q.label }}</span>
             </button>
@@ -193,24 +175,28 @@
       <!-- Recent Activity -->
       <div class="db-card">
         <div class="db-card-header">
-          <h2 class="db-card-title">Recent Activity</h2>
+          <h2 class="db-card-title">Recently Joined</h2>
         </div>
-        <ul class="db-activity">
-          @for (a of activities; track a.time + a.name) {
-            <li class="db-act-item">
-              <div class="db-act-avatar"
-                   [style.background]="activityColor[a.type] + '18'"
-                   [style.color]="activityColor[a.type]">
-                {{ a.initials }}
-              </div>
-              <div class="db-act-body">
-                <p class="db-act-name">{{ a.name }}</p>
-                <p class="db-act-detail">{{ a.detail }}</p>
-              </div>
-              <span class="db-act-time">{{ a.time }}</span>
-            </li>
-          }
-        </ul>
+        @if (employeesLoading()) {
+          <p class="db-card-state">Loading…</p>
+        } @else if (recentActivity().length === 0) {
+          <p class="db-card-state">No employees yet.</p>
+        } @else {
+          <ul class="db-activity">
+            @for (a of recentActivity(); track a.name + a.time) {
+              <li class="db-act-item">
+                <div class="db-act-avatar" style="background:#6366f118; color:#6366f1">
+                  {{ a.initials }}
+                </div>
+                <div class="db-act-body">
+                  <p class="db-act-name">{{ a.name }}</p>
+                  <p class="db-act-detail">{{ a.detail }}</p>
+                </div>
+                <span class="db-act-time">{{ a.time }}</span>
+              </li>
+            }
+          </ul>
+        }
       </div>
 
       <!-- Upcoming Holidays -->
@@ -218,37 +204,25 @@
         <div class="db-card-header">
           <h2 class="db-card-title">Upcoming Holidays</h2>
         </div>
-        <ul class="db-holidays">
-          @for (h of upcomingHolidays; track h.name) {
-            <li class="db-holiday-item">
-              <div class="db-hol-badge">{{ h.daysLeft }}d</div>
-              <div>
-                <p class="db-hol-name">{{ h.name }}</p>
-                <p class="db-hol-date">{{ h.date }}</p>
-              </div>
-            </li>
-          }
-        </ul>
-      </div>
-
-      <!-- Announcements -->
-      <div class="db-card">
-        <div class="db-card-header">
-          <h2 class="db-card-title">Announcements</h2>
-        </div>
-        <div class="db-announcements">
-          @for (a of announcements; track a.title) {
-            <div class="db-ann-item">
-              <div class="db-ann-top">
-                <span class="db-ann-tag" [style.color]="a.tagColor"
-                      [style.background]="a.tagColor + '18'">{{ a.tag }}</span>
-                <span class="db-ann-date">{{ a.date }}</span>
-              </div>
-              <p class="db-ann-title">{{ a.title }}</p>
-              <p class="db-ann-body">{{ a.body }}</p>
-            </div>
-          }
-        </div>
+        @if (holidaysGated()) {
+          <p class="db-card-state">Sign in to Organisation Settings to view the holiday calendar.</p>
+        } @else if (holidaysLoading()) {
+          <p class="db-card-state">Loading…</p>
+        } @else if (upcomingHolidays().length === 0) {
+          <p class="db-card-state">No holidays configured.</p>
+        } @else {
+          <ul class="db-holidays">
+            @for (h of upcomingHolidays(); track h.name + h.date) {
+              <li class="db-holiday-item">
+                <div class="db-hol-badge">{{ h.daysLeft }}d</div>
+                <div>
+                  <p class="db-hol-name">{{ h.name }}</p>
+                  <p class="db-hol-date">{{ h.date }}</p>
+                </div>
+              </li>
+            }
+          </ul>
+        }
       </div>
 
     </div>

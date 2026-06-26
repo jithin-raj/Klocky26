@@ -2,12 +2,13 @@ import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } 
 import { FormsModule } from '@angular/forms';
 import { PlatformAdminService } from '../../../../core/services/platform-admin.service';
 import { PlatformOrgListItem } from '../../../../core/models/platform-auth.model';
+import { UiSelectComponent } from '../../../../shared/components';
 
 @Component({
   selector: 'klocky-admin-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, UiSelectComponent],
   templateUrl: './admin-dashboard.component.html',
   styleUrl: './admin-dashboard.component.scss',
 })
@@ -20,6 +21,12 @@ export class AdminDashboardComponent implements OnInit {
 
   readonly search = signal('');
   readonly statusFilter = signal<'all' | 'active' | 'inactive'>('all');
+
+  readonly statusFilterOptions = [
+    { label: 'All statuses', value: 'all' },
+    { label: 'Active', value: 'active' },
+    { label: 'Deactivated', value: 'inactive' },
+  ];
 
   ngOnInit(): void {
     this.platformAdmin.listOrganisations().subscribe({
@@ -80,7 +87,7 @@ export class AdminDashboardComponent implements OnInit {
     this.search.set((event.target as HTMLInputElement).value);
   }
 
-  onStatusFilter(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value as any);
+  onStatusFilter(value: string): void {
+    this.statusFilter.set(value as any);
   }
 }
