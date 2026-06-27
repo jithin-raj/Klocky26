@@ -39,8 +39,9 @@ import { CommonModule } from '@angular/common';
   styles: [`
     :host { display: block; }
     .ufs {
-      border: 1.5px solid #eef1f5; border-radius: 14px;
+      border: 1px solid rgba(15,23,42,0.06); border-radius: 16px;
       background: #fff; padding: 20px 22px; margin-bottom: 18px;
+      box-shadow: var(--shadow-card, 0 1px 2px rgba(15,23,42,.04), 0 10px 28px -12px rgba(15,23,42,.10));
     }
     .ufs-head {
       display: flex; align-items: flex-start; justify-content: space-between;

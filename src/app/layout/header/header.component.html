@@ -78,13 +78,108 @@
       <div class="v-sep"></div>
     }
 
-    <!-- BELL -->
-    <button class="icon-btn" title="Notifications">
-      <icon-bell [size]="20" color="#6b7280"></icon-bell>
-      <span class="notif-dot"></span>
-    </button>
+    <!-- BELL + notification panel -->
+    <div class="menu-wrap" (click)="$event.stopPropagation()">
+      <button class="icon-btn" type="button" title="Notifications"
+              [class.active]="notifOpen()" (click)="toggleNotif($event)"
+              [attr.aria-expanded]="notifOpen()">
+        <ui-icon [name]="unreadCount() > 0 ? 'bell-dot' : 'bell'" [size]="20"></ui-icon>
+        @if (unreadCount() > 0) {
+          <span class="notif-badge">{{ unreadCount() > 9 ? '9+' : unreadCount() }}</span>
+        }
+      </button>
 
-    <!-- USER AVATAR placeholder -->
+      @if (notifOpen()) {
+        <div class="menu-panel notif-panel">
+          <div class="menu-head">
+            <span class="menu-title">Notifications</span>
+            @if (unreadCount() > 0) {
+              <button class="menu-link" type="button" (click)="markAllRead($event)">Mark all read</button>
+            }
+          </div>
+
+          <div class="notif-list">
+            @for (n of recentNotifs(); track n.id) {
+              <button class="notif-item" type="button" [class.unread]="!n.isRead" (click)="openNotification(n)">
+                <span class="notif-ico" [style.--nc]="notifColor(n.type)">
+                  <ui-icon [name]="notifIcon(n.type)" [size]="16"></ui-icon>
+                </span>
+                <span class="notif-body">
+                  <span class="notif-title">{{ n.title }}</span>
+                  <span class="notif-text">{{ n.body }}</span>
+                </span>
+                <span class="notif-time">{{ timeAgo(n.createdAt) }}</span>
+              </button>
+            } @empty {
+              <div class="notif-empty">
+                <ui-icon name="bell" [size]="22"></ui-icon>
+                <span>You're all caught up</span>
+              </div>
+            }
+          </div>
+
+          <button class="menu-foot" type="button" (click)="viewAllNotifications()">
+            View all notifications
+            <ui-icon name="arrow-right" [size]="15"></ui-icon>
+          </button>
+        </div>
+      }
+    </div>
+
+    <div class="v-sep"></div>
+
+    <!-- PROFILE menu -->
+    <div class="menu-wrap" (click)="$event.stopPropagation()">
+      <button class="avatar-btn" type="button" title="Account"
+              [class.active]="profileOpen()" (click)="toggleProfile($event)"
+              [attr.aria-expanded]="profileOpen()">
+        @if (avatarUrl()) {
+          <img class="avatar-img" [src]="avatarUrl()" [alt]="fullName()" />
+        } @else {
+          <span class="avatar-initials">{{ initials() }}</span>
+        }
+        <span class="avatar-status"></span>
+      </button>
+
+      @if (profileOpen()) {
+        <div class="menu-panel profile-panel">
+          <div class="profile-id">
+            <span class="profile-avatar">
+              @if (avatarUrl()) {
+                <img class="avatar-img" [src]="avatarUrl()" [alt]="fullName()" />
+              } @else {
+                {{ initials() }}
+              }
+            </span>
+            <span class="profile-id-text">
+              <span class="profile-name">{{ fullName() }}</span>
+              <span class="profile-email">{{ email() }}</span>
+              @if (roleLabel()) { <span class="profile-role">{{ roleLabel() }}</span> }
+            </span>
+          </div>
+
+          <div class="menu-sep"></div>
+
+          <button class="menu-row" type="button" (click)="goToProfile()">
+            <ui-icon name="user" [size]="17"></ui-icon>
+            <span>My Profile</span>
+          </button>
+          @if (showSettings()) {
+            <button class="menu-row" type="button" (click)="goToSettings()">
+              <ui-icon name="settings" [size]="17"></ui-icon>
+              <span>Settings</span>
+            </button>
+          }
+
+          <div class="menu-sep"></div>
+
+          <button class="menu-row menu-row--danger" type="button" (click)="logout()">
+            <ui-icon name="log-out" [size]="17"></ui-icon>
+            <span>Log out</span>
+          </button>
+        </div>
+      }
+    </div>
 
   </div>
 

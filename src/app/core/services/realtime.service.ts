@@ -17,7 +17,9 @@ import { AppStateService } from './app-state.service';
 //   this.realtime.disconnect();        // on logout
 // ─────────────────────────────────────────────────────────────────────────────
 
-const KNOWN_EVENTS = ['attendance.updated']; // extend as the backend adds new IRealtimeNotifier events
+// Events the hub can push today (per backend): user-targeted attendance +
+// notification events, plus org/admin broadcasts. Extend as new ones land.
+const KNOWN_EVENTS = ['attendance.updated', 'notification.created'];
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {

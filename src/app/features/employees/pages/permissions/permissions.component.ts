@@ -11,7 +11,7 @@ import {
   AccessLevel,
   PermissionFeature,
   PermissionEntry,
-  ENFORCED_PERMISSION_MODULES,
+  ENFORCED_PERMISSION_KEYS,
 } from '../../../../core/models/permission.model';
 import { OrgRole } from '../../../../core/models/org-role.model';
 import { Department } from '../../../../core/models/department.model';
@@ -64,15 +64,18 @@ export class PermissionsComponent implements OnInit {
     const showPayroll = this.canSeePayroll();
     const byModule = new Map<string, PermissionFeature[]>();
     for (const feature of this.catalog()) {
-      // Hide payroll.* rows unless the current user is admin/HR (spec §2).
-      if (!showPayroll && feature.key.startsWith('payroll.')) continue;
+      // Hide the payroll row unless the current user is admin/HR (spec §2).
+      // Keys are now single per-resource (e.g. 'payroll'), not dotted 'payroll.*'.
+      if (!showPayroll && feature.key === 'payroll') continue;
       const list = byModule.get(feature.module) ?? [];
       list.push(feature);
       byModule.set(feature.module, list);
     }
+    const enforcedKeys = ENFORCED_PERMISSION_KEYS as readonly string[];
     return Array.from(byModule.entries()).map(([module, features]) => ({
       module,
-      enforced: (ENFORCED_PERMISSION_MODULES as readonly string[]).includes(module),
+      // A module is "live" when every feature in it is enforced server-side.
+      enforced: features.every(f => enforcedKeys.includes(f.key)),
       features,
     }));
   });

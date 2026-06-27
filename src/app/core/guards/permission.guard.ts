@@ -15,7 +15,7 @@ import { AccessLevel } from '../models/permission.model';
 //
 //   {
 //     path: 'permissions',
-//     canActivate: [permissionGuard('permissions.manage', 3)],
+//     canActivate: [permissionGuard('permissions', 3)],
 //     loadComponent: ...
 //   }
 // ─────────────────────────────────────────────────────────────────────────────

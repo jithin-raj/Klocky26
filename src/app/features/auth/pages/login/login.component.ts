@@ -42,47 +42,81 @@ type LoginStep = 'org' | 'credentials' | 'loading';
     </klocky-auth-shell>
 
     <!-- Non-dismissible: the temp/old password was just exposed in plaintext, close the window now. -->
-    <ui-modal [open]="mustChangePassword()" [closeOnBackdrop]="false">
+    <ui-modal [open]="mustChangePassword()" [closeOnBackdrop]="false" size="sm">
       <div class="pwm">
-        <div class="pwm-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <div class="pwm-badge">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
         </div>
         <h2 class="pwm-title">Set a new password</h2>
         <p class="pwm-sub">For your security, choose a new password before continuing — your temporary one won't work again.</p>
 
-        <form [formGroup]="changePasswordForm" (ngSubmit)="submitChangePassword()">
+        <form class="pwm-form" [formGroup]="changePasswordForm" (ngSubmit)="submitChangePassword()">
           <div class="pwm-field">
             <label for="pwm-current">Current password</label>
-            <input id="pwm-current" class="pwm-input" [type]="showPw() ? 'text' : 'password'"
-                   formControlName="currentPassword" autocomplete="current-password" placeholder="Enter current password" />
+            <div class="pwm-input-wrap">
+              <input id="pwm-current" class="pwm-input" [type]="showPw() ? 'text' : 'password'"
+                     formControlName="currentPassword" autocomplete="current-password" placeholder="Temporary password" />
+              <button type="button" class="pwm-eye" (click)="showPw.set(!showPw())" [attr.aria-label]="showPw() ? 'Hide' : 'Show'">
+                @if (showPw()) {
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
           </div>
+
           <div class="pwm-field">
             <label for="pwm-new">New password</label>
-            <input id="pwm-new" class="pwm-input" [type]="showPw() ? 'text' : 'password'"
-                   formControlName="newPassword" autocomplete="new-password" placeholder="Min 8 characters" />
+            <div class="pwm-input-wrap">
+              <input id="pwm-new" class="pwm-input" [type]="showPw() ? 'text' : 'password'"
+                     formControlName="newPassword" autocomplete="new-password" placeholder="Min 8 characters" />
+              <button type="button" class="pwm-eye" (click)="showPw.set(!showPw())" [attr.aria-label]="showPw() ? 'Hide' : 'Show'">
+                @if (showPw()) {
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
+            @if (newPasswordValue()) {
+              <div class="pwm-strength" [attr.data-score]="pwScore()">
+                <div class="pwm-strength-track">
+                  @for (i of [1,2,3,4]; track i) {
+                    <span class="pwm-strength-seg" [class.on]="pwScore() >= i"></span>
+                  }
+                </div>
+                <span class="pwm-strength-label">{{ pwStrengthLabel() }}</span>
+              </div>
+            }
           </div>
+
           <div class="pwm-field">
             <label for="pwm-confirm">Confirm new password</label>
-            <input id="pwm-confirm" class="pwm-input" [type]="showPw() ? 'text' : 'password'"
-                   formControlName="confirmPassword" autocomplete="new-password" placeholder="Repeat new password" />
+            <div class="pwm-input-wrap">
+              <input id="pwm-confirm" class="pwm-input" [type]="showPw() ? 'text' : 'password'"
+                     formControlName="confirmPassword" autocomplete="new-password" placeholder="Repeat new password" />
+              <button type="button" class="pwm-eye" (click)="showPw.set(!showPw())" [attr.aria-label]="showPw() ? 'Hide' : 'Show'">
+                @if (showPw()) {
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                } @else {
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
           </div>
 
-          <label class="pwm-toggle-row">
-            <input type="checkbox" [checked]="showPw()" (change)="showPw.set(!showPw())" />
-            Show passwords
-          </label>
-
-          <div class="pwm-hints">
-            <span [class.ok]="newPasswordValue().length >= 8">✓ At least 8 characters</span>
-            <span [class.ok]="pwHasUpper()">✓ Uppercase letter</span>
-            <span [class.ok]="pwHasNumber()">✓ Number</span>
-            <span [class.ok]="pwHasSpecial()">✓ Special character</span>
+          <div class="pwm-reqs">
+            <span class="pwm-req" [class.ok]="newPasswordValue().length >= 8"><span class="pwm-req-tick"></span>8+ characters</span>
+            <span class="pwm-req" [class.ok]="pwHasUpper()"><span class="pwm-req-tick"></span>Uppercase</span>
+            <span class="pwm-req" [class.ok]="pwHasNumber()"><span class="pwm-req-tick"></span>Number</span>
+            <span class="pwm-req" [class.ok]="pwHasSpecial()"><span class="pwm-req-tick"></span>Special character</span>
           </div>
 
           @if (changePasswordError()) {
-            <p class="pwm-error">⚠ {{ changePasswordError() }}</p>
+            <p class="pwm-error">{{ changePasswordError() }}</p>
           }
 
           <button class="pwm-btn" type="submit" [disabled]="changingPassword()">
@@ -137,51 +171,88 @@ type LoginStep = 'org' | 'credentials' | 'loading';
       margin: 0;
     }
 
-    /* ── Password-change modal — classy, org-branded (uses --accent set by OrgThemeService) ── */
-    .pwm { padding: 28px 30px 30px; text-align: center; }
-    .pwm-icon {
-      width: 52px; height: 52px; margin: 0 auto 16px;
+    /* ── Password-change modal — modern, org-branded (uses --accent set by OrgThemeService) ── */
+    .pwm { padding: 30px 30px 30px; text-align: center; }
+    .pwm-badge {
+      width: 58px; height: 58px; margin: 0 auto 18px;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 50%;
-      background: color-mix(in srgb, var(--accent, #6366f1) 12%, #fff);
-      color: var(--accent, #6366f1);
+      border-radius: 18px; color: #fff;
+      background: linear-gradient(140deg, var(--accent, #0d9488), color-mix(in srgb, var(--accent, #0d9488) 62%, #000));
+      box-shadow: 0 10px 24px -6px color-mix(in srgb, var(--accent, #0d9488) 55%, transparent),
+                  inset 0 1px 0 rgba(255,255,255,.28);
     }
-    .pwm-title { font-size: 19px; font-weight: 800; color: #0f172a; margin: 0 0 6px; letter-spacing: -0.3px; }
-    .pwm-sub { font-size: 13.5px; color: #64748b; margin: 0 0 22px; line-height: 1.5; }
-    .pwm-field { display: flex; flex-direction: column; gap: 5px; text-align: left; margin-bottom: 14px; }
-    .pwm-field label { font-size: 12.5px; font-weight: 600; color: #374151; }
+    .pwm-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 7px; letter-spacing: -0.4px; }
+    .pwm-sub { font-size: 13.5px; color: #64748b; margin: 0 0 24px; line-height: 1.55; }
+
+    .pwm-form { display: flex; flex-direction: column; gap: 14px; }
+    .pwm-field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+    .pwm-field label { font-size: 12.5px; font-weight: 650; color: #334155; }
+    .pwm-input-wrap { position: relative; display: flex; align-items: center; }
     .pwm-input {
-      padding: 10px 13px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+      padding: 12px 42px 12px 14px; border: 1.5px solid #e6eaf1; border-radius: 12px;
       font-size: 14px; color: #1e293b; outline: none; width: 100%; box-sizing: border-box;
-      transition: border-color .15s, box-shadow .15s;
+      background: #fbfcfe;
+      transition: border-color .15s, box-shadow .15s, background .15s;
     }
+    .pwm-input::placeholder { color: #aab4c2; }
     .pwm-input:focus {
-      border-color: var(--accent, #6366f1);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #6366f1) 15%, transparent);
+      border-color: var(--accent, #0d9488); background: #fff;
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #0d9488) 14%, transparent);
     }
-    .pwm-toggle-row {
-      display: flex; align-items: center; gap: 8px; font-size: 13px; color: #374151;
-      cursor: pointer; margin-bottom: 14px; justify-content: flex-start;
+    .pwm-eye {
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border: none; background: none; cursor: pointer;
+      color: #94a3b8; border-radius: 8px; transition: color .12s, background .12s;
     }
-    .pwm-toggle-row input { accent-color: var(--accent, #6366f1); }
-    .pwm-hints {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
-      margin-bottom: 18px; text-align: left;
+    .pwm-eye:hover { color: var(--accent, #0d9488); background: #f1f5f9; }
+
+    /* Strength meter */
+    .pwm-strength { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+    .pwm-strength-track { display: flex; gap: 4px; flex: 1; }
+    .pwm-strength-seg { height: 4px; flex: 1; border-radius: 4px; background: #e6eaf1; transition: background .2s; }
+    .pwm-strength-label { font-size: 11.5px; font-weight: 700; color: #94a3b8; min-width: 52px; text-align: right; }
+    .pwm-strength[data-score="1"] .pwm-strength-seg.on { background: #ef4444; }
+    .pwm-strength[data-score="1"] .pwm-strength-label { color: #ef4444; }
+    .pwm-strength[data-score="2"] .pwm-strength-seg.on { background: #f59e0b; }
+    .pwm-strength[data-score="2"] .pwm-strength-label { color: #f59e0b; }
+    .pwm-strength[data-score="3"] .pwm-strength-seg.on { background: #eab308; }
+    .pwm-strength[data-score="3"] .pwm-strength-label { color: #ca8a04; }
+    .pwm-strength[data-score="4"] .pwm-strength-seg.on { background: #16a34a; }
+    .pwm-strength[data-score="4"] .pwm-strength-label { color: #16a34a; }
+
+    /* Requirement chips */
+    .pwm-reqs {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px;
+      margin: 4px 0 4px; text-align: left;
     }
-    .pwm-hints span { font-size: 12px; color: #94a3b8; }
-    .pwm-hints span.ok { color: #16a34a; font-weight: 600; }
+    .pwm-req { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #94a3b8; transition: color .15s; }
+    .pwm-req-tick {
+      width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+      border: 1.5px solid #cbd5e1; position: relative; transition: all .15s;
+    }
+    .pwm-req.ok { color: #16a34a; font-weight: 600; }
+    .pwm-req.ok .pwm-req-tick { background: #16a34a; border-color: #16a34a; }
+    .pwm-req.ok .pwm-req-tick::after {
+      content: ''; position: absolute; left: 4.5px; top: 2px; width: 4px; height: 7px;
+      border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg);
+    }
+
     .pwm-error {
-      background: #fee2e2; color: #dc2626; font-size: 13px; font-weight: 600;
-      padding: 10px 14px; border-radius: 9px; margin: 0 0 14px; text-align: left;
+      background: #fef2f2; color: #dc2626; font-size: 12.5px; font-weight: 600;
+      padding: 10px 14px; border-radius: 10px; margin: 0; text-align: left;
+      border: 1px solid #fecaca;
     }
     .pwm-btn {
-      width: 100%; padding: 12px; border: none; border-radius: 11px;
-      background: var(--accent, #6366f1); color: #fff; font-size: 14.5px; font-weight: 700;
-      cursor: pointer; transition: filter .15s, transform .1s;
+      width: 100%; padding: 13px; border: none; border-radius: 12px; margin-top: 4px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent, #0d9488) 92%, #fff), var(--accent, #0d9488));
+      color: #fff; font-size: 14.5px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 1px 1px rgba(15,23,42,.12), 0 12px 24px -8px color-mix(in srgb, var(--accent, #0d9488) 60%, transparent);
+      transition: filter .15s, transform .1s, box-shadow .15s;
     }
-    .pwm-btn:hover:not(:disabled) { filter: brightness(0.92); }
-    .pwm-btn:active:not(:disabled) { transform: scale(0.99); }
-    .pwm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .pwm-btn:hover:not(:disabled) { filter: brightness(1.04); }
+    .pwm-btn:active:not(:disabled) { transform: translateY(1px); }
+    .pwm-btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
   `],
 })
 export class LoginComponent implements OnInit {
@@ -221,6 +292,19 @@ export class LoginComponent implements OnInit {
   pwHasUpper()   { return /[A-Z]/.test(this.newPasswordValue()); }
   pwHasNumber()  { return /[0-9]/.test(this.newPasswordValue()); }
   pwHasSpecial() { return /[^A-Za-z0-9]/.test(this.newPasswordValue()); }
+
+  /** 0–4 satisfied rules — drives the strength meter. */
+  pwScore(): number {
+    let s = 0;
+    if (this.newPasswordValue().length >= 8) s++;
+    if (this.pwHasUpper())   s++;
+    if (this.pwHasNumber())  s++;
+    if (this.pwHasSpecial()) s++;
+    return s;
+  }
+  pwStrengthLabel(): string {
+    return ['Too weak', 'Weak', 'Fair', 'Good', 'Strong'][this.pwScore()];
+  }
 
   ngOnInit(): void {
     this.orgTheme.reset();

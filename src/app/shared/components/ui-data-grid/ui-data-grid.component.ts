@@ -210,9 +210,10 @@ let _gridSeq = 0;
 
     .dg-wrap {
       overflow-x: auto;
-      border-radius: 12px;
-      border: 1.5px solid #e5e7eb;
+      border-radius: 14px;
+      border: 1px solid rgba(15,23,42,0.07);
       background: #fff;
+      box-shadow: var(--shadow-card, 0 1px 2px rgba(15,23,42,.04), 0 10px 28px -12px rgba(15,23,42,.10));
     }
 
     .dg-table {
@@ -359,7 +360,7 @@ let _gridSeq = 0;
     .dg-empty-inner p { margin: 0; font-size: 14.5px; }
 
     /* ── Dark theme ───────────────────────────────────────────── */
-    :host(.dark) .dg-wrap { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.08); }
+    :host(.dark) .dg-wrap { background: rgba(255,255,255,.03); border-color: rgba(255,255,255,.08); box-shadow: none; }
     :host(.dark) .dg-th {
       background: rgba(255,255,255,.04); color: rgba(255,255,255,.5);
       border-bottom-color: rgba(255,255,255,.08);

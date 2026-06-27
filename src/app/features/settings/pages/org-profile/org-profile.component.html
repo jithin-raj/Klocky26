@@ -1111,19 +1111,55 @@
   }
 
   <!-- ── Org-admin step-up — required once per session before saving policy/details ── -->
-  <ui-modal [open]="stepUpOpen()" [closeOnBackdrop]="false" title="Confirm it's you">
-    <p class="op-section-desc">
-      Organisation settings need a quick re-confirmation of your admin password before saving.
-    </p>
-    <form [formGroup]="stepUpForm" (ngSubmit)="submitStepUp()">
-      <ui-input label="Password" type="password" [required]="true" formControlName="password" />
-      @if (stepUpError()) {
-        <p class="op-section-desc" style="color:#ef4444;">{{ stepUpError() }}</p>
-      }
-      <button type="submit" class="op-save-btn" style="margin-top: 12px; width: 100%;" [disabled]="stepUpSubmitting()">
-        {{ stepUpSubmitting() ? 'Verifying…' : 'Confirm' }}
+  <ui-modal [open]="stepUpOpen()" [closeOnBackdrop]="false" size="sm">
+    <div class="su">
+      <button class="su-x" type="button" (click)="cancelStepUp()" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
       </button>
-    </form>
+
+      <div class="su-badge">
+        <ui-icon name="shield" [size]="26"></ui-icon>
+      </div>
+      <h3 class="su-title">Confirm it's you</h3>
+      <p class="su-sub">For your security, re-enter your admin password to manage organisation settings.</p>
+
+      <form class="su-form" [formGroup]="stepUpForm" (ngSubmit)="submitStepUp()">
+        <div class="su-field" [class.invalid]="!!stepUpError()">
+          <span class="su-field-ico">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </span>
+          <input class="su-input" formControlName="password"
+                 [type]="stepUpShowPw() ? 'text' : 'password'"
+                 placeholder="Admin password" autocomplete="current-password" />
+          <button class="su-eye" type="button" tabindex="-1"
+                  (click)="stepUpShowPw.set(!stepUpShowPw())" aria-label="Show password">
+            @if (stepUpShowPw()) {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            } @else {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            }
+          </button>
+        </div>
+
+        @if (stepUpError()) {
+          <p class="su-error">{{ stepUpError() }}</p>
+        }
+
+        <button type="submit" class="su-confirm" [disabled]="stepUpSubmitting()">
+          @if (stepUpSubmitting()) { <span class="su-spin"></span> Verifying… }
+          @else { Confirm }
+        </button>
+        <button type="button" class="su-cancel" (click)="cancelStepUp()">Cancel</button>
+      </form>
+    </div>
   </ui-modal>
 
 </div>

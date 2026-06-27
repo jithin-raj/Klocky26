@@ -49,6 +49,10 @@ export { UiModalComponent, UiModalOutletComponent } from './ui-modal/ui-modal.co
 export { ModalService } from './ui-modal/modal.service';
 export type { ModalConfig } from './ui-modal/modal.service';
 
+// Icon
+export { UiIconComponent } from './ui-icon/ui-icon.component';
+export type { UiIconName } from './ui-icon/ui-icon.component';
+
 // Directives
 export { HasPermissionDirective } from '../directives/has-permission.directive';
 

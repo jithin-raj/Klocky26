@@ -19,8 +19,17 @@ export interface PermissionFeature {
   defaultLevel: AccessLevel;
 }
 
-/** Modules whose access level is wired server-side — everything else is UI-only ("coming soon"). */
-export const ENFORCED_PERMISSION_MODULES = ['Employees', 'Payroll'] as const;
+/**
+ * Resource keys whose access level is enforced server-side. The backend now
+ * uses one key per resource (level = access: 0 none · 1 view · 2 add/edit ·
+ * 3 full+delete); enforcement applies a per-action minimum to the same key.
+ * Anything outside this set is UI-only ("coming soon").
+ */
+export const ENFORCED_PERMISSION_KEYS = [
+  'employees', 'payroll', 'departments', 'offices', 'geofencing', 'org_settings',
+  'roles', 'permissions', 'attendance', 'shifts', 'leaves', 'performance',
+  'analytics', 'recruitment', 'notifications',
+] as const;
 
 // ── GET /api/permissions/me (§1) ──────────────────────────────────────────────
 

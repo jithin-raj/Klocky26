@@ -9,6 +9,7 @@ import { AppStateService } from '../../core/services/app-state.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { RealtimeService } from '../../core/services/realtime.service';
 import { AttendanceStateService } from '../../core/services/attendance-state.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { LoadingService } from '../../core/services/loading.service';
 
 @Component({
@@ -54,6 +55,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     private permissions: PermissionService,
     private realtime: RealtimeService,
     private attendance: AttendanceStateService,
+    private notifications: NotificationService,
     private loading: LoadingService,
   ) {}
 
@@ -67,6 +69,9 @@ export class ShellComponent implements OnInit, OnDestroy {
 
     // Source of truth for "am I currently clocked in" — SignalR keeps it live after this.
     this.attendance.refreshToday();
+
+    // Load the notification list for the bell; live ones arrive via SignalR.
+    this.notifications.load();
 
     // On a hard refresh / deep link the login flow's load() never ran — resolve
     // the permission map so the sidebar and *hasPermission gating are correct.

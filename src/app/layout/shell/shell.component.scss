@@ -44,13 +44,17 @@
 /* CONTENT BELOW HEADER */
 .content {
   flex: 1;
-  padding: 20px;
-  /* Elegant, org-themed canvas: a faint accent glow in the corners over a soft
-     neutral gradient — replaces the flat grey for a more premium feel. */
-  background:
-    radial-gradient(900px 360px at 100% -8%, color-mix(in srgb, var(--accent, #6366f1) 9%, transparent), transparent 62%),
-    radial-gradient(700px 320px at -5% 105%, color-mix(in srgb, var(--accent, #6366f1) 6%, transparent), transparent 60%),
-    linear-gradient(180deg, #f7f9fd 0%, var(--app-bg, #eef2f8) 100%);
+  padding: 22px 24px;
+  /* Teal-mist canvas: a soft, brand-tinted neutral (faint accent-grey) with a
+     gentle accent aurora in the corners. Calm, modern, brand-cohesive — adapts
+     to any org via --accent. */
+  --canvas-base: color-mix(in srgb, var(--accent, #0d9488) 6%, #eef1f4);
+  --canvas-top:  color-mix(in srgb, var(--accent, #0d9488) 3%, #fbfdfc);
+  background-color: var(--canvas-base);
+  background-image:
+    radial-gradient(1100px 480px at 100% -10%, color-mix(in srgb, var(--accent, #0d9488) 15%, transparent), transparent 56%),
+    radial-gradient(840px 440px at -8% 110%, color-mix(in srgb, var(--accent, #0d9488) 9%, transparent), transparent 58%),
+    linear-gradient(180deg, var(--canvas-top) 0%, var(--canvas-base) 58%);
   background-attachment: local, local, fixed;
   overflow-y: auto;
   overflow-x: hidden;

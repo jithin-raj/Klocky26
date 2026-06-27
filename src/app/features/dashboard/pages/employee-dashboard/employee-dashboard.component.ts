@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
+import { UiIconComponent, UiIconName } from '../../../../shared/components';
 
 interface LeaveBalance {
   type: string;
@@ -26,11 +27,19 @@ interface Activity {
   type: 'in' | 'out' | 'leave' | 'absent' | 'holiday';
 }
 
+interface QuickAction {
+  label: string;
+  sub: string;
+  icon: UiIconName;
+  route: string;
+  color: string;
+}
+
 @Component({
   selector: 'app-employee-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, UiIconComponent],
   templateUrl: './employee-dashboard.component.html',
   styleUrl: './employee-dashboard.component.scss',
 })
@@ -42,6 +51,42 @@ export class EmployeeDashboardComponent implements OnDestroy {
 
   // Org-scoped route prefix for routerLink bindings
   orgPrefix = computed(() => `/${this.appState.orgUrlName() || 'default'}`);
+
+  // ── Logged-in user ──────────────────────────────────────────────
+  firstName = computed(() => {
+    const u = this.appState.user();
+    return u?.firstName?.trim() || u?.fullName?.split(' ')[0] || 'there';
+  });
+  fullName = computed(() => this.appState.user()?.fullName?.trim() || 'My Profile');
+  userMeta = computed(() => {
+    const u = this.appState.user();
+    return u?.designationTitle || u?.departmentName || '';
+  });
+  avatarUrl = computed(() => this.appState.user()?.avatarUrl || '');
+  initials = computed(() => {
+    const u = this.appState.user();
+    const a = (u?.firstName?.[0] ?? '') + (u?.lastName?.[0] ?? '');
+    return (a || u?.fullName?.[0] || u?.email?.[0] || 'U').toUpperCase();
+  });
+
+  /** "Good morning / afternoon / evening" by local time. */
+  greeting = computed(() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  });
+
+  quickActions: QuickAction[] = [
+    { label: 'Apply Leave',     sub: '1 pending request', icon: 'calendar',        route: 'app/leaves',     color: '#f59e0b' },
+    { label: 'View Attendance', sub: '22 days present',   icon: 'clock',           route: 'app/attendance', color: '#0ea5e9' },
+    { label: 'My Tasks',        sub: '5 tasks pending',   icon: 'clipboard-check', route: 'app/tasks',      color: '#10b981' },
+    { label: 'My Profile',      sub: 'View details',      icon: 'user',            route: 'app/profile',    color: '#8b5cf6' },
+  ];
+
+  onQuickAction(a: QuickAction): void {
+    this.router.navigate([this.orgPrefix(), ...a.route.split('/')]);
+  }
 
   // Shorthand getters for template
   get isClockedIn()  { return this.attendanceSvc.isClockedIn; }

@@ -11,9 +11,12 @@ import { AccessLevel } from '../../core/models/permission.model';
 // access to a feature key. Re-evaluates reactively when the permission map
 // loads/refreshes (PermissionService signals).
 //
-//   <button *hasPermission="'employees.edit'; minLevel: 2">Edit</button>
-//   <a *hasPermission="'employees.delete'; minLevel: 3">Delete permanently</a>
-//   <section *hasPermission="'payroll.view'">…</section>   <!-- minLevel defaults to 1 -->
+// Keys are one-per-resource; the action is the `minLevel`:
+// 1 = view · 2 = add/edit · 3 = full (+delete).
+//
+//   <button *hasPermission="'employees'; minLevel: 2">Edit</button>
+//   <a *hasPermission="'employees'; minLevel: 3">Delete permanently</a>
+//   <section *hasPermission="'payroll'">…</section>   <!-- minLevel defaults to 1 -->
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Directive({

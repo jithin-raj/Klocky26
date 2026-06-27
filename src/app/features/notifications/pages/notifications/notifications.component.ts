@@ -1,103 +1,161 @@
 import {
-  Component, ChangeDetectionStrategy, signal, computed
+  Component, ChangeDetectionStrategy, signal, computed, inject, OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MOCK_EMPLOYEES } from '../../../employees/models/employee.model';
-import { UiSelectComponent } from '../../../../shared/components';
-
-interface Notification {
-  id: string;
-  title: string;
-  body: string;
-  channel: 'push' | 'email' | 'sms' | 'in_app';
-  audience: 'all' | 'department' | 'individual';
-  target: string;
-  sentAt: string;
-  status: 'sent' | 'scheduled' | 'draft';
-  read?: boolean;
-}
+import { UiSelectComponent, SelectOption, UiIconComponent, UiIconName } from '../../../../shared/components';
+import { NotificationService } from '../../../../core/services/notification.service';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { DepartmentService } from '../../../../core/services/department.service';
+import { EmployeeService } from '../../../../core/services/employee.service';
+import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { AppNotification, NotificationType, NotificationAudience } from '../../../../core/models/notification.model';
+import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
 
 @Component({
   selector: 'app-notifications',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent],
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.scss',
 })
-export class NotificationsComponent {
+export class NotificationsComponent implements OnInit {
 
-  activeTab = signal<'send' | 'history'>('send');
+  private readonly notifications = inject(NotificationService);
+  private readonly permissions   = inject(PermissionService);
+  private readonly departmentSvc = inject(DepartmentService);
+  private readonly employeeSvc   = inject(EmployeeService);
+  private readonly toast         = inject(ToastService);
 
-  // Compose form
-  title     = signal('');
-  body      = signal('');
-  channel   = signal<'push' | 'email' | 'sms' | 'in_app'>('in_app');
-  audience  = signal<'all' | 'department' | 'individual'>('all');
-  target    = signal('');
-  schedule  = signal('');
-  isSending = signal(false);
-  sent      = signal(false);
+  // Send needs add/edit on the notifications key (level 2); admins always pass.
+  readonly canSend = computed(() => this.permissions.can('notifications', 2));
+
+  activeTab = signal<'inbox' | 'send'>('inbox');
+
+  // ── Inbox ────────────────────────────────────────────────────────
+  readonly items = computed(() => this.notifications.items());
+  readonly unread = computed(() => this.notifications.unreadCount());
+  readonly loading = computed(() => this.notifications.loading());
+
+  open(n: AppNotification): void {
+    this.notifications.markRead(n.id);
+  }
+  markAllRead(): void {
+    this.notifications.markAllRead();
+  }
+
+  // ── Compose ──────────────────────────────────────────────────────
+  title    = signal('');
+  body     = signal('');
+  audience = signal<NotificationAudience>('all');
+  target   = signal('');           // departmentId or userId, depending on audience
+  type     = signal<NotificationType>('announcement');
+  sending  = signal(false);
   charCount = computed(() => this.body().length);
 
-  readonly channels   = [
-    { value: 'in_app', label: 'In-App', icon: '🔔' },
-    { value: 'push',   label: 'Push',   icon: '📱' },
-    { value: 'email',  label: 'Email',  icon: '✉️' },
-    { value: 'sms',    label: 'SMS',    icon: '💬' },
-  ] as const;
+  departments = signal<{ id: string; name: string }[]>([]);
+  employees   = signal<{ id: string; name: string }[]>([]);
 
-  readonly departments = ['Engineering','Design','HR','Sales','Marketing','Finance','Operations'];
-  readonly employees   = MOCK_EMPLOYEES;
-
-  readonly departmentOptions = [
+  readonly departmentOptions = computed<SelectOption[]>(() => [
     { label: 'Select department', value: '' },
-    ...this.departments.map(d => ({ label: d, value: d })),
-  ];
-  readonly employeeOptions = [
+    ...this.departments().map(d => ({ label: d.name, value: d.id })),
+  ]);
+  readonly employeeOptions = computed<SelectOption[]>(() => [
     { label: 'Select employee', value: '' },
-    ...this.employees.map(e => ({ label: `${e.fullName} – ${e.department}`, value: e.id })),
-  ];
-
-  private _history = signal<Notification[]>([
-    { id:'1', title:'Holiday Notice',           body:'Office closed on May 1st – Labour Day.',          channel:'in_app', audience:'all',        target:'All Employees',  sentAt:'2026-04-28 10:00', status:'sent' },
-    { id:'2', title:'Q1 Performance Review',    body:'Please complete your self-assessment by Apr 30.', channel:'email',  audience:'all',        target:'All Employees',  sentAt:'2026-04-25 09:30', status:'sent' },
-    { id:'3', title:'Fire Drill – Engineering', body:'Fire drill scheduled for 3 PM today.',            channel:'push',   audience:'department', target:'Engineering',    sentAt:'2026-04-22 14:00', status:'sent' },
-    { id:'4', title:'Welcome Aboard Sakshi',    body:'Please welcome our newest team member Sakshi.',   channel:'in_app', audience:'all',        target:'All Employees',  sentAt:'2026-04-15 11:00', status:'sent' },
-    { id:'5', title:'System Maintenance',       body:'App will be offline 1–3 AM on May 5th.',          channel:'email',  audience:'all',        target:'All Employees',  sentAt:'2026-05-03 09:00', status:'scheduled' },
+    ...this.employees().map(e => ({ label: e.name, value: e.id })),
   ]);
 
-  readonly history = this._history.asReadonly();
+  readonly typeOptions: SelectOption[] = [
+    { label: 'Announcement', value: 'announcement' },
+    { label: 'Information',  value: 'info' },
+    { label: 'Success',      value: 'success' },
+    { label: 'Warning',      value: 'warning' },
+  ];
 
-  sendNotification() {
-    if (!this.title().trim() || !this.body().trim()) return;
-    this.isSending.set(true);
-    setTimeout(() => {
-      this._history.update(h => [{
-        id: Date.now().toString(),
-        title: this.title(),
-        body: this.body(),
-        channel: this.channel(),
-        audience: this.audience(),
-        target: this.audience() === 'all' ? 'All Employees'
-              : this.audience() === 'department' ? this.target()
-              : this.employees.find(e => e.id === this.target())?.fullName ?? 'Unknown',
-        sentAt: new Date().toLocaleString(),
-        status: this.schedule() ? 'scheduled' : 'sent',
-      }, ...h]);
-      this.isSending.set(false);
-      this.sent.set(true);
-      this.title.set(''); this.body.set(''); this.schedule.set('');
-      setTimeout(() => this.sent.set(false), 2500);
-    }, 900);
+  readonly audienceChoices: { value: NotificationAudience; label: string }[] = [
+    { value: 'all',        label: 'All Employees' },
+    { value: 'department', label: 'By Department' },
+    { value: 'individual', label: 'Specific Employee' },
+  ];
+
+  ngOnInit(): void {
+    // Make sure the inbox is populated even on a direct deep-link to this page.
+    if (!this.notifications.loaded()) this.notifications.load();
+    if (this.canSend()) this.loadTargets();
   }
 
-  channelIcon(c: string) {
-    return this.channels.find(ch => ch.value === c)?.icon ?? '🔔';
+  setAudience(a: NotificationAudience): void {
+    this.audience.set(a);
+    this.target.set('');
   }
 
-  channelLabel(c: string) {
-    return this.channels.find(ch => ch.value === c)?.label ?? c;
+  private loadTargets(): void {
+    this.departmentSvc.getAll().subscribe({
+      next: (res) => this.departments.set((res.data ?? []).map((d: any) => ({ id: d.departmentId ?? d.id, name: d.name }))),
+      error: () => { /* soft — leave empty */ },
+    });
+    this.employeeSvc.getAll().subscribe({
+      next: (res) => this.employees.set((res.data ?? []).map((e: any) => ({ id: e.employeeId ?? e.id, name: `${e.fullName} — ${e.email}` }))),
+      error: () => { /* soft — leave empty */ },
+    });
+  }
+
+  get canSubmit(): boolean {
+    if (!this.title().trim() || !this.body().trim() || this.sending()) return false;
+    if (this.audience() === 'department' && !this.target()) return false;
+    if (this.audience() === 'individual' && !this.target()) return false;
+    return true;
+  }
+
+  clearForm(): void {
+    this.title.set(''); this.body.set(''); this.target.set('');
+    this.audience.set('all'); this.type.set('announcement');
+  }
+
+  send(): void {
+    if (!this.canSubmit) return;
+    this.sending.set(true);
+    const audience = this.audience();
+    this.notifications.send({
+      title: this.title().trim(),
+      body: this.body().trim(),
+      audience,
+      departmentId: audience === 'department' ? this.target() : null,
+      userId: audience === 'individual' ? this.target() : null,
+      type: this.type(),
+    }).subscribe({
+      next: () => {
+        this.sending.set(false);
+        this.toast.success('Notification sent', 'Your notification is on its way.');
+        this.clearForm();
+        this.activeTab.set('inbox');
+      },
+      error: (err) => {
+        this.sending.set(false);
+        this.toast.error('Could not send', extractApiErrorMessage(err, 'The notification could not be sent.'));
+      },
+    });
+  }
+
+  // ── Display helpers ──────────────────────────────────────────────
+  icon(type: NotificationType): UiIconName {
+    const map: Record<NotificationType, UiIconName> = {
+      info: 'bell', success: 'check-circle', warning: 'bell-dot',
+      attendance: 'clock', leave: 'calendar', announcement: 'megaphone', system: 'settings',
+    };
+    return map[type] ?? 'bell';
+  }
+  color(type: NotificationType): string {
+    const map: Record<NotificationType, string> = {
+      info: '#6366f1', success: '#10b981', warning: '#f59e0b',
+      attendance: '#0ea5e9', leave: '#8b5cf6', announcement: '#ec4899', system: '#64748b',
+    };
+    return map[type] ?? '#6366f1';
+  }
+  when(iso: string): string {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 }

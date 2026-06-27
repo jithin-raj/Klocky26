@@ -291,21 +291,50 @@
 }
 
 .db-ql-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 16px 10px; border-radius: 14px;
-  border: 1px solid #dde3ed; background: #f8fafd;
-  cursor: pointer; font-family: inherit;
-  transition: background .15s, border-color .15s, transform .12s;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 13px; border-radius: 13px;
+  border: 1px solid #e7ebf1; background: #fff;
+  cursor: pointer; font-family: inherit; text-align: left; width: 100%;
+  transition: background .15s, border-color .15s, transform .12s, box-shadow .15s;
   &:hover {
-    background: color-mix(in srgb, var(--ql) 6%, #fff);
-    border-color: color-mix(in srgb, var(--ql) 28%, #dde3ed);
+    border-color: color-mix(in srgb, var(--ql) 35%, #e7ebf1);
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--ql) 16%, transparent);
     transform: translateY(-2px);
+    .db-ql-arrow { opacity: 1; transform: translateX(0); color: var(--ql); }
   }
   &:active { transform: translateY(0); }
 }
 
-.db-ql-icon  { font-size: 22px; line-height: 1; }
-.db-ql-label { font-size: 11.5px; font-weight: 600; color: #374151; text-align: center; }
+.db-ql-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(140deg, var(--ql, #6366f1), color-mix(in srgb, var(--ql, #6366f1) 64%, #000));
+  box-shadow: 0 5px 14px -4px color-mix(in srgb, var(--ql, #6366f1) 55%, transparent),
+              inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform .15s;
+}
+.db-ql-btn:hover .db-ql-icon { transform: scale(1.06) rotate(-3deg); }
+.db-ql-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.db-ql-label { font-size: 13px; font-weight: 650; color: #1e293b; }
+.db-ql-sub   { font-size: 11.5px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.db-ql-arrow {
+  flex-shrink: 0; color: #cbd5e1; opacity: 0; transform: translateX(-4px);
+  transition: opacity .15s, transform .15s, color .15s;
+}
+
+/* ─── Workforce composition ─────────────────────────────── */
+.db-comp-bar {
+  display: flex; height: 12px; border-radius: 8px; overflow: hidden;
+  background: #f1f5f9; margin-bottom: 14px;
+}
+.db-comp-seg { height: 100%; transition: width .4s ease; }
+.db-comp-seg:not(:last-child) { box-shadow: 1px 0 0 #fff; }
+.db-comp-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+.db-comp-item { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; }
+.db-comp-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.db-comp-label { color: #475569; }
+.db-comp-count { color: #0f172a; font-weight: 700; }
 
 /* ─── Activity feed ─────────────────────────────────────── */
 .db-activity { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -515,10 +544,13 @@
 }
 
 .db-stat-icon {
-  width: 46px; height: 46px; border-radius: 12px;
-  background: var(--stat-bg); color: var(--stat-color);
-  font-size: 20px; display: flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 14px;
+  background: linear-gradient(140deg, var(--sc, #6366f1), color-mix(in srgb, var(--sc, #6366f1) 64%, #000));
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; font-style: normal;
+  box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--sc, #6366f1) 55%, transparent),
+              inset 0 1px 0 rgba(255,255,255,.25);
 }
 
 .db-stat-value { font-size: 28px; font-weight: 780; color: #0f172a; margin: 0; line-height: 1; }
@@ -540,9 +572,14 @@
 
 /* ─── Generic card ───────────────────────────────────────── */
 .db-card {
-  background: #fff; border: 1.5px solid #f1f5f9;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0)) ,
+    #fff;
+  border: 1px solid rgba(15,23,42,0.06);
   border-radius: 18px; padding: 24px;
-  box-shadow: 0 2px 8px rgba(15,23,42,.04);
+  box-shadow: var(--shadow-card, 0 1px 2px rgba(15,23,42,.04), 0 10px 28px -12px rgba(15,23,42,.12));
+  transition: box-shadow .2s, transform .2s;
+  &:hover { box-shadow: var(--shadow-hover, 0 18px 40px -14px rgba(15,23,42,.18)); }
 }
 
 .db-card-header { margin-bottom: 18px; }
@@ -620,27 +657,6 @@
 
 .db-act-label { font-size: 13.5px; font-weight: 600; color: #1e293b; margin: 0 0 2px; }
 .db-act-time  { font-size: 12px; color: #94a3b8; margin: 0; }
-
-/* ─── Quick links ────────────────────────────────────────── */
-.db-quicklinks {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-}
-
-.db-ql-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding: 16px 10px; border-radius: 14px; border: 1.5px solid #f1f5f9;
-  background: #fafbfd; cursor: pointer; font-family: inherit;
-  transition: background .15s, border-color .15s, transform .12s;
-  &:hover {
-    background: color-mix(in srgb, var(--ql-color) 6%, #fff);
-    border-color: color-mix(in srgb, var(--ql-color) 30%, #e5e7eb);
-    transform: translateY(-2px);
-  }
-  &:active { transform: translateY(0); }
-}
-
-.db-ql-icon  { font-size: 24px; line-height: 1; }
-.db-ql-label { font-size: 12px; font-weight: 600; color: #374151; text-align: center; }
 
 /* ─── Leave balance ──────────────────────────────────────── */
 .db-leaves { display: flex; flex-direction: column; gap: 16px; }

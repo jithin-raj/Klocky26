@@ -5,6 +5,7 @@ import { filter } from 'rxjs';
 import {
   IconKlockyLogoComponent,
 } from '../../shared/icons';
+import { UiIconComponent } from '../../shared/components';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
 import { UserAuthService } from '../../core/services/user-auth.service';
@@ -43,6 +44,7 @@ const ADMIN_ONLY_ROLES: UserRole[] = ['admin', 'super_admin'];
     RouterLink,
     RouterLinkActive,
     IconKlockyLogoComponent,
+    UiIconComponent,
   ],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
@@ -62,6 +64,11 @@ export class SidebarComponent {
   // Org-scoped route prefix
   orgPrefix = computed(() => `/${this.appState.orgUrlName() || 'default'}`);
 
+  // Dashboard promoted to a standalone top-level link (no "Main" group).
+  // '/app/dashboard' redirects admins/managers/hr to the admin dashboard
+  // automatically (dashboardRedirectGuard) — one link covers both.
+  dashboardLink = computed(() => `${this.orgPrefix()}/app/dashboard`);
+
   // State for expanded sections - initially empty, sections expand on click or when they have active routes
   expandedSections = signal<Set<string>>(new Set());
 
@@ -79,28 +86,16 @@ export class SidebarComponent {
   // this only hides the link, it isn't the security boundary; the guard is.
   private baseMenuSections: MenuSection[] = [
     {
-      id: 'main',
-      label: 'Main',
-      icon: 'home',
-      expanded: false,
-      items: [
-        // '/app/dashboard' redirects admins/managers/hr to the admin dashboard
-        // automatically (dashboardRedirectGuard) — one link covers both.
-        { label: 'Dashboard', route: 'app/dashboard', icon: 'home', exact: true },
-        { label: 'My Profile', route: 'app/profile', icon: 'profile' },
-      ]
-    },
-    {
       id: 'people',
       label: 'People & Organization',
-      icon: 'employees',
+      icon: 'users',
       expanded: false,
       items: [
-        { label: 'Employees', route: 'app/employees', icon: 'employees', exact: true, roles: MANAGEMENT_ROLES, permKey: 'employees.view', permLevel: 1 },
+        { label: 'Employees', route: 'app/employees', icon: 'users', exact: true, roles: MANAGEMENT_ROLES, permKey: 'employees', permLevel: 1 },
         { label: 'Org Tree', route: 'app/employees/tree', icon: 'tree', roles: MANAGEMENT_ROLES },
-        { label: 'Departments & Roles', route: 'app/employees/org-structure', icon: 'employees', roles: ADMIN_ONLY_ROLES },
+        { label: 'Departments & Roles', route: 'app/employees/org-structure', icon: 'sitemap', roles: ADMIN_ONLY_ROLES },
         // Single canonical Roles & Permissions editor (the old duplicate "Permissions" link was removed).
-        { label: 'Roles & Permissions', route: 'app/roles', icon: 'roles', roles: ADMIN_ONLY_ROLES, permKey: 'permissions.manage', permLevel: 3 },
+        { label: 'Roles & Permissions', route: 'app/roles', icon: 'shield', roles: ADMIN_ONLY_ROLES, permKey: 'permissions', permLevel: 3 },
       ]
     },
     {
@@ -110,33 +105,33 @@ export class SidebarComponent {
       expanded: false,
       items: [
         { label: 'Attendance', route: 'app/attendance', icon: 'clock', exact: true },
-        { label: 'Shifts & Roster', route: 'app/shifts', icon: 'shifts', roles: MANAGEMENT_ROLES },
-        { label: 'Geo-fencing', route: 'app/attendance/geofence', icon: 'geo', roles: ADMIN_ONLY_ROLES },
-        { label: 'Face Scan', route: 'app/attendance/face-scan', icon: 'face' },
-        { label: 'Face Roster', route: 'app/attendance/face-roster', icon: 'roster', roles: MANAGEMENT_ROLES },
+        { label: 'Shifts & Roster', route: 'app/shifts', icon: 'repeat', roles: MANAGEMENT_ROLES },
+        { label: 'Geo-fencing', route: 'app/attendance/geofence', icon: 'map-pin', roles: ADMIN_ONLY_ROLES },
+        { label: 'Face Scan', route: 'app/attendance/face-scan', icon: 'scan' },
+        { label: 'Face Roster', route: 'app/attendance/face-roster', icon: 'users', roles: MANAGEMENT_ROLES },
       ]
     },
     {
       id: 'timeoff',
       label: 'Time Off & Work',
-      icon: 'leaves',
+      icon: 'calendar',
       expanded: false,
       items: [
-        { label: 'Leave Approvals', route: 'app/leaves', icon: 'leaves', roles: MANAGEMENT_ROLES },
-        { label: 'Tasks', route: 'app/tasks', icon: 'tasks' },
-        { label: 'Notifications', route: 'app/notifications', icon: 'notifications' },
+        { label: 'Leave Approvals', route: 'app/leaves', icon: 'calendar', roles: MANAGEMENT_ROLES },
+        { label: 'Tasks', route: 'app/tasks', icon: 'clipboard-check' },
+        { label: 'Notifications', route: 'app/notifications', icon: 'bell' },
       ]
     },
     {
       id: 'performance',
       label: 'Performance & HR',
-      icon: 'performance',
+      icon: 'bar-chart',
       expanded: false,
       items: [
-        { label: 'Performance', route: 'app/performance', icon: 'performance' },
-        { label: 'HR Analytics', route: 'app/analytics', icon: 'analytics', roles: ADMIN_HR_ROLES },
-        { label: 'Engagement', route: 'app/engagement', icon: 'engagement', roles: MANAGEMENT_ROLES },
-        { label: 'Recruitment', route: 'app/recruitment', icon: 'recruitment', roles: ADMIN_HR_ROLES },
+        { label: 'Performance', route: 'app/performance', icon: 'bar-chart' },
+        { label: 'HR Analytics', route: 'app/analytics', icon: 'pie-chart', roles: ADMIN_HR_ROLES },
+        { label: 'Engagement', route: 'app/engagement', icon: 'sparkles', roles: MANAGEMENT_ROLES },
+        { label: 'Recruitment', route: 'app/recruitment', icon: 'user-plus', roles: ADMIN_HR_ROLES },
       ]
     },
   ];

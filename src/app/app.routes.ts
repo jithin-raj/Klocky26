@@ -74,7 +74,7 @@ export const routes: Routes = [
         path: 'employees',
         // Hidden from level-0 users (spec §1) — deep links 404; the sidebar
         // hides the link too. Admin/super_admin always pass (spec §11).
-        canActivate: [permissionGuard('employees.view', 1)],
+        canActivate: [permissionGuard('employees', 1)],
         loadChildren: () =>
           import('./features/employees/employees.routes').then((m) => m.routes),
       },

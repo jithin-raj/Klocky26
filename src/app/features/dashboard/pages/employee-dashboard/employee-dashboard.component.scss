@@ -4,17 +4,23 @@
 .ed-page {
   padding: 0;
   max-width: 100%;
-  background: linear-gradient(135deg, #f8fafc 0%, #e5e7eb 100%);
-  min-height: 100vh;
+  background: transparent;
   overflow-x: hidden;
 }
 
 /* ── Hero Section ────────────────────────────────────────── */
 .ed-hero {
-  background: linear-gradient(135deg, var(--accent, #6366f1) 0%, #8b5cf6 100%);
-  padding: 32px 32px 40px;
-  margin-bottom: 32px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background:
+    radial-gradient(120% 140% at 85% -20%, rgba(255, 255, 255, .22) 0%, transparent 55%),
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--accent, #0d9488) 88%, #000) 0%,
+      var(--accent, #0d9488) 48%,
+      color-mix(in srgb, var(--accent, #0d9488) 72%, #4f46e5) 100%);
+  padding: 30px 32px 34px;
+  margin: 20px 32px 24px;
+  border-radius: 22px;
+  box-shadow: 0 20px 44px -22px color-mix(in srgb, var(--accent, #0d9488) 70%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, .18);
   position: relative;
   overflow: hidden;
 
@@ -25,7 +31,7 @@
     right: -10%;
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
     border-radius: 50%;
     pointer-events: none;
   }
@@ -63,6 +69,14 @@
   justify-content: center;
   flex-shrink: 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.ed-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .ed-greeting-text {
@@ -163,6 +177,25 @@
   }
 }
 
+.ed-clockin-ico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  color: #fff;
+  background: linear-gradient(140deg, var(--accent, #0d9488), color-mix(in srgb, var(--accent, #0d9488) 60%, #000));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25);
+  transition: background .25s, color .25s;
+
+  .ed-btn-clockin-hero:hover & {
+    background: rgba(255, 255, 255, .2);
+    color: #fff;
+  }
+}
+
 .ed-btn-content {
   display: flex;
   flex-direction: column;
@@ -253,6 +286,9 @@
 }
 
 .ed-geo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   color: var(--btn-text, rgba(255, 255, 255, 0.9));
   opacity: 0.85;
@@ -296,86 +332,53 @@
 .ed-action-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
+  gap: 14px;
+  padding: 16px 18px;
   border-radius: 16px;
-  border: 2px solid transparent;
+  border: 1px solid var(--border, #e6eaf1);
   background: #fff;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s, border-color 0.22s;
   text-align: left;
   font-family: inherit;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-card, 0 2px 8px rgba(15, 23, 42, 0.06));
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
-  }
-
-  &.ed-action-leaves {
-    border-color: #f59e0b;
-    &:hover { background: linear-gradient(135deg, #fff5f5 0%, #fef3c7 100%); }
-  }
-
-  &.ed-action-attendance {
-    border-color: #6366f1;
-    &:hover { background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 100%); }
-  }
-
-  &.ed-action-tasks {
-    border-color: #10b981;
-    &:hover { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); }
-  }
-
-  &.ed-action-profile {
-    border-color: #8b5cf6;
-    &:hover { background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); }
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--qa, #6366f1) 40%, var(--border, #e6eaf1));
+    box-shadow: 0 14px 30px -14px color-mix(in srgb, var(--qa, #6366f1) 55%, transparent);
   }
 }
 
 .ed-action-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.25s;
-
-  .ed-action-leaves & {
-    background: linear-gradient(135deg, #fef3c7, #fde68a);
-    color: #d97706;
-  }
-
-  .ed-action-attendance & {
-    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-    color: #2563eb;
-  }
-
-  .ed-action-tasks & {
-    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-    color: #059669;
-  }
-
-  .ed-action-profile & {
-    background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
-    color: #7c3aed;
-  }
+  color: #fff;
+  background: linear-gradient(140deg, var(--qa, #6366f1), color-mix(in srgb, var(--qa, #6366f1) 62%, #000));
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--qa, #6366f1) 60%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, .28);
+  transition: transform 0.22s;
 
   .ed-action-card:hover & {
-    transform: scale(1.1);
+    transform: scale(1.08) rotate(-3deg);
   }
 }
 
 .ed-action-text {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
 }
 
 .ed-action-title {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 700;
   color: #0f172a;
 }
@@ -384,6 +387,20 @@
   font-size: 12px;
   color: #64748b;
   font-weight: 500;
+}
+
+.ed-action-arrow {
+  display: flex;
+  align-items: center;
+  color: color-mix(in srgb, var(--qa, #6366f1) 70%, #94a3b8);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.22s, transform 0.22s;
+
+  .ed-action-card:hover & {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* ── Main content ────────────────────────────────────────── */
@@ -442,6 +459,7 @@
   background: none;
   border: none;
   cursor: pointer;
+  text-decoration: none;
   transition: all 0.2s;
 
   &:hover {
@@ -521,8 +539,9 @@
 
 @media (max-width: 768px) {
   .ed-hero {
-    padding: 20px 16px 28px;
-    margin-bottom: 24px;
+    padding: 22px 18px 26px;
+    margin: 14px 14px 20px;
+    border-radius: 18px;
   }
 
   .ed-hero-content {
@@ -644,8 +663,9 @@
   }
 
   .ed-hero {
-    padding: 16px 12px 24px;
-    margin-bottom: 20px;
+    padding: 18px 14px 22px;
+    margin: 12px 10px 16px;
+    border-radius: 16px;
   }
 
   .ed-greeting-left {

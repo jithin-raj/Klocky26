@@ -6,15 +6,21 @@
   --danger: #ef4444;
 
   /* ── App shell backgrounds ─────────────────────────────────────── */
-  --app-bg:   #edf1f7;   /* elegant cool-neutral for inner app pages   */
-  --bg:       #edf1f7;   /* legacy alias — used by body                */
+  --app-bg:   #eef1f8;   /* premium cool-neutral for inner app pages   */
+  --bg:       #eef1f8;   /* legacy alias — used by body                */
   --card-bg:  #ffffff;   /* card surfaces                              */
 
-  --text: #111827;
-  --text-light: #6b7280;
+  --text: #0f172a;
+  --text-light: #64748b;
   --text-lighter: #94a3b8;
-  --border: #e2e8f0;
+  --border: #e6eaf1;
   --border-light: #f1f5f9;
+
+  /* ── Elevation — soft, layered, modern ─────────────────────────── */
+  --shadow-sm:    0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-card:  0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 28px -12px rgba(15, 23, 42, 0.12);
+  --shadow-hover: 0 2px 4px rgba(15, 23, 42, 0.05), 0 18px 40px -14px rgba(15, 23, 42, 0.18);
+  --hairline:     1px solid rgba(15, 23, 42, 0.06);
 
   /* Spacing */
   --space-sm: 8px;

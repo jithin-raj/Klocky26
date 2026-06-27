@@ -6,7 +6,10 @@ import {
   inject,
   OnInit,
 } from '@angular/core';
+import { Location } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { UiIconComponent } from '../../../../shared/components';
 import { UiInputComponent } from '../../../../shared/components/ui-input/ui-input.component';
 import { UiTextareaComponent } from '../../../../shared/components/ui-textarea/ui-textarea.component';
 import { UiSelectComponent } from '../../../../shared/components/ui-select/ui-select.component';
@@ -114,7 +117,7 @@ const HOLIDAY_TYPE_LABELS: Record<Holiday['type'], string> = {
 @Component({
   selector: 'org-profile',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, UiInputComponent, UiTextareaComponent, UiSelectComponent, UiToggleComponent, UiModalComponent],
+  imports: [FormsModule, ReactiveFormsModule, UiIconComponent, UiInputComponent, UiTextareaComponent, UiSelectComponent, UiToggleComponent, UiModalComponent],
   templateUrl: './org-profile.component.html',
   styleUrl: './org-profile.component.scss',
 })
@@ -126,6 +129,8 @@ export class OrgProfileComponent implements OnInit {
   private readonly appState        = inject(AppStateService);
   private readonly orgAuth         = inject(OrgAuthService);
   private readonly fb              = inject(FormBuilder);
+  private readonly location        = inject(Location);
+  private readonly router          = inject(Router);
 
   // ── Org-admin step-up (POST /api/org/auth/login) ────────────────────
   // GET/PUT /api/tenant/settings (§1.5c) both require the org-admin token,
@@ -134,10 +139,31 @@ export class OrgProfileComponent implements OnInit {
   readonly stepUpOpen       = signal(false);
   readonly stepUpSubmitting = signal(false);
   readonly stepUpError      = signal('');
+  readonly stepUpShowPw     = signal(false);
   readonly stepUpForm: FormGroup = this.fb.group({
     password: ['', Validators.required],
   });
   private _pendingAction: 'load' | 'save' = 'load';
+
+  /**
+   * Dismiss the step-up dialog. When it gated the initial *load* (nothing is on
+   * screen yet) cancelling returns to the previous screen — falling back to the
+   * dashboard when there's no in-app history (e.g. a deep link). When it gated a
+   * *save*, the page is already populated, so just close it and keep the edits.
+   */
+  cancelStepUp(): void {
+    const wasLoadGate = this._pendingAction === 'load';
+    this.stepUpOpen.set(false);
+    this.stepUpError.set('');
+    this.stepUpShowPw.set(false);
+    this.stepUpForm.reset();
+    if (!wasLoadGate) return;
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigate([`/${this.appState.orgUrlName() || 'default'}`, 'app', 'dashboard']);
+    }
+  }
 
   submitStepUp(): void {
     this.stepUpForm.markAllAsTouched();

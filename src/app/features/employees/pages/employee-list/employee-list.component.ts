@@ -219,7 +219,7 @@ export class EmployeeListComponent implements OnInit {
    */
   readonly rowActions: GridAction<EmployeeRow>[] = [
     { label: 'View Profile', click: (r) => this.viewEmployee(r.id) },
-    { label: 'Edit', visible: () => this.permissions.can('employees.edit', 2), click: (r) => this.editEmployee(r.id) },
+    { label: 'Edit', visible: () => this.permissions.can('employees', 2), click: (r) => this.editEmployee(r.id) },
   ];
 
   readonly filtered = computed(() => {

@@ -33,7 +33,7 @@ export const routes: Routes = [
   {
     path: 'permissions',
     // Permission matrix editor needs full access (spec §2 — PUT needs level 3).
-    canActivate: [permissionGuard('permissions.manage', 3)],
+    canActivate: [permissionGuard('permissions', 3)],
     loadComponent: () =>
       import('./pages/permissions/permissions.component').then(
         m => m.PermissionsComponent
