@@ -11,6 +11,7 @@ import { AppStateService } from '../../../../core/services/app-state.service';
 import { UserAuthService } from '../../../../core/services/user-auth.service';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { RealtimeService } from '../../../../core/services/realtime.service';
+import { MobileBridgeService } from '../../../../core/services/mobile-bridge.service';
 import { UiModalComponent } from '../../../../shared/components/ui-modal/ui-modal.component';
 
 type LoginStep = 'org' | 'credentials' | 'loading';
@@ -272,6 +273,7 @@ export class LoginComponent implements OnInit {
   private userAuth  = inject(UserAuthService);
   private permissions = inject(PermissionService);
   private realtime  = inject(RealtimeService);
+  private bridge    = inject(MobileBridgeService);
   private fb        = inject(FormBuilder);
 
   private orgUrlNameForNav = '';
@@ -328,6 +330,8 @@ export class LoginComponent implements OnInit {
           this.orgTheme.apply(this.orgTheme.generateThemeFromColor(res.data.accentColor));
         }
         this.realtime.connect();
+        // Mobile: tell the RN shell we're in and register the device for push.
+        this.bridge.onLogin();
 
         if (res.data.mustChangePassword) {
           this.mustChangePassword.set(true);

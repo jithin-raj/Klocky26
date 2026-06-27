@@ -10,6 +10,7 @@ import { routes }              from './app.routes';
 import { AppStateService }     from './core/services/app-state.service';
 import { apiUrlInterceptor }   from './core/interceptors/api-url.interceptor';
 import { authInterceptor }     from './core/interceptors/auth.interceptor';
+import { mobileHeaderInterceptor } from './core/interceptors/mobile-header.interceptor';
 import { errorInterceptor }    from './core/interceptors/error.interceptor';
 import { loadingInterceptor }  from './core/interceptors/loading.interceptor';
 
@@ -30,15 +31,17 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
 
     // HTTP client with interceptors applied in execution order:
-    //  1. loadingInterceptor  — starts/stops global loading indicator
-    //  2. apiUrlInterceptor   — prepends base URL to relative paths
-    //  3. authInterceptor     — attaches Bearer token + X-Org-Slug header
-    //  4. errorInterceptor    — handles 401 refresh, 403 redirect, 5xx messages
+    //  1. loadingInterceptor      — starts/stops global loading indicator
+    //  2. apiUrlInterceptor       — prepends base URL to relative paths
+    //  3. authInterceptor         — attaches Bearer token + X-Org-Slug header
+    //  4. mobileHeaderInterceptor — adds `isMobile: true` in the RN WebView shell
+    //  5. errorInterceptor        — handles 401 refresh, 403 redirect, 5xx messages
     provideHttpClient(
       withInterceptors([
         loadingInterceptor,
         apiUrlInterceptor,
         authInterceptor,
+        mobileHeaderInterceptor,
         errorInterceptor,
       ]),
     ),

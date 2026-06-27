@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, tap }    from 'rxjs';
+import { Observable, tap, firstValueFrom } from 'rxjs';
 import { ApiService }         from './api.service';
 import { AppStateService }    from './app-state.service';
 import { PermissionService }  from './permission.service';
 import { RealtimeService }    from './realtime.service';
+import { MobileBridgeService } from './mobile-bridge.service';
 import { ApiResponse }        from '../models/api-response.model';
 import {
   LoginRequest,
@@ -34,6 +35,7 @@ export class UserAuthService {
   private readonly appState = inject(AppStateService);
   private readonly permissions = inject(PermissionService);
   private readonly realtime = inject(RealtimeService);
+  private readonly bridge   = inject(MobileBridgeService);
 
   /** POST /api/users/auth/login — persists tokens, does NOT fetch /me (call getMe() after). */
   login(payload: LoginRequest): Observable<ApiResponse<LoginResponse>> {
@@ -73,10 +75,19 @@ export class UserAuthService {
   }
 
   /**
-   * Client-side only — the API defines no logout endpoint. Clears the
-   * encrypted local session and disconnects the realtime hub.
+   * Best-effort server logout (revokes the refresh token + clears the device's
+   * FCM token), then clears the encrypted local session and disconnects the
+   * realtime hub. The server call runs while the token is still present; any
+   * failure (offline, endpoint absent) is ignored so logout always completes.
    */
   async logout(): Promise<void> {
+    try {
+      await firstValueFrom(this.api.post('/users/auth/logout', {
+        deviceId: this.bridge.deviceId ?? null,
+        refreshToken: this.appState.refreshToken() ?? null,
+      }));
+    } catch { /* best-effort — proceed with local teardown regardless */ }
+
     this.realtime.disconnect();
     this.permissions.clear();
     await this.appState.clearState();
