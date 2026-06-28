@@ -1,11 +1,12 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { RealtimeService } from './realtime.service';
 import { ApiResponse, Paged } from '../models/api-response.model';
 import {
   AppNotification,
   SendNotificationRequest,
+  SendNotificationResult,
   normalizeNotification,
 } from '../models/notification.model';
 
@@ -33,8 +34,8 @@ export class NotificationService {
 
   /** Number of unread notifications — drives the bell badge. */
   readonly unreadCount = computed(() => this._items().filter(n => !n.isRead).length);
-  /** Most recent few, for the header dropdown. */
-  readonly recent = computed(() => this._items().slice(0, 6));
+  /** Most recent few unread, for the header dropdown — read ones live on the full page. */
+  readonly recent = computed(() => this._items().filter(n => !n.isRead).slice(0, 6));
 
   constructor() {
     // Live pushes — a new notification for this user lands in real time.
@@ -45,12 +46,12 @@ export class NotificationService {
     });
   }
 
-  /** GET /api/notifications — load the current user's notifications. */
+  /** GET /api/notifications — the caller's notifications (mine + org-wide). */
   load(): void {
     if (this.loading()) return;
     this.loading.set(true);
     this.api
-      .get<ApiResponse<Paged<unknown> | unknown[]>>('/notifications', { page: 1, pageSize: 50 })
+      .get<ApiResponse<Paged<unknown> | unknown[]>>('/notifications', { unreadOnly: false })
       .subscribe({
         next: (res) => {
           this._items.set(this.extractList(res?.data).map(normalizeNotification));
@@ -65,33 +66,39 @@ export class NotificationService {
       });
   }
 
-  /** Mark one as read (optimistic). */
+  /** PATCH /api/notifications/{id}/read — mark one read (optimistic, 204). */
   markRead(id: string): void {
     if (!this._items().some(n => n.id === id && !n.isRead)) return;
     this._items.update(list => list.map(n => n.id === id ? { ...n, isRead: true } : n));
-    this.api.post(`/notifications/${id}/read`, {}).subscribe({ error: () => { /* soft */ } });
+    this.api.patch(`/notifications/${id}/read`, {}).subscribe({ error: () => { /* soft */ } });
   }
 
-  /** Mark every notification as read (optimistic). */
+  /** PATCH /api/notifications/read-all — mark all read (optimistic, 204). */
   markAllRead(): void {
     if (this.unreadCount() === 0) return;
     this._items.update(list => list.map(n => n.isRead ? n : { ...n, isRead: true }));
-    this.api.post('/notifications/read-all', {}).subscribe({ error: () => { /* soft */ } });
+    this.api.patch('/notifications/read-all', {}).subscribe({ error: () => { /* soft */ } });
   }
 
-  /** POST /api/notifications — compose & send (admin/HR). */
-  send(req: SendNotificationRequest): Observable<ApiResponse<unknown>> {
-    return this.api.post<ApiResponse<unknown>>('/notifications', req).pipe(
-      // If the API echoes the created record back to the sender, fold it in.
-      tap((res) => {
-        const data = (res as ApiResponse<unknown>)?.data;
-        if (data && typeof data === 'object') {
-          const n = normalizeNotification(data);
-          this._items.update(list =>
-            list.some(x => x.id === n.id) ? list : [n, ...list]);
-        }
-      }),
-    );
+  /**
+   * POST /api/notifications/send — compose & send (HR/manager/admin).
+   * Targets specific employees / departments / roles, or the whole org via
+   * `toAll`. Recipients are unioned + de-duplicated server-side. The sender
+   * receives any resulting notification back over SignalR, so we don't add it
+   * optimistically. Returns { sentTo, orgWide }.
+   */
+  send(req: SendNotificationRequest): Observable<SendNotificationResult> {
+    const toAll = req.toAll === true;
+    return this.api.post<SendNotificationResult>('/notifications/send', {
+      title: req.title,
+      body: req.body,
+      toAll,
+      // When broadcasting, leave the targeted arrays off entirely.
+      userIds:       toAll ? undefined : nonEmpty(req.userIds),
+      departmentIds: toAll ? undefined : nonEmpty(req.departmentIds),
+      orgRoleIds:    toAll ? undefined : nonEmpty(req.orgRoleIds),
+      userId:        toAll ? undefined : (req.userId ?? undefined),
+    });
   }
 
   clear(): void {
@@ -105,4 +112,9 @@ export class NotificationService {
     if (data && Array.isArray((data as Paged<unknown>).data)) return (data as Paged<unknown>).data;
     return [];
   }
+}
+
+/** Drop empty arrays so we don't send `[]` the API would have to ignore. */
+function nonEmpty(arr?: string[]): string[] | undefined {
+  return arr && arr.length ? arr : undefined;
 }

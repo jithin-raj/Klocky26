@@ -5,7 +5,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  /* viewport-fit=cover lets content sit under the status bar / notch — pad the
+     header by the safe-area insets so the buttons stay tappable below it.
+     env() falls back to 0px on devices without insets (desktop, no-notch). */
+  box-sizing: border-box;
+  height: calc(64px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) max(24px, env(safe-area-inset-right, 0px)) 0 max(24px, env(safe-area-inset-left, 0px));
   border-bottom: 1px solid #dde3ed;
   box-shadow: 0 1px 0 #dde3ed;
   gap: 16px;
@@ -652,5 +657,9 @@
 
 @media (max-width: 480px) {
   .search-wrap { display: none; }
-  .header { padding: 0 14px; }
+  /* tighten horizontal padding but keep the safe-area top/side insets */
+  .header {
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
 }

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" fill="none" role="img" aria-label="Klocky">
+  <defs>
+    <!-- Brand green, top-light to bottom-deep -->
+    <linearGradient id="kGrad" x1="150" y1="0" x2="150" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#72d97a"/>
+      <stop offset="48%"  stop-color="#20943a"/>
+      <stop offset="100%" stop-color="#0b3d15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── The "K" ─────────────────────────────────────────────── -->
+  <!-- Upper arm + lower arm meet the spine at the vertex (96,150) -->
+  <line x1="78" y1="150" x2="258" y2="44"  stroke="url(#kGrad)" stroke-width="56" stroke-linecap="round"/>
+  <line x1="78" y1="150" x2="258" y2="256" stroke="url(#kGrad)" stroke-width="56" stroke-linecap="round"/>
+  <!-- Spine -->
+  <rect x="34" y="40" width="56" height="220" rx="20" fill="url(#kGrad)"/>
+
+  <!-- ── Clock hands (centered on the K's vertex) ─────────────── -->
+  <!-- Second hand (thin amber) — runs down the lower arm, with a short tail -->
+  <line x1="96" y1="150" x2="158" y2="212" stroke="#ffc857" stroke-width="4" stroke-linecap="round"/>
+  <line x1="96" y1="150" x2="80"  y2="134" stroke="#ffc857" stroke-width="4" stroke-linecap="round"/>
+  <!-- Minute hand (white) — runs up the upper arm -->
+  <line x1="96" y1="150" x2="162" y2="90"  stroke="#ffffff" stroke-width="8"  stroke-linecap="round"/>
+  <!-- Hour hand (white, shorter & thicker) — runs up the spine -->
+  <line x1="96" y1="150" x2="62"  y2="108" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- Hub -->
+  <circle cx="96" cy="150" r="11" fill="#ffffff"/>
+  <circle cx="96" cy="150" r="4"  fill="#ffc857"/>
+</svg>

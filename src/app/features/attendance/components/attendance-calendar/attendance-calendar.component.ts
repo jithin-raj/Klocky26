@@ -8,8 +8,18 @@ import {
   ElementRef,
   AfterViewInit,
   OnDestroy,
+  inject,
+  effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
+import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
+import { RealtimeService } from '../../../../core/services/realtime.service';
+import {
+  AttendanceRecordResponse,
+  CalendarDayStatus,
+  CalendarResponse,
+} from '../../../../core/models/attendance.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -20,6 +30,7 @@ export type AttendanceStatus =
   | 'half'
   | 'absent'
   | 'leave'
+  | 'comp_off'
   | 'holiday'
   | 'off';
 
@@ -60,43 +71,19 @@ export const STATUS_META: Record<
   AttendanceStatus,
   { label: string; color: string; bg: string }
 > = {
-  present: { label: 'Present',  color: '#16a34a', bg: '#dcfce7' },
-  half:    { label: 'Half Day', color: '#d97706', bg: '#fef3c7' },
-  absent:  { label: 'Absent',   color: '#dc2626', bg: '#fee2e2' },
-  leave:   { label: 'Leave',    color: '#ea580c', bg: '#ffedd5' },
-  holiday: { label: 'Holiday',  color: '#7c3aed', bg: '#ede9fe' },
-  off:     { label: 'Weekend',  color: '#f87171', bg: '#fff5f5' },
+  present:  { label: 'Present',  color: '#16a34a', bg: '#dcfce7' },
+  half:     { label: 'Half Day', color: '#d97706', bg: '#fef3c7' },
+  absent:   { label: 'Absent',   color: '#dc2626', bg: '#fee2e2' },
+  leave:    { label: 'Leave',    color: '#ea580c', bg: '#ffedd5' },
+  comp_off: { label: 'Comp Off', color: '#0891b2', bg: '#cffafe' },
+  holiday:  { label: 'Holiday',  color: '#7c3aed', bg: '#ede9fe' },
+  off:      { label: 'Weekend',  color: '#f87171', bg: '#fff5f5' },
 };
 
 const REQUIRED_HOURS: Partial<Record<AttendanceStatus, number>> = {
   present: 8,
   half: 4,
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Demo data — replace with API data via @Input() records
-// ─────────────────────────────────────────────────────────────────────────────
-
-const DEMO: AttendanceRecord[] = [
-  { date: '2026-04-01', status: 'present', hours: 13.5 },
-  { date: '2026-04-02', status: 'present', hours: 8.0 },
-  { date: '2026-04-03', status: 'present', hours: 7.2 },
-  { date: '2026-04-06', status: 'present', hours: 8.5 },
-  { date: '2026-04-07', status: 'half',    hours: 4.0 },
-  { date: '2026-04-08', status: 'leave' },
-  { date: '2026-04-09', status: 'present', hours: 9.0 },
-  { date: '2026-04-10', status: 'present', hours: 6.5 },
-  { date: '2026-04-13', status: 'present', hours: 8.0 },
-  { date: '2026-04-14', status: 'absent' },
-  { date: '2026-04-15', status: 'holiday', holidayName: 'Vishu' },
-  { date: '2026-04-16', status: 'present', hours: 8.0 },
-  { date: '2026-04-17', status: 'present', hours: 8.5 },
-  { date: '2026-04-20', status: 'present', hours: 9.0 },
-  { date: '2026-04-21', status: 'present', hours: 7.5 },
-  { date: '2026-04-22', status: 'present', hours: 8.0 },
-  { date: '2026-04-23', status: 'present', hours: 8.3 },
-  { date: '2026-04-24', status: 'present', hours: 8.0 },
-];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
@@ -114,7 +101,26 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   // ── Inputs ────────────────────────────────────────────────────────────────
 
-  constructor(private _el: ElementRef<HTMLElement>) {}
+  private readonly attendance = inject(AttendanceStateService);
+  private readonly realtime   = inject(RealtimeService);
+  private _liveSub?: Subscription;
+
+  /** Optional — admin/HR view another employee's calendar; omit for the caller's own. */
+  @Input() set userId(val: string | undefined) { this._userId.set(val); }
+  private readonly _userId = signal<string | undefined>(undefined);
+
+  constructor(private _el: ElementRef<HTMLElement>) {
+    // Fetch whenever the visible month or the targeted user changes.
+    effect(() => {
+      const { year, month } = this._ym();
+      const userId = this._userId();
+      this._fetchMonth(year, month, userId);
+    });
+
+    // Live: patch the open month when an attendance record for it changes.
+    this._liveSub = this.realtime.on<AttendanceRecordResponse>('attendance.updated')
+      .subscribe((rec) => this._applyLiveRecord(rec));
+  }
 
   ngAfterViewInit(): void {
     // Register as non-passive so preventDefault() can block the page scroll
@@ -123,6 +129,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._el.nativeElement.removeEventListener('wheel', this._wheelHandler);
+    this._liveSub?.unsubscribe();
   }
 
   private readonly _wheelHandler = (e: WheelEvent): void => this.onWheel(e);
@@ -133,6 +140,85 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   @Input() set holidays(val: { date: string; name: string }[]) {
     this._holidayMap.set(val.reduce((a, h) => ({ ...a, [h.date]: h.name }), {}));
+  }
+
+  // ── Data loading ───────────────────────────────────────────────────────────
+
+  readonly loadingMonth = signal(false);
+
+  private _fetchMonth(year: number, month: number, userId?: string): void {
+    this.loadingMonth.set(true);
+    // month is 0-based internally; the API expects 1-based.
+    this.attendance.getCalendar(year, month + 1, userId).subscribe({
+      next: (res) => { this._ingest(res?.data); this.loadingMonth.set(false); },
+      error: () => { this.loadingMonth.set(false); /* soft — keep whatever is shown */ },
+    });
+  }
+
+  /** Fold a CalendarResponse into the record/holiday maps the grid renders from. */
+  private _ingest(res: CalendarResponse | null | undefined): void {
+    if (!res) return;
+    const records: Record<string, AttendanceRecord> = {};
+    const holidays: Record<string, string> = {};
+    for (const day of res.days) {
+      const status = this._mapStatus(day.status);
+      // Weekends + future days carry no record — the grid derives those itself.
+      if (status) {
+        const hours = day.hoursWorked ?? day.presentHours ?? undefined;
+        records[day.date] = {
+          date: day.date,
+          status,
+          ...(hours != null ? { hours } : {}),
+          ...(day.holidayName ? { holidayName: day.holidayName } : {}),
+        };
+      }
+      if (day.holidayName) holidays[day.date] = day.holidayName;
+    }
+    this._recordMap.set(records);
+    this._holidayMap.set(holidays);
+  }
+
+  /** Patch a single day in-place when SignalR reports it (current open month only). */
+  private _applyLiveRecord(rec: AttendanceRecordResponse | null): void {
+    if (!rec?.date) return;
+    // Ignore pushes for a different user than the one being viewed.
+    if (this._userId() && rec.userId !== this._userId()) return;
+    const { year, month } = this._ym();
+    const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+    if (!rec.date.startsWith(prefix)) return;
+
+    const status = this._mapStatus(rec.status as CalendarDayStatus);
+    if (!status) return;
+    const hours = rec.hoursWorked ?? undefined;
+    this._recordMap.update(map => {
+      const holidayName = map[rec.date]?.holidayName;
+      return {
+        ...map,
+        [rec.date]: {
+          date: rec.date,
+          status,
+          ...(hours != null ? { hours } : {}),
+          ...(holidayName ? { holidayName } : {}),
+        },
+      };
+    });
+  }
+
+  /** API status string → the grid's internal status (null = let the grid derive it: weekend/future). */
+  private _mapStatus(s: CalendarDayStatus | AttendanceStatus): AttendanceStatus | null {
+    switch (s) {
+      case 'present':  return 'present';
+      case 'half_day':
+      case 'half':     return 'half';
+      case 'absent':   return 'absent';
+      case 'leave':    return 'leave';
+      case 'comp_off': return 'comp_off';
+      case 'holiday':  return 'holiday';
+      case 'weekend':
+      case 'off':      return null;   // grid marks Sat/Sun as off itself
+      case 'upcoming': return null;   // future day — no record
+      default:         return null;
+    }
   }
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -147,7 +233,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   readonly today = new Date();
   readonly viewDate = signal(new Date(this.today.getFullYear(), this.today.getMonth(), 1));
-  readonly _recordMap = signal<Record<string, AttendanceRecord>>(this._toMap(DEMO));
+  readonly _recordMap = signal<Record<string, AttendanceRecord>>({});
   readonly _holidayMap = signal<Record<string, string>>({});
 
   /** Currently "active" cell on mobile (tap to magnify) */
@@ -204,7 +290,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     const { year, month } = this._ym();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const map = this._recordMap();
-    const counts: Record<string, number> = { present: 0, half: 0, absent: 0, leave: 0, holiday: 0 };
+    const counts: Record<string, number> = { present: 0, half: 0, absent: 0, leave: 0, comp_off: 0, holiday: 0 };
 
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d);
@@ -215,7 +301,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       if (s && s !== 'off' && counts[s] !== undefined) counts[s]++;
     }
 
-    return (['present', 'half', 'absent', 'leave', 'holiday'] as AttendanceStatus[]).map(k => ({
+    return (['present', 'half', 'absent', 'leave', 'comp_off', 'holiday'] as AttendanceStatus[]).map(k => ({
       key: k,
       count: counts[k],
       label: STATUS_META[k].label,
@@ -375,6 +461,11 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   requiredHours(cell: DayCell): number {
     return cell.status ? (REQUIRED_HOURS[cell.status] ?? 8) : 8;
+  }
+
+  /** Human label for a status (handles multi-word statuses like comp_off). */
+  statusLabel(status: AttendanceStatus): string {
+    return STATUS_META[status]?.label ?? status;
   }
 
   /**

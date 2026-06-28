@@ -6,6 +6,7 @@ import { ApiResponse } from '../models/api-response.model';
 import { ClockInMethod } from '../models/user.model';
 import {
   AttendanceRecordResponse,
+  CalendarResponse,
   ClockInRequest,
   ClockOutRequest,
   LocationPingResponse,
@@ -161,6 +162,17 @@ export class AttendanceStateService implements OnDestroy {
   /** GET /api/attendance/team — 403s for regular employees; only call this when the user is a manager/HR/admin. */
   getTeamStatus(): Observable<ApiResponse<TeamAttendanceItem[]>> {
     return this.api.get<ApiResponse<TeamAttendanceItem[]>>('/attendance/team');
+  }
+
+  // ── Monthly calendar ────────────────────────────────────────────────────
+
+  /**
+   * GET /api/attendance/calendar?year=&month=&userId= — one month of per-day
+   * statuses + summary + legend. Omit `userId` for the caller's own calendar;
+   * pass it (admin/HR/super-admin) to view another employee's.
+   */
+  getCalendar(year: number, month: number, userId?: string): Observable<ApiResponse<CalendarResponse>> {
+    return this.api.get<ApiResponse<CalendarResponse>>('/attendance/calendar', { year, month, userId });
   }
 
   // ── Toast ────────────────────────────────────────────────────────────

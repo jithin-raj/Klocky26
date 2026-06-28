@@ -3,11 +3,12 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { UiSelectComponent, SelectOption, UiIconComponent, UiIconName } from '../../../../shared/components';
+import { UiMultiSelectComponent, MultiSelectOption, UiIconComponent, UiIconName } from '../../../../shared/components';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { PermissionService } from '../../../../core/services/permission.service';
-import { DepartmentService } from '../../../../core/services/department.service';
 import { EmployeeService } from '../../../../core/services/employee.service';
+import { DepartmentService } from '../../../../core/services/department.service';
+import { OrgRoleService } from '../../../../core/services/org-role.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { AppNotification, NotificationType, NotificationAudience } from '../../../../core/models/notification.model';
 import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
@@ -16,7 +17,7 @@ import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
   selector: 'app-notifications',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent],
+  imports: [CommonModule, FormsModule, UiMultiSelectComponent, UiIconComponent],
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.scss',
 })
@@ -24,8 +25,9 @@ export class NotificationsComponent implements OnInit {
 
   private readonly notifications = inject(NotificationService);
   private readonly permissions   = inject(PermissionService);
-  private readonly departmentSvc = inject(DepartmentService);
   private readonly employeeSvc   = inject(EmployeeService);
+  private readonly departmentSvc = inject(DepartmentService);
+  private readonly orgRoleSvc    = inject(OrgRoleService);
   private readonly toast         = inject(ToastService);
 
   // Send needs add/edit on the notifications key (level 2); admins always pass.
@@ -49,34 +51,31 @@ export class NotificationsComponent implements OnInit {
   title    = signal('');
   body     = signal('');
   audience = signal<NotificationAudience>('all');
-  target   = signal('');           // departmentId or userId, depending on audience
-  type     = signal<NotificationType>('announcement');
   sending  = signal(false);
   charCount = computed(() => this.body().length);
 
-  departments = signal<{ id: string; name: string }[]>([]);
+  // Selected ids per targeting mode (multi-select).
+  selectedEmployees   = signal<string[]>([]);
+  selectedDepartments = signal<string[]>([]);
+  selectedRoles       = signal<string[]>([]);
+
+  // Picker source lists.
   employees   = signal<{ id: string; name: string }[]>([]);
+  departments = signal<{ id: string; name: string }[]>([]);
+  roles       = signal<{ id: string; name: string }[]>([]);
 
-  readonly departmentOptions = computed<SelectOption[]>(() => [
-    { label: 'Select department', value: '' },
-    ...this.departments().map(d => ({ label: d.name, value: d.id })),
-  ]);
-  readonly employeeOptions = computed<SelectOption[]>(() => [
-    { label: 'Select employee', value: '' },
-    ...this.employees().map(e => ({ label: e.name, value: e.id })),
-  ]);
-
-  readonly typeOptions: SelectOption[] = [
-    { label: 'Announcement', value: 'announcement' },
-    { label: 'Information',  value: 'info' },
-    { label: 'Success',      value: 'success' },
-    { label: 'Warning',      value: 'warning' },
-  ];
+  readonly employeeOptions = computed<MultiSelectOption[]>(() =>
+    this.employees().map(e => ({ label: e.name, value: e.id })));
+  readonly departmentOptions = computed<MultiSelectOption[]>(() =>
+    this.departments().map(d => ({ label: d.name, value: d.id })));
+  readonly roleOptions = computed<MultiSelectOption[]>(() =>
+    this.roles().map(r => ({ label: r.name, value: r.id })));
 
   readonly audienceChoices: { value: NotificationAudience; label: string }[] = [
-    { value: 'all',        label: 'All Employees' },
+    { value: 'all',        label: 'Everyone (org-wide)' },
+    { value: 'employees',  label: 'Specific Employees' },
     { value: 'department', label: 'By Department' },
-    { value: 'individual', label: 'Specific Employee' },
+    { value: 'role',       label: 'By Role' },
   ];
 
   ngOnInit(): void {
@@ -87,47 +86,62 @@ export class NotificationsComponent implements OnInit {
 
   setAudience(a: NotificationAudience): void {
     this.audience.set(a);
-    this.target.set('');
+    // Reset selections so a hidden picker never carries over into the payload.
+    this.selectedEmployees.set([]);
+    this.selectedDepartments.set([]);
+    this.selectedRoles.set([]);
   }
 
   private loadTargets(): void {
-    this.departmentSvc.getAll().subscribe({
-      next: (res) => this.departments.set((res.data ?? []).map((d: any) => ({ id: d.departmentId ?? d.id, name: d.name }))),
-      error: () => { /* soft — leave empty */ },
-    });
     this.employeeSvc.getAll().subscribe({
       next: (res) => this.employees.set((res.data ?? []).map((e: any) => ({ id: e.employeeId ?? e.id, name: `${e.fullName} — ${e.email}` }))),
+      error: () => { /* soft — leave empty */ },
+    });
+    this.departmentSvc.getAll().subscribe({
+      next: (res) => this.departments.set((res.data ?? []).map(d => ({ id: d.departmentId, name: d.name }))),
+      error: () => { /* soft — leave empty */ },
+    });
+    this.orgRoleSvc.getAll().subscribe({
+      next: (res) => this.roles.set((res.data ?? []).map(r => ({ id: r.id, name: r.name }))),
       error: () => { /* soft — leave empty */ },
     });
   }
 
   get canSubmit(): boolean {
     if (!this.title().trim() || !this.body().trim() || this.sending()) return false;
-    if (this.audience() === 'department' && !this.target()) return false;
-    if (this.audience() === 'individual' && !this.target()) return false;
-    return true;
+    switch (this.audience()) {
+      case 'employees':  return this.selectedEmployees().length > 0;
+      case 'department': return this.selectedDepartments().length > 0;
+      case 'role':       return this.selectedRoles().length > 0;
+      case 'all':        return true;
+    }
   }
 
   clearForm(): void {
-    this.title.set(''); this.body.set(''); this.target.set('');
-    this.audience.set('all'); this.type.set('announcement');
+    this.title.set(''); this.body.set('');
+    this.setAudience('all');
   }
 
   send(): void {
     if (!this.canSubmit) return;
+    const mode = this.audience();
     this.sending.set(true);
-    const audience = this.audience();
     this.notifications.send({
       title: this.title().trim(),
       body: this.body().trim(),
-      audience,
-      departmentId: audience === 'department' ? this.target() : null,
-      userId: audience === 'individual' ? this.target() : null,
-      type: this.type(),
+      toAll:         mode === 'all',
+      userIds:       mode === 'employees'  ? this.selectedEmployees()   : undefined,
+      departmentIds: mode === 'department' ? this.selectedDepartments() : undefined,
+      orgRoleIds:    mode === 'role'       ? this.selectedRoles()       : undefined,
     }).subscribe({
-      next: () => {
+      next: (res) => {
         this.sending.set(false);
-        this.toast.success('Notification sent', 'Your notification is on its way.');
+        const count = res?.sentTo ?? 0;
+        this.toast.success(
+          'Notification sent',
+          res?.orgWide ? 'Sent to everyone in your organization.'
+                       : `Sent to ${count} ${count === 1 ? 'person' : 'people'}.`,
+        );
         this.clearForm();
         this.activeTab.set('inbox');
       },
