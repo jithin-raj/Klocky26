@@ -3,11 +3,14 @@ import { authGuard }   from './core/guards/auth.guard';
 import { publicGuard } from './core/guards/public.guard';
 import { roleGuard }   from './core/guards/role.guard';
 import { permissionGuard } from './core/guards/permission.guard';
+import { webOnlyGuard } from './core/guards/web-only.guard';
 
 export const routes: Routes = [
   // ── Public / marketing ─────────────────────────────────────────────────────
+  // webOnlyGuard: inside the mobile app these flows redirect to /login.
   {
     path: '',
+    canActivate: [webOnlyGuard],
     loadComponent: () =>
       import('./features/landing/landing.component').then((m) => m.LandingComponent),
   },
@@ -20,7 +23,7 @@ export const routes: Routes = [
   },
   {
     path: 'register',
-    canActivate: [publicGuard],
+    canActivate: [publicGuard, webOnlyGuard],
     loadComponent: () =>
       import('./features/auth/pages/register/register.component').then(
         (m) => m.RegisterComponent,
@@ -28,6 +31,7 @@ export const routes: Routes = [
   },
   {
     path: 'request-demo',
+    canActivate: [webOnlyGuard],
     loadComponent: () =>
       import('./features/landing/pages/request-demo/request-demo.component').then(
         (m) => m.RequestDemoComponent,
@@ -35,6 +39,7 @@ export const routes: Routes = [
   },
   {
     path: 'free-trial',
+    canActivate: [webOnlyGuard],
     loadChildren: () =>
       import('./features/onboarding/onboarding.routes').then((m) => m.onboardingRoutes),
   },

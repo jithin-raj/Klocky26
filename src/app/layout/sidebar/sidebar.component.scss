@@ -750,8 +750,10 @@
   .nav-item {
     height: 36px;
     font-size: 12.5px;
-    padding: 0 8px 0 42px;
-    
+    /* Was 42px left-padding — that double-indented items (on top of the icon
+       tile) and pushed the labels far right. Keep a modest, even inset. */
+    padding: 0 8px;
+
     svg {
       width: 15px;
       height: 15px;
@@ -792,9 +794,25 @@
     opacity: 1;
     transition-delay: 0s;
   }
-  
-  /* Always show sections as expanded on mobile */
+
+  /* ── Touch has no :hover, so the hover-gated submenu rules never fire.
+        Drive expand/collapse purely off the .expanded / .has-active-child
+        classes the component already toggles on tap. ── */
   .nav-section-arrow {
-    display: none;
+    display: block;
+    opacity: 1;
   }
+  .nav-section.expanded .nav-section-arrow {
+    transform: rotate(180deg);
+    color: var(--accent);
+  }
+  .nav-section.expanded .nav-section-items,
+  .nav-section.has-active-child .nav-section-items {
+    display: flex;
+    animation: slideDown 0.2s ease-out;
+  }
+
+  /* Comfortable, evenly-indented sub-items in the open drawer */
+  .nav-section-items { padding-left: 10px; }
+  .nav-item { padding: 0 12px; }
 }

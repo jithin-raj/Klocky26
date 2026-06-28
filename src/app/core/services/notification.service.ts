@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { RealtimeService } from './realtime.service';
 import { ApiResponse, Paged } from '../models/api-response.model';
@@ -89,7 +90,7 @@ export class NotificationService {
    */
   send(req: SendNotificationRequest): Observable<SendNotificationResult> {
     const toAll = req.toAll === true;
-    return this.api.post<SendNotificationResult>('/notifications/send', {
+    return this.api.post<ApiResponse<SendNotificationResult> | SendNotificationResult>('/notifications/send', {
       title: req.title,
       body: req.body,
       toAll,
@@ -98,7 +99,14 @@ export class NotificationService {
       departmentIds: toAll ? undefined : nonEmpty(req.departmentIds),
       orgRoleIds:    toAll ? undefined : nonEmpty(req.orgRoleIds),
       userId:        toAll ? undefined : (req.userId ?? undefined),
-    });
+    }).pipe(
+      // The API wraps the result in the standard envelope ({ data: { sentTo, orgWide } }).
+      // Unwrap it so the toast can show the real count; tolerate an un-enveloped shape too.
+      map((res) => {
+        const r = (res as ApiResponse<SendNotificationResult>)?.data ?? (res as SendNotificationResult);
+        return r ?? { sentTo: 0, orgWide: toAll };
+      }),
+    );
   }
 
   clear(): void {

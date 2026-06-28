@@ -663,3 +663,26 @@
     padding-right: max(14px, env(safe-area-inset-right, 0px));
   }
 }
+
+/* ── Dropdown panels on small screens ──────────────────────────────
+   A bell-anchored dropdown is cramped and can sit half off-screen on a
+   phone. Pin the panels just below the header and let them span the width
+   (minus a small gutter) so they read as a proper sheet. */
+@media (max-width: 520px) {
+  .notif-panel {
+    position: fixed;
+    top: calc(64px + env(safe-area-inset-top, 0px) + 8px);
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+  }
+  .notif-list { max-height: calc(100vh - 200px); }
+
+  .profile-panel {
+    position: fixed;
+    top: calc(64px + env(safe-area-inset-top, 0px) + 8px);
+    right: 10px;
+    width: min(264px, calc(100vw - 20px));
+  }
+}

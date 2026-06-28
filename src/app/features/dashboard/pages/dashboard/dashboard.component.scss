@@ -864,3 +864,42 @@
   .db-stats { grid-template-columns: 1fr 1fr; }
   .db-name  { font-size: 18px; }
 }
+
+/* ── Extra small-screen polish (additive) ───────────────────────── */
+@media (max-width: 600px) {
+  /* Never let a stray wide child cause a horizontal scroll on phones */
+  .db-page { overflow-x: hidden; }
+
+  /* Tighter cards = more room for content on a phone */
+  .db-card { padding: 16px; border-radius: 14px; }
+  .db-card-header { margin-bottom: 14px; }
+
+  /* Truncate long text in list rows so the trailing time/count stays put
+     instead of overflowing the row (Recently Joined, departments, holidays) */
+  .db-act-body { min-width: 0; }
+  .db-act-name,
+  .db-act-detail,
+  .db-dept-name,
+  .db-hol-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .db-act-time { flex-shrink: 0; }
+}
+
+@media (max-width: 480px) {
+  /* Two quick-link columns get cramped on a phone — stack them */
+  .db-quicklinks { grid-template-columns: 1fr; }
+  .db-date-pill { font-size: 12px; padding: 6px 12px; }
+
+  /* Header wraps cleanly and the title doesn't crowd the role badge */
+  .db-header { gap: 10px; }
+  .db-org-title { font-size: 18px; }
+
+  /* Compact stat cards so two fit comfortably without clipping the value */
+  .db-stat-card { padding: 14px; gap: 12px; }
+  .db-stat-icon { width: 40px; height: 40px; }
+  .db-stat-value { font-size: 22px; }
+}
