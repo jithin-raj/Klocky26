@@ -768,15 +768,20 @@
   .sidebar {
     position: fixed;
     top: 0;
-    left: -260px;
+    left: 0;
     width: 260px;
     z-index: 1000;
     box-shadow: 6px 0 50px rgba(0, 0, 0, 0.7);
-    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Animate transform (GPU-composited) instead of `left` (which relayouts
+       every frame) so the drawer slides in without jank. */
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
   .sidebar.open {
-    left: 0;
+    transform: translateX(0);
   }
 
   .sidebar:hover {

@@ -68,18 +68,19 @@
           }
         </div>
 
-        @if (audience() === 'department') {
-          <ui-select [options]="departmentOptions()" [ngModel]="target()" (ngModelChange)="target.set($event)"></ui-select>
+        @if (audience() === 'employees') {
+          <ui-multiselect placeholder="Select employees"
+            [options]="employeeOptions()"
+            [ngModel]="selectedEmployees()" (ngModelChange)="selectedEmployees.set($event)"></ui-multiselect>
+        } @else if (audience() === 'department') {
+          <ui-multiselect placeholder="Select departments"
+            [options]="departmentOptions()"
+            [ngModel]="selectedDepartments()" (ngModelChange)="selectedDepartments.set($event)"></ui-multiselect>
+        } @else if (audience() === 'role') {
+          <ui-multiselect placeholder="Select roles"
+            [options]="roleOptions()"
+            [ngModel]="selectedRoles()" (ngModelChange)="selectedRoles.set($event)"></ui-multiselect>
         }
-        @if (audience() === 'individual') {
-          <ui-select [options]="employeeOptions()" [ngModel]="target()" (ngModelChange)="target.set($event)"></ui-select>
-        }
-      </div>
-
-      <!-- Type -->
-      <div class="nt-section">
-        <h3>Type</h3>
-        <ui-select [options]="typeOptions" [ngModel]="type()" (ngModelChange)="type.set($event)"></ui-select>
       </div>
 
       <!-- Message -->

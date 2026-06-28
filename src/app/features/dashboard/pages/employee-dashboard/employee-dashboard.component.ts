@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, inject, OnDestroy, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnDestroy, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
@@ -44,7 +44,22 @@ interface QuickAction {
   styleUrl: './employee-dashboard.component.scss',
 })
 export class EmployeeDashboardComponent implements OnDestroy {
-  constructor(private router: Router) {}
+  constructor(private router: Router) {
+    // Keep the hero clock-in/out state and "Today's Hours" ticking in sync with
+    // the real attendance state — whether the user clocked in here, from the
+    // header, on another device, or before this page mounted (SignalR + the
+    // shell's refreshToday() drive clockInTime).
+    effect(() => {
+      const start = this.attendanceSvc.clockInTime();
+      if (start) {
+        this._renderHours(start);   // immediate, don't wait for the first tick
+        this._startTimer();
+      } else {
+        this._stopTimer();
+        this.todayHours.set('0h 00m');
+      }
+    });
+  }
 
   readonly attendanceSvc = inject(AttendanceStateService);
   private  appState      = inject(AppStateService);
@@ -104,25 +119,27 @@ export class EmployeeDashboardComponent implements OnDestroy {
    * uploaded capture instead of re-introducing client-side face matching here.
    */
   clockIn(): void {
+    // The timer + hours start automatically once the service reports clockInTime
+    // (see the effect in the constructor) — no need to start it here.
     if (!navigator.geolocation) {
       this.attendanceSvc.clockIn('web');
-      this._startTimer();
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        this.attendanceSvc.clockIn('mobile', {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
-        this._startTimer();
-      },
-      () => {
-        this.attendanceSvc.clockIn('web');
-        this._startTimer();
-      },
+      (pos) => this.attendanceSvc.clockIn('mobile', {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      }),
+      () => this.attendanceSvc.clockIn('web'),
       { enableHighAccuracy: true, timeout: 10000 },
     );
+  }
+
+  private _renderHours(start: Date) {
+    const diff = Date.now() - start.getTime();
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    this.todayHours.set(`${h}h ${String(m).padStart(2, '0')}m`);
   }
 
   private _startTimer() {
@@ -130,10 +147,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
     this.timerRef = setInterval(() => {
       const t = this.attendanceSvc.clockInTime();
       if (!t) { this._stopTimer(); return; }
-      const diff = Date.now() - t.getTime();
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      this.todayHours.set(`${h}h ${String(m).padStart(2, '0')}m`);
+      this._renderHours(t);
     }, 10000);
   }
 

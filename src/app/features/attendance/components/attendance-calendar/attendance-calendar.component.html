@@ -212,7 +212,7 @@
                   <span class="status-badge"
                         [style.background]="cellBg(row)"
                         [style.color]="cellColor(row)">
-                    {{ row.holidayName ?? (row.status | titlecase) }}
+                    {{ row.holidayName ?? statusLabel(row.status) }}
                   </span>
                 } @else if (row.isOff) {
                   <span class="status-badge off-badge">Weekend</span>

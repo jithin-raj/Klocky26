@@ -62,3 +62,55 @@ export interface TeamAttendanceItem {
   departmentName: string | null;
   today: AttendanceRecordResponse | null;
 }
+
+// ── Monthly calendar (GET /api/attendance/calendar?year=&month=&userId=) ──────
+
+/** Per-day status as returned by the calendar endpoint (richer than the live record's). */
+export type CalendarDayStatus =
+  | 'present' | 'half_day' | 'absent' | 'leave'
+  | 'comp_off' | 'holiday' | 'weekend' | 'upcoming';
+
+/** One day in the monthly calendar response. */
+export interface CalendarDay {
+  /** ISO date YYYY-MM-DD. */
+  date: string;
+  status: CalendarDayStatus;
+  isPresent: boolean;
+  isHalfDay: boolean;
+  isAbsent: boolean;
+  isLeave: boolean;
+  isHoliday: boolean;
+  isWeekend: boolean;
+  isUpcoming: boolean;
+  presentHours: number | null;
+  hoursWorked: number | null;
+  clockInTime: string | null;
+  clockOutTime: string | null;
+  holidayName: string | null;
+  leaveTypeName: string | null;
+  isPaidLeave: boolean | null;
+  /** Server-chosen hex colour for this status. */
+  color: string;
+}
+
+/** Per-month roll-up returned alongside the days. */
+export interface CalendarSummary {
+  presentDays: number;
+  halfDays: number;
+  absentDays: number;
+  leaveDays: number;
+  compOffDays: number;
+  holidayDays: number;
+  weekendDays: number;
+}
+
+/** GET /api/attendance/calendar response (data). */
+export interface CalendarResponse {
+  userId: string;
+  userFullName: string;
+  year: number;
+  month: number;
+  days: CalendarDay[];
+  summary: CalendarSummary;
+  legend: { status: CalendarDayStatus; label: string; color: string }[];
+}

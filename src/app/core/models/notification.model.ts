@@ -24,18 +24,38 @@ export interface AppNotification {
   link?: string | null;
 }
 
-export type NotificationAudience = 'all' | 'department' | 'individual';
+/**
+ * UI-only concept for the composer — which selection mode the sender picked.
+ * Each maps to a different field on SendNotificationRequest.
+ */
+export type NotificationAudience = 'all' | 'employees' | 'department' | 'role';
 
-/** POST /api/notifications request — compose & send (admin/HR). */
+/**
+ * POST /api/notifications/send body (HR/manager/admin only).
+ * Recipients = union of userIds + members of departmentIds + holders of
+ * orgRoleIds (active only, de-duplicated). `toAll: true` overrides the rest and
+ * broadcasts org-wide. `userId` (singular) is kept for backward compatibility.
+ * Returns { sentTo, orgWide }.
+ */
 export interface SendNotificationRequest {
   title: string;
   body: string;
-  audience: NotificationAudience;
-  /** Required when audience = 'department'. */
-  departmentId?: string | null;
-  /** Required when audience = 'individual'. */
+  /** Specific employees. */
+  userIds?: string[];
+  /** Everyone active in these departments. */
+  departmentIds?: string[];
+  /** Everyone active holding these roles. */
+  orgRoleIds?: string[];
+  /** true = whole-org broadcast (overrides the other selections). */
+  toAll?: boolean;
+  /** Legacy single-recipient field — still accepted by the API. */
   userId?: string | null;
-  type?: NotificationType;
+}
+
+/** POST /api/notifications/send response. */
+export interface SendNotificationResult {
+  sentTo: number;
+  orgWide: boolean;
 }
 
 /**
