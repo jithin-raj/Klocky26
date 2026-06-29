@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthStateService } from '../../services/auth-state.service';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { MobileBridgeService } from '../../../../core/services/mobile-bridge.service';
 import { toOrgSlug } from '../../../../core/utils/org-slug.util';
 
 /** Secret code that bypasses the normal org flow and goes straight to the admin panel */
@@ -19,6 +20,10 @@ const ADMIN_CODE = 'klock2026';
 export class OrgLookupComponent {
   @Output() found    = new EventEmitter<void>();
   @Output() register = new EventEmitter<void>();
+
+  private readonly mobile = inject(MobileBridgeService);
+  /** Inside the mobile app the register/landing flows are hidden — see webOnlyGuard. */
+  get isMobile(): boolean { return this.mobile.isMobile; }
 
   goHome(): void {
     this.router.navigate(['/']);

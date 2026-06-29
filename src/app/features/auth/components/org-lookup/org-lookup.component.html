@@ -51,13 +51,15 @@
     }
   </button>
 
-  <p class="lk-legal">
-    New to Klocky?
-    <a href="#" (click)="$event.preventDefault(); register.emit()">Create your organization</a>
-  </p>
+  @if (!isMobile) {
+    <p class="lk-legal">
+      New to Klocky?
+      <a href="#" (click)="$event.preventDefault(); register.emit()">Create your organization</a>
+    </p>
 
-  <p class="lk-legal" style="margin-top:8px">
-    <a href="#" (click)="$event.preventDefault(); goHome()">← Back to home</a>
-  </p>
+    <p class="lk-legal" style="margin-top:8px">
+      <a href="#" (click)="$event.preventDefault(); goHome()">← Back to home</a>
+    </p>
+  }
 
 </form>
