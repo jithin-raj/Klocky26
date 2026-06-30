@@ -45,6 +45,13 @@ export interface RegisterOrgRequest {
   weekStartDay: string;
   weekEndDay: string;
   workHours: number;
+  /** Office hours — "HH:mm" in the org timezone. workDayEnd must be after workDayStart. */
+  workDayStart: string;
+  workDayEnd: string;
+  /** Minutes after workDayEnd before auto clock-out fires (default 0). */
+  autoCheckoutBufferMins: number;
+  /** Cooldown between punches, either direction (default 2). */
+  minPunchGapMins: number;
   checkInRuleType: CheckInRuleType;
   checkInCustomMinutes?: number | null;
   halfDayThresholdHrs: number;
@@ -108,6 +115,11 @@ export interface RegisterCompleteRequest {
   weekStartDay: string;
   weekEndDay: string;
   workHours: number;
+  /** Office hours — "HH:mm" in the org timezone. workDayEnd must be after workDayStart. */
+  workDayStart: string;
+  workDayEnd: string;
+  autoCheckoutBufferMins: number;
+  minPunchGapMins: number;
   checkInRuleType: CheckInRuleType;
   halfDayThresholdHrs: number;
   locationPolicy: LocationPolicy;
@@ -193,6 +205,21 @@ export interface HolidayDto {
   type: HolidayType;
 }
 
+/**
+ * Office entry in the tenant-settings `offices` array — upsert by id (id: null
+ * creates, existing id updates). NOT delete-on-omit: to remove an office call
+ * DELETE /api/offices/{officeId}. Geofence (lat/long/radius) is NOT set here —
+ * use PUT /api/geofencing/office/{officeId}; it's read-only via GET /api/offices.
+ */
+export interface OfficeSettingDto {
+  id: string | null;
+  name: string;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  timezone?: string | null;
+}
+
 /** GET /api/tenant/settings response (data) */
 export interface TenantSettings {
   orgSlug: string;
@@ -227,6 +254,13 @@ export interface TenantSettings {
   weekStartDay: string;
   weekEndDay: string;
   workHours: number;
+  /** Office hours — "HH:mm" in the org timezone. workDayEnd must be after workDayStart. */
+  workDayStart: string;
+  workDayEnd: string;
+  /** Minutes after workDayEnd before auto clock-out fires (default 0). */
+  autoCheckoutBufferMins: number;
+  /** Cooldown between punches, either direction (default 2). */
+  minPunchGapMins: number;
   checkInRuleType: CheckInRuleType;
   checkInCustomMinutes: number | null;
   halfDayThresholdHrs: number;
@@ -253,6 +287,8 @@ export interface TenantSettings {
   encashmentEnabled: boolean;
   leaveTypes: LeaveTypeDto[];
   holidays: HolidayDto[];
+  /** Upsert-by-id on save; not delete-on-omit (delete via DELETE /api/offices/{id}). */
+  offices: OfficeSettingDto[];
   isActive: boolean;
   createdAt: string;
 }

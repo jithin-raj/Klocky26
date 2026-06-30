@@ -20,6 +20,10 @@ export interface AttendanceSetupData {
   selfieVerification: boolean;
   autoCheckoutEnabled: boolean;
   autoCheckoutTime: string;
+  /** Minutes after workDayEnd before auto clock-out fires (optional override). */
+  autoCheckoutBufferMins?: number;
+  /** Cooldown between punches, either direction. */
+  minPunchGapMins?: number;
 }
 
 @Component({

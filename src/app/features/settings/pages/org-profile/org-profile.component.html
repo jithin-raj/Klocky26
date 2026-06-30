@@ -464,10 +464,12 @@
               </ui-input>
             </div>
 
-            <ui-input label="Street Address"
-              placeholder="Building, street, area…"
-              [(ngModel)]="offices[i].address" (ngModelChange)="markDirty()">
-            </ui-input>
+            <div class="op-office-address">
+              <ui-input label="Street Address"
+                placeholder="Building, street, area…"
+                [(ngModel)]="offices[i].address" (ngModelChange)="markDirty()">
+              </ui-input>
+            </div>
 
             <div class="op-form-row">
               <ui-select [dark]="false" label="Country" placeholder="Select country…"
@@ -619,6 +621,42 @@
                           [disabled]="workHoursPerDay >= 24">&#43;</button>
                 </div>
                 <span class="op-number-unit">hrs / day</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Office hours — auto clock-out & overtime are computed from these
+               server-side (overtime = time worked past Office End). -->
+          <div class="op-form-row">
+            <div class="op-field">
+              <p class="op-field-label">Office Start Time</p>
+              <input type="time" [(ngModel)]="workDayStart" (ngModelChange)="markDirty()"
+                     name="workDayStart" style="max-width:160px" />
+            </div>
+            <div class="op-field">
+              <p class="op-field-label">Office End Time</p>
+              <input type="time" [(ngModel)]="workDayEnd" (ngModelChange)="markDirty()"
+                     name="workDayEnd" style="max-width:160px" />
+            </div>
+          </div>
+
+          <div class="op-form-row">
+            <div class="op-field">
+              <p class="op-field-label">Auto Clock-out Buffer</p>
+              <div class="op-number-wrap">
+                <input type="number" style="max-width:110px"
+                       [(ngModel)]="autoCheckoutBufferMins" (ngModelChange)="markDirty()"
+                       name="autoCheckoutBufferMins" min="0" max="240" />
+                <span class="op-number-unit">min after Office End</span>
+              </div>
+            </div>
+            <div class="op-field">
+              <p class="op-field-label">Min Gap Between Punches</p>
+              <div class="op-number-wrap">
+                <input type="number" style="max-width:110px"
+                       [(ngModel)]="minPunchGapMins" (ngModelChange)="markDirty()"
+                       name="minPunchGapMins" min="0" max="120" />
+                <span class="op-number-unit">min cooldown</span>
               </div>
             </div>
           </div>

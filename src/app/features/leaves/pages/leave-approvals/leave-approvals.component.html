@@ -33,32 +33,40 @@
         </button>
       }
     </div>
-    <ui-select [options]="leaveTypeOptions" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)"></ui-select>
+    <ui-select [options]="leaveTypeOptions()" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)"></ui-select>
   </div>
 
   <!-- List -->
   <div class="lv-list">
+    @if (loading()) {
+      <div class="lv-empty">Loading leave requests…</div>
+    } @else if (loadError()) {
+      <div class="lv-empty">{{ loadError() }}</div>
+    }
     @for (req of filtered(); track req.id) {
       <div class="lv-card" [class]="'lv-card--' + req.status">
         <div class="lv-card__left">
           <div class="lv-avatar" [style.background]="req.avatarColor">{{ req.initials }}</div>
           <div class="lv-info">
-            <div class="lv-info__name">{{ req.employeeName }}</div>
-            <div class="lv-info__sub">{{ req.department }} · {{ req.employeeCode }}</div>
+            <div class="lv-info__name">{{ req.userFullName }}</div>
+            @if (req.halfDay) { <div class="lv-info__sub">Half day</div> }
           </div>
         </div>
 
         <div class="lv-card__mid">
-          <span class="lv-type-badge">{{ typeLabel(req.leaveType) }}</span>
-          <span class="lv-date">{{ req.from | date:'MMM d' }} – {{ req.to | date:'MMM d, yyyy' }}</span>
-          <span class="lv-days">{{ req.days }} day{{ req.days > 1 ? 's' : '' }}</span>
+          <span class="lv-type-badge">{{ req.leaveTypeName }}</span>
+          <span class="lv-date">{{ req.fromDate | date:'MMM d' }} – {{ req.toDate | date:'MMM d, yyyy' }}</span>
+          <span class="lv-days">{{ req.days }} day{{ req.days === 1 ? '' : 's' }}</span>
         </div>
 
         <div class="lv-card__status">
           <span class="lv-status lv-status--{{ req.status }}">
             {{ req.status.charAt(0).toUpperCase() + req.status.slice(1) }}
           </span>
-          <span class="lv-applied">Applied {{ req.appliedOn | date:'MMM d' }}</span>
+          @if (req.status === 'pending' && stageLabel(req.approvalStage)) {
+            <span class="lv-stage">{{ stageLabel(req.approvalStage) }}</span>
+          }
+          <span class="lv-applied">Applied {{ req.createdAt | date:'MMM d' }}</span>
         </div>
 
         <div class="lv-card__actions">
@@ -70,8 +78,8 @@
         </div>
       </div>
     }
-    @if (filtered().length === 0) {
-      <div class="lv-empty">No leave requests match the current filter.</div>
+    @if (!loading() && !loadError() && filtered().length === 0) {
+      <div class="lv-empty">No leave requests awaiting your approval.</div>
     }
   </div>
 
@@ -87,14 +95,20 @@
       </div>
       <div class="lv-modal__body">
         <div class="lv-avatar lv-avatar--lg" [style.background]="d.avatarColor">{{ d.initials }}</div>
-        <h4>{{ d.employeeName }}</h4>
-        <p>{{ d.department }} · {{ d.employeeCode }}</p>
+        <h4>{{ d.userFullName }}</h4>
+        <p>{{ d.leaveTypeName }}</p>
         <div class="lv-detail-grid">
-          <div class="lv-detail-row"><span>Leave Type</span><span>{{ typeLabel(d.leaveType) }}</span></div>
-          <div class="lv-detail-row"><span>From</span><span>{{ d.from | date:'MMMM d, yyyy' }}</span></div>
-          <div class="lv-detail-row"><span>To</span><span>{{ d.to | date:'MMMM d, yyyy' }}</span></div>
-          <div class="lv-detail-row"><span>Total Days</span><span>{{ d.days }} day{{ d.days > 1 ? 's' : '' }}</span></div>
-          <div class="lv-detail-row"><span>Applied On</span><span>{{ d.appliedOn | date:'MMMM d, yyyy' }}</span></div>
+          <div class="lv-detail-row"><span>Leave Type</span><span>{{ d.leaveTypeName }}</span></div>
+          <div class="lv-detail-row"><span>From</span><span>{{ d.fromDate | date:'MMMM d, yyyy' }}</span></div>
+          <div class="lv-detail-row"><span>To</span><span>{{ d.toDate | date:'MMMM d, yyyy' }}</span></div>
+          <div class="lv-detail-row"><span>Total Days</span><span>{{ d.days }} day{{ d.days === 1 ? '' : 's' }}</span></div>
+          @if (d.halfDay) {
+            <div class="lv-detail-row"><span>Half Day</span><span>{{ d.halfDaySession === 'second_half' ? 'Second half' : 'First half' }}</span></div>
+          }
+          @if (d.isCompOff && d.workedDate) {
+            <div class="lv-detail-row"><span>Worked Date</span><span>{{ d.workedDate | date:'MMMM d, yyyy' }}</span></div>
+          }
+          <div class="lv-detail-row"><span>Applied On</span><span>{{ d.createdAt | date:'MMMM d, yyyy' }}</span></div>
           <div class="lv-detail-row"><span>Status</span><span class="lv-status lv-status--{{ d.status }}">{{ d.status | titlecase }}</span></div>
         </div>
         <div class="lv-reason">

@@ -5,7 +5,26 @@
 import { ClockInMethod } from './user.model';
 
 export type AttendanceStatus = 'present' | 'half' | 'absent' | 'leave' | 'holiday' | 'off';
-export type AutoClockedOutReason = 'geofence_exit' | 'missed_ping' | null;
+export type AutoClockedOutReason =
+  | 'geofence_exit'
+  | 'missed_ping'
+  | 'no_ping_timeout'
+  | 'auto_checkout_time'
+  | 'shift_end'
+  | null;
+
+/**
+ * One clock-in/out pair within a day (multi-punch). The day's AttendanceRecord
+ * is the summary (first-in / last-out / total hours); `sessions` is the detail.
+ */
+export interface AttendancePunchSession {
+  id: string;
+  clockInTime: string;
+  clockOutTime: string | null;
+  clockInMethod: ClockInMethod | null;
+  clockOutMethod: ClockInMethod | null;
+  autoClockedOutReason: AutoClockedOutReason;
+}
 
 /** POST /api/attendance/clock-in request */
 export interface ClockInRequest {
@@ -38,6 +57,26 @@ export interface AttendanceRecordResponse {
   autoClockedOutReason: AutoClockedOutReason;
   /** Non-null → this employee is geofence-restricted; start the ping timer at this interval */
   geofencePingIntervalMinutes: number | null;
+  /** First clock-in was after workDayStart + lateThresholdMins (server-computed). */
+  isLate?: boolean;
+  /** Authoritative "an open session exists right now" flag (multi-punch). */
+  isClockedIn?: boolean;
+  /** Per-day clock-in/out pairs (multi-punch); the open one drives the live timer. */
+  sessions?: AttendancePunchSession[];
+}
+
+/**
+ * GET /api/attendance/geofence/config — the caller's effective geofence, used to
+ * hydrate the native layer (the web shell forwards it to RN on login/foreground).
+ */
+export interface GeofenceConfig {
+  enabled: boolean;
+  officeId: string | null;
+  officeName: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  radiusMeters: number | null;
+  pingIntervalMinutes: number | null;
 }
 
 /** POST /api/attendance/location-ping request */

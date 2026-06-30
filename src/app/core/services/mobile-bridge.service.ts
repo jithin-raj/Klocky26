@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { AppStateService } from './app-state.service';
+import { AttendanceStateService } from './attendance-state.service';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MobileBridgeService — bridge between the React-Native shell and this SPA
@@ -33,6 +34,7 @@ export class MobileBridgeService {
 
   private readonly api = inject(ApiService);
   private readonly appState = inject(AppStateService);
+  private readonly attendance = inject(AttendanceStateService);
   private readonly router = inject(Router);
 
   private device?: DeviceInfo;
@@ -59,8 +61,19 @@ export class MobileBridgeService {
       if (route) this.router.navigateByUrl(route);
     });
 
-    // Foreground pushes already reflect in the UI via SignalR, so we don't
-    // re-handle 'klocky:push' here to avoid duplicate notifications.
+    // Foreground data pushes. Most notification content already reflects via
+    // SignalR, but two data-message types need explicit handling:
+    //   • 'geofence'       — silent: re-hydrate the native geofence config.
+    //   • 'clockOutStatus' — show an in-app toast (e.g. auto clock-out result).
+    window.addEventListener('klocky:push', (e: Event) => {
+      const data = (e as CustomEvent<{ type?: string; message?: string }>).detail;
+      if (!data?.type) return;
+      if (data.type === 'geofence') {
+        this.hydrateGeofence();
+      } else if (data.type === 'clockOutStatus') {
+        this.attendance.showToast(data.message ?? 'You have been clocked out.', 'info');
+      }
+    });
   }
 
   /** Call right after a successful login (tokens already stored). */
@@ -70,11 +83,29 @@ export class MobileBridgeService {
     // If the device handshake already happened, register now; otherwise the
     // 'klocky:device' listener will register as soon as it arrives.
     if (this.device) this.register();
+    // Push the current geofence config down to the native layer.
+    this.hydrateGeofence();
   }
 
   private register(): void {
     if (!this.device) return;
     // Bearer token is attached by authInterceptor automatically.
     this.api.post('/mobile/register-device', this.device).subscribe({ error: () => { /* best-effort */ } });
+  }
+
+  /**
+   * Fetch the caller's geofence config and forward it to the RN shell so the
+   * native layer can (re)arm the geofence. Best-effort; no-op off mobile.
+   */
+  hydrateGeofence(): void {
+    if (!this.isMobile) return;
+    this.attendance.getGeofenceConfig().subscribe({
+      next: (res) => {
+        (window as MobileWindow).ReactNativeWebView?.postMessage(
+          JSON.stringify({ type: 'geofence', config: res.data }),
+        );
+      },
+      error: () => { /* best-effort */ },
+    });
   }
 }

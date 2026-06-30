@@ -9,6 +9,7 @@ import {
   CalendarResponse,
   ClockInRequest,
   ClockOutRequest,
+  GeofenceConfig,
   LocationPingResponse,
   TeamAttendanceItem,
 } from '../models/attendance.model';
@@ -146,9 +147,14 @@ export class AttendanceStateService implements OnDestroy {
 
   private _applyRecord(record: AttendanceRecordResponse | null): void {
     this.status.set(record);
-    const clockedIn = !!record && !record.clockOutTime;
+    // Prefer the server's authoritative flag (multi-punch); fall back to the
+    // legacy "has a clock-in with no clock-out" derive for older responses.
+    const clockedIn = !!record && (record.isClockedIn ?? !record.clockOutTime);
     this.isClockedIn.set(clockedIn);
-    this.clockInTime.set(record?.clockInTime ? new Date(record.clockInTime) : null);
+    // Live timer tracks the CURRENT open session, not the day's first clock-in.
+    const openSession = record?.sessions?.find(s => !s.clockOutTime);
+    const startIso = clockedIn ? (openSession?.clockInTime ?? record?.clockInTime ?? null) : null;
+    this.clockInTime.set(startIso ? new Date(startIso) : null);
 
     if (clockedIn && record?.geofencePingIntervalMinutes) {
       this._startPingTimer(record.geofencePingIntervalMinutes);
@@ -173,6 +179,14 @@ export class AttendanceStateService implements OnDestroy {
    */
   getCalendar(year: number, month: number, userId?: string): Observable<ApiResponse<CalendarResponse>> {
     return this.api.get<ApiResponse<CalendarResponse>>('/attendance/calendar', { year, month, userId });
+  }
+
+  /**
+   * GET /api/attendance/geofence/config — the caller's effective geofence. Used
+   * to hydrate the native layer on login/foreground (MobileBridge forwards it to RN).
+   */
+  getGeofenceConfig(): Observable<ApiResponse<GeofenceConfig>> {
+    return this.api.get<ApiResponse<GeofenceConfig>>('/attendance/geofence/config');
   }
 
   // ── Toast ────────────────────────────────────────────────────────────

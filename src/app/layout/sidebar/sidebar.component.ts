@@ -92,7 +92,8 @@ export class SidebarComponent {
       expanded: false,
       items: [
         { label: 'Employees', route: 'app/employees', icon: 'users', exact: true, roles: MANAGEMENT_ROLES, permKey: 'employees', permLevel: 1 },
-        { label: 'Org Tree', route: 'app/employees/tree', icon: 'tree', roles: MANAGEMENT_ROLES },
+        // Org Tree is view-only org structure — visible to anyone with employees view access (level 1).
+        { label: 'Org Tree', route: 'app/employees/tree', icon: 'tree', permKey: 'employees', permLevel: 1 },
         { label: 'Departments & Roles', route: 'app/employees/org-structure', icon: 'sitemap', roles: ADMIN_ONLY_ROLES },
         // Single canonical Roles & Permissions editor (the old duplicate "Permissions" link was removed).
         { label: 'Roles & Permissions', route: 'app/roles', icon: 'shield', roles: ADMIN_ONLY_ROLES, permKey: 'permissions', permLevel: 3 },
@@ -105,6 +106,7 @@ export class SidebarComponent {
       expanded: false,
       items: [
         { label: 'Attendance', route: 'app/attendance', icon: 'clock', exact: true },
+        { label: 'Regularization', route: 'app/attendance/requests', icon: 'clock' },
         { label: 'Shifts & Roster', route: 'app/shifts', icon: 'repeat', roles: MANAGEMENT_ROLES },
         { label: 'Geo-fencing', route: 'app/attendance/geofence', icon: 'map-pin', roles: ADMIN_ONLY_ROLES },
         { label: 'Face Scan', route: 'app/attendance/face-scan', icon: 'scan' },
@@ -117,7 +119,8 @@ export class SidebarComponent {
       icon: 'calendar',
       expanded: false,
       items: [
-        { label: 'Leave Approvals', route: 'app/leaves', icon: 'calendar', roles: MANAGEMENT_ROLES },
+        { label: 'My Leave', route: 'app/leaves/my', icon: 'calendar' },
+        { label: 'Leave Approvals', route: 'app/leaves', icon: 'calendar', exact: true, roles: MANAGEMENT_ROLES },
         { label: 'Tasks', route: 'app/tasks', icon: 'clipboard-check' },
         { label: 'Notifications', route: 'app/notifications', icon: 'bell' },
       ]

@@ -1,0 +1,139 @@
+<div class="ar-page">
+
+  <div class="ar-header">
+    <h1>Attendance Requests</h1>
+    <p>Apply to regularize a day — missed punch, work from home, on-duty or correction.</p>
+  </div>
+
+  <div class="ar-grid">
+
+    <!-- ── Apply form ──────────────────────────────────────────── -->
+    <section class="ar-card ar-apply">
+      <div class="ar-apply-head">
+        <h2 class="ar-card-title">Apply for Attendance</h2>
+        <p>Regularize a past or current day.</p>
+      </div>
+
+      <div class="ar-apply-body">
+        <div class="ar-field">
+          <label>Request Type</label>
+          <div class="ar-seg">
+            @for (opt of typeOptions; track opt.value) {
+              <button type="button" class="ar-seg-btn" [class.active]="type() === opt.value"
+                      (click)="type.set($any(opt.value))">{{ opt.label }}</button>
+            }
+          </div>
+        </div>
+
+        <div class="ar-field">
+          <label>Date</label>
+          <input type="date" [max]="todayIso" [ngModel]="date()" (ngModelChange)="date.set($event)" />
+        </div>
+
+        <div class="ar-row">
+          <div class="ar-field">
+            <label>Clock In <span class="ar-req">*</span></label>
+            <input type="time" [ngModel]="clockIn()" (ngModelChange)="clockIn.set($event)" />
+          </div>
+          <div class="ar-field">
+            <label>Clock Out</label>
+            <input type="time" [ngModel]="clockOut()" (ngModelChange)="clockOut.set($event)" />
+          </div>
+        </div>
+
+        <div class="ar-field">
+          <label>Office <span class="ar-opt">(optional)</span></label>
+          <ui-select [options]="officeOptions()" [ngModel]="officeId()" (ngModelChange)="officeId.set($event)"></ui-select>
+        </div>
+
+        <div class="ar-field">
+          <label>Reason</label>
+          <textarea rows="3" placeholder="Add a note for the approver…"
+                    [ngModel]="reason()" (ngModelChange)="reason.set($event)"></textarea>
+        </div>
+
+        <button class="ar-btn ar-btn--primary" [disabled]="!canSubmit()" (click)="submit()">
+          {{ submitting() ? 'Submitting…' : 'Submit Request' }}
+        </button>
+      </div>
+    </section>
+
+    <!-- ── My requests ─────────────────────────────────────────── -->
+    <section class="ar-card ar-mine">
+      <h2 class="ar-card-title">My Requests</h2>
+
+      @if (loadingMine()) {
+        <p class="ar-empty">Loading…</p>
+      } @else if (mine().length === 0) {
+        <p class="ar-empty">You haven't raised any attendance requests yet.</p>
+      } @else {
+        <div class="ar-list">
+          @for (r of mine(); track r.id) {
+            <div class="ar-item">
+              <div class="ar-item-main">
+                <span class="ar-type">{{ typeLabel(r.type) }}</span>
+                <span class="ar-date">{{ r.date | date:'EEE, MMM d, y' }}</span>
+                <span class="ar-times">
+                  {{ r.requestedClockIn || '—' }}@if (r.requestedClockOut) { – {{ r.requestedClockOut }} }
+                </span>
+                @if (r.reason) { <span class="ar-reason">{{ r.reason }}</span> }
+                @if (r.status === 'rejected' && r.rejectionReason) {
+                  <span class="ar-reject-note">Rejected: {{ r.rejectionReason }}</span>
+                }
+              </div>
+              <div class="ar-item-side">
+                <span class="ar-status ar-status--{{ r.status }}">{{ r.status | titlecase }}</span>
+                @if (r.status === 'pending') {
+                  <button class="ar-btn ar-btn--ghost ar-btn--sm" [disabled]="busyId() === r.id" (click)="cancel(r.id)">Cancel</button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+  </div>
+
+  <!-- ── Approvals (managers / HR) ─────────────────────────────── -->
+  @if (hasApprovals()) {
+    <section class="ar-card ar-approvals">
+      <h2 class="ar-card-title">Pending Approvals</h2>
+      <div class="ar-list">
+        @for (r of pending(); track r.id) {
+          <div class="ar-item">
+            <div class="ar-item-main">
+              <span class="ar-emp">{{ r.userFullName }}</span>
+              <span class="ar-type">{{ typeLabel(r.type) }}</span>
+              <span class="ar-date">{{ r.date | date:'EEE, MMM d, y' }}</span>
+              <span class="ar-times">
+                {{ r.requestedClockIn || '—' }}@if (r.requestedClockOut) { – {{ r.requestedClockOut }} }
+              </span>
+              @if (r.reason) { <span class="ar-reason">{{ r.reason }}</span> }
+            </div>
+            <div class="ar-item-side">
+              <button class="ar-btn ar-btn--approve ar-btn--sm" [disabled]="busyId() === r.id" (click)="approve(r.id)">Approve</button>
+              <button class="ar-btn ar-btn--reject ar-btn--sm" [disabled]="busyId() === r.id" (click)="openReject(r.id)">Reject</button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+</div>
+
+<!-- Reject reason modal -->
+@if (rejectTarget()) {
+  <div class="ar-overlay" (click)="cancelReject()">
+    <div class="ar-modal" (click)="$event.stopPropagation()">
+      <h3>Reject Request</h3>
+      <p>Provide a reason (optional):</p>
+      <textarea rows="3" [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)" placeholder="Enter reason…"></textarea>
+      <div class="ar-modal-actions">
+        <button class="ar-btn ar-btn--ghost" (click)="cancelReject()">Cancel</button>
+        <button class="ar-btn ar-btn--reject" (click)="doReject()">Confirm Reject</button>
+      </div>
+    </div>
+  </div>
+}

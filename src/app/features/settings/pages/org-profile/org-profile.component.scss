@@ -230,6 +230,9 @@
   &:last-child { margin-bottom: 0; }
 }
 
+/* Full-width office street-address field needs the same row spacing below it */
+.op-office-address { margin-bottom: 24px; }
+
 .op-field {
   display: flex;
   flex-direction: column;
@@ -297,6 +300,9 @@ input[type='text'],
 input[type='email'],
 input[type='url'],
 input[type='tel'],
+input[type='time'],
+input[type='date'],
+input[type='number'],
 textarea {
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;

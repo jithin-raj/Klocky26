@@ -1,0 +1,115 @@
+<div class="ml-page">
+
+  <div class="ml-header">
+    <h1>My Leave</h1>
+    <p>Apply for leave and track the status of your requests.</p>
+  </div>
+
+  <div class="ml-grid">
+
+    <!-- ── Apply form ──────────────────────────────────────────── -->
+    <section class="ml-card ml-apply">
+      <div class="ml-apply-head">
+        <h2 class="ml-card-title">Apply for Leave</h2>
+        <p>Submit a new leave request for approval.</p>
+      </div>
+
+      <div class="ml-apply-body">
+        <div class="ml-field">
+          <label>Leave Type</label>
+          <ui-select placeholder="Select leave type"
+            [options]="typeOptions()"
+            [ngModel]="leaveTypeId()" (ngModelChange)="leaveTypeId.set($event)"></ui-select>
+          @if (selectedBalance(); as bal) {
+            <span class="ml-balance">{{ bal.remainingDays }} of {{ bal.totalDays }} days remaining</span>
+          }
+        </div>
+
+        @if (isCompOff()) {
+          <div class="ml-field">
+            <label>Worked Date <span class="ml-req">*</span></label>
+            <input type="date" [max]="todayIso" [ngModel]="workedDate()" (ngModelChange)="workedDate.set($event)" name="workedDate" />
+            <span class="ml-hint">The day you worked that you're claiming off for.</span>
+          </div>
+        }
+
+        <div class="ml-row">
+          <div class="ml-field">
+            <label>From</label>
+            <input type="date" [ngModel]="fromDate()" (ngModelChange)="onFromChange($event)" name="fromDate" />
+          </div>
+          <div class="ml-field">
+            <label>To</label>
+            <input type="date" [min]="fromDate()" [disabled]="halfDay()"
+                   [ngModel]="toDate()" (ngModelChange)="toDate.set($event)" name="toDate" />
+          </div>
+        </div>
+
+        <label class="ml-check">
+          <input type="checkbox" [ngModel]="halfDay()" (ngModelChange)="onHalfDayToggle($event)" name="halfDay" />
+          <span>Half day</span>
+        </label>
+
+        @if (halfDay()) {
+          <div class="ml-field">
+            <label>Session</label>
+            <ui-select [options]="sessionOptions"
+              [ngModel]="halfDaySession()" (ngModelChange)="halfDaySession.set($event)"></ui-select>
+          </div>
+        }
+
+        <div class="ml-field">
+          <label>Reason</label>
+          <textarea rows="3" maxlength="500" placeholder="Add a note for the approver…"
+                    [ngModel]="reason()" (ngModelChange)="reason.set($event)"></textarea>
+        </div>
+
+        <button class="ml-btn ml-btn--primary" [disabled]="!canSubmit()" (click)="submit()">
+          {{ submitting() ? 'Submitting…' : 'Apply for Leave' }}
+        </button>
+      </div>
+    </section>
+
+    <!-- ── My requests ─────────────────────────────────────────── -->
+    <section class="ml-card ml-mine">
+      <h2 class="ml-card-title">My Requests</h2>
+
+      @if (loadingMine()) {
+        <p class="ml-empty">Loading…</p>
+      } @else if (mine().length === 0) {
+        <p class="ml-empty">You haven't applied for any leave yet.</p>
+      } @else {
+        <div class="ml-list">
+          @for (r of mine(); track r.id) {
+            <div class="ml-item ml-item--{{ r.status }}">
+              <div class="ml-item-main">
+                <div class="ml-item-top">
+                  <span class="ml-type">{{ r.leaveTypeName }}</span>
+                  <span class="ml-days">{{ r.days }} day{{ r.days === 1 ? '' : 's' }}</span>
+                </div>
+                <span class="ml-dates">
+                  {{ r.fromDate | date:'MMM d' }} – {{ r.toDate | date:'MMM d, y' }}
+                  @if (r.halfDay) { · half day }
+                </span>
+                @if (r.reason) { <span class="ml-reason">{{ r.reason }}</span> }
+                @if (r.status === 'rejected' && r.rejectionReason) {
+                  <span class="ml-reject-note">Rejected: {{ r.rejectionReason }}</span>
+                }
+              </div>
+              <div class="ml-item-side">
+                <span class="ml-status ml-status--{{ r.status }}">{{ r.status | titlecase }}</span>
+                @if (r.status === 'pending' && stageLabel(r.approvalStage)) {
+                  <span class="ml-stage">{{ stageLabel(r.approvalStage) }}</span>
+                }
+                @if (canCancel(r)) {
+                  <button class="ml-btn ml-btn--ghost ml-btn--sm" [disabled]="busyId() === r.id" (click)="cancel(r.id)">Cancel</button>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+  </div>
+</div>

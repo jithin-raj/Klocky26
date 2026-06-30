@@ -7,9 +7,14 @@ export const routes: Routes = [
       import('./pages/attendance/attendance.component').then(m => m.AttendanceComponent),
   },
   {
+    path: 'requests',
+    loadComponent: () =>
+      import('./pages/attendance-requests/attendance-requests.component').then(m => m.AttendanceRequestsComponent),
+  },
+  {
     path: 'geofence',
     loadComponent: () =>
-      import('./pages/geofence/geofence.component').then(m => m.GeofenceComponent),
+      import('./pages/geofencing/geofencing.component').then(m => m.GeofencingComponent),
   },
   {
     path: 'face-scan',

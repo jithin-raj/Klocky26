@@ -15,14 +15,20 @@ import { UiTextareaComponent } from '../../../../shared/components/ui-textarea/u
 import { UiSelectComponent } from '../../../../shared/components/ui-select/ui-select.component';
 import { UiToggleComponent } from '../../../../shared/components/ui-toggle/ui-toggle.component';
 import { UiModalComponent } from '../../../../shared/components/ui-modal/ui-modal.component';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { OfficeService } from '../../../../core/services/office.service';
+import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { Office as OfficeRecord } from '../../../../core/models/office.model';
 import {
   TenantSettings,
   UpdateTenantSettingsRequest,
   LeaveTypeDto,
   HolidayDto,
+  OfficeSettingDto,
 } from '../../../../core/models/org-auth.model';
 import {
   INDUSTRIES,
@@ -128,6 +134,8 @@ export class OrgProfileComponent implements OnInit {
   private readonly orgThemeService = inject(OrgThemeService);
   private readonly appState        = inject(AppStateService);
   private readonly orgAuth         = inject(OrgAuthService);
+  private readonly officeSvc       = inject(OfficeService);
+  private readonly toast           = inject(ToastService);
   private readonly fb              = inject(FormBuilder);
   private readonly location        = inject(Location);
   private readonly router          = inject(Router);
@@ -197,6 +205,9 @@ export class OrgProfileComponent implements OnInit {
       this.accentColor = currentTheme.accent.toLowerCase();
     }
 
+    // Offices come from their own endpoint (no dummy data).
+    this._loadOffices();
+
     // GET /api/tenant/options (§1.6) — replace the local country list and
     // the clock-in method choices with the server's; never hardcode the
     // latter, the set of valid methods is the server's to define.
@@ -264,6 +275,10 @@ export class OrgProfileComponent implements OnInit {
     this.weekStart         = this.workWeekStartDay;
 
     this.workHoursPerDay  = s.workHours;
+    this.workDayStart     = s.workDayStart ? s.workDayStart.slice(0, 5) : this.workDayStart;
+    this.workDayEnd       = s.workDayEnd ? s.workDayEnd.slice(0, 5) : this.workDayEnd;
+    this.autoCheckoutBufferMins = s.autoCheckoutBufferMins ?? this.autoCheckoutBufferMins;
+    this.minPunchGapMins  = s.minPunchGapMins ?? this.minPunchGapMins;
     this.gracePeriodMins   = s.checkInRuleType === 'none'
       ? 0
       : s.checkInRuleType === 'custom'
@@ -369,17 +384,10 @@ export class OrgProfileComponent implements OnInit {
   phone            = '';
   billingEmail     = '';
 
-  // Offices
-  offices: Office[] = [
-    {
-      id: '1',
-      name: 'Headquarters',
-      address: '123 Main Street',
-      city: 'Mumbai',
-      country: 'India',
-      timezone: 'Asia/Kolkata',
-    },
-  ];
+  // Offices — loaded from GET /api/offices (no dummy data) and persisted via the
+  // dedicated /api/offices CRUD on save. New rows get a 'new-' id until created.
+  offices: Office[] = [];
+  private _removedOfficeIds: string[] = [];
 
   // Team
   employeeCount  = '51–200';
@@ -407,6 +415,11 @@ export class OrgProfileComponent implements OnInit {
   workHoursPerDay      = 8;
   workWeekStartDay     = 'Monday';
   workWeekEndDay       = 'Friday';
+  // Office hours — drive auto clock-out & overtime server-side ("HH:mm").
+  workDayStart         = '09:00';
+  workDayEnd           = '18:00';
+  autoCheckoutBufferMins = 0;
+  minPunchGapMins      = 2;
   gracePeriodMins      = 10;
   halfDayThresholdHrs  = 4;
   overtimeEnabled      = false;
@@ -647,17 +660,56 @@ export class OrgProfileComponent implements OnInit {
   }
 
   // ── Offices ────────────────────────────────────────────────────
+  private _loadOffices(): void {
+    this.officeSvc.getAll().subscribe({
+      next: (res) => {
+        this.offices = (res.data ?? []).map((o: OfficeRecord) => ({
+          id: o.id,
+          name: o.name,
+          address: o.address ?? '',
+          city: o.city ?? '',
+          country: o.country ?? '',
+          timezone: o.timezone ?? '',
+        }));
+        this._removedOfficeIds = [];
+      },
+      error: () => { this.offices = []; },
+    });
+  }
+
   addOffice(): void {
     this.offices = [
       ...this.offices,
-      { id: Date.now().toString(), name: '', address: '', city: '', country: '', timezone: '' },
+      { id: `new-${Date.now()}`, name: '', address: '', city: '', country: '', timezone: '' },
     ];
     this.markDirty();
   }
 
   removeOffice(id: string): void {
+    // Remember existing (server) offices so they're deleted on save; new rows just drop.
+    if (!id.startsWith('new-')) this._removedOfficeIds.push(id);
     this.offices = this.offices.filter(o => o.id !== id);
     this.markDirty();
+  }
+
+  /** Office adds/edits are upserted via the tenant-settings `offices` array. */
+  private _toOfficeDtos(): OfficeSettingDto[] {
+    return this.offices
+      .filter(o => o.name.trim())
+      .map(o => ({
+        id: o.id.startsWith('new-') ? null : o.id,
+        name: o.name.trim(),
+        address: o.address || null,
+        city: o.city || null,
+        country: o.country || null,
+        timezone: o.timezone || null,
+      }));
+  }
+
+  /** Omitting an office does NOT delete it — removals go through DELETE /api/offices/{id}. */
+  private _deleteRemovedOffices() {
+    const ops = this._removedOfficeIds.map(id => this.officeSvc.delete(id).pipe(catchError(() => of(null))));
+    return ops.length ? forkJoin(ops) : of([]);
   }
 
   // ── Custom leave types ───────────────────────────────────────
@@ -798,6 +850,10 @@ export class OrgProfileComponent implements OnInit {
       weekStartDay: this.workWeekStartDay.toLowerCase(),
       weekEndDay: this.workWeekEndDay.toLowerCase(),
       workHours: this.workHoursPerDay,
+      workDayStart: this.workDayStart,
+      workDayEnd: this.workDayEnd,
+      autoCheckoutBufferMins: this.autoCheckoutBufferMins,
+      minPunchGapMins: this.minPunchGapMins,
       checkInRuleType,
       checkInCustomMinutes,
       halfDayThresholdHrs: this.halfDayThresholdHrs,
@@ -824,6 +880,7 @@ export class OrgProfileComponent implements OnInit {
       encashmentEnabled: this.encashmentEnabled,
       leaveTypes: this._toLeaveTypeDtos(),
       holidays: this._toHolidayDtos(),
+      offices: this._toOfficeDtos(),
     };
 
     this.orgAuth.updateTenantSettings(payload).subscribe({
@@ -831,10 +888,27 @@ export class OrgProfileComponent implements OnInit {
         this._applySettings(res.data);
         const completeTheme = this.orgThemeService.generateThemeFromColor(this.accentColor);
         this.orgThemeService.apply(completeTheme);
-        this.saving.set(false);
-        this.isDirty.set(false);
+        // Office adds/edits were upserted in the payload above; only removals
+        // need an explicit DELETE. Then refresh from the server.
+        this._deleteRemovedOffices().subscribe({
+          next: () => {
+            this._loadOffices();
+            this.saving.set(false);
+            this.isDirty.set(false);
+            this.toast.success('Settings saved', 'Your organisation settings have been updated.');
+          },
+          error: () => {
+            this._loadOffices();
+            this.saving.set(false);
+            this.isDirty.set(false);
+            this.toast.success('Settings saved', 'Settings updated, but removing an office may have failed.');
+          },
+        });
       },
-      error: () => { this.saving.set(false); },
+      error: (err) => {
+        this.saving.set(false);
+        this.toast.error('Could not save', err?.error?.message ?? 'Your settings could not be saved.');
+      },
     });
   }
 
