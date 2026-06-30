@@ -1,25 +1,23 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Leave request models — POST/GET /api/leave-requests
+// Leave request models — /api/leave-requests
 //
-// The exact base field names weren't pinned in the latest contract (only the new
-// approval-stage fields were), so the raw response is read defensively via
-// normalizeLeaveRequest() into a stable view model. Tighten these once the full
-// DTO is confirmed.
+// Leave types are org-defined (no fixed codes) — fetch GET /types and send
+// leaveTypeId. `days` and all balance figures are decimals (0.5 for half-day).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
-/** Which approval step a still-pending request is on. */
-export type LeaveApprovalStage = 'manager' | 'hr' | 'completed' | null;
+export type LeaveApprovalStage = 'manager' | 'hr' | 'completed';
+export type HalfDaySession = 'first_half' | 'second_half';
 
-/** POST /api/leave-requests request body (best-effort shape). */
+/** POST /api/leave-requests request body. */
 export interface CreateLeaveRequest {
-  leaveType: string;
-  fromDate: string;   // ISO date
-  toDate: string;     // ISO date
-  reason?: string;
-  halfDay?: boolean;
-  /** For comp-off: the worked day being claimed. */
-  compOffDate?: string;
+  leaveTypeId: string;
+  fromDate: string;                  // "YYYY-MM-DD"
+  toDate: string;                    // "YYYY-MM-DD" (== fromDate for a half-day)
+  reason?: string | null;           // max 500
+  halfDay?: boolean;                // if true, fromDate must == toDate; counts as 0.5
+  halfDaySession?: HalfDaySession | null;
+  workedDate?: string | null;       // required when the leave type isCompOff
 }
 
 /** POST /api/leave-requests/{id}/decision request body. */
@@ -28,33 +26,64 @@ export interface LeaveDecisionRequest {
   rejectionReason?: string;
 }
 
-/** Raw server item — loosely typed; consume via normalizeLeaveRequest(). */
-export type LeaveRequestRaw = Record<string, any>;
+/** GET /api/leave-requests/types item — org-defined leave types. */
+export interface LeaveTypeOption {
+  leaveTypeId: string;
+  name: string;
+  isCompOff: boolean;               // true → show the workedDate picker on apply
+  isPaid: boolean;
+  applicableTo: string;             // "all" | "male" | "female"
+  daysPerYear: number;
+}
 
-/** Stable view model the leave UI binds to. */
-export interface LeaveRequestView {
+/** GET /api/leave-requests/balances item — all figures are decimal. */
+export interface LeaveBalance {
+  leaveTypeId: string;
+  leaveTypeName?: string;
+  totalDays: number;
+  usedDays: number;
+  pendingDays: number;
+  carriedForward: number;
+  remainingDays: number;
+}
+
+/** GET/POST /api/leave-requests response item (exact server shape). */
+export interface LeaveRequestResponse {
   id: string;
-  employeeName: string;
-  employeeCode: string;
-  department: string;
-  initials: string;
-  avatarColor: string;
-  leaveType: string;
-  from: string;
-  to: string;
-  days: number;
-  reason: string;
+  userId: string;
+  userFullName: string;
+  leaveTypeId: string;
+  leaveTypeName: string;
+  isCompOff: boolean;
+  fromDate: string;
+  toDate: string;
+  days: number;                     // decimal — 0.5 for half-day
+  halfDay: boolean;
+  halfDaySession: string | null;
+  workedDate: string | null;
+  reason: string | null;
   status: LeaveStatus;
   approvalStage: LeaveApprovalStage;
-  appliedOn: string;
-  /** Original payload, in case a screen needs a field not mapped here. */
-  raw: LeaveRequestRaw;
+  managerApprovedBy: string | null;
+  managerApproverName: string | null;
+  managerApprovedAt: string | null;
+  approvedBy: string | null;
+  approverName: string | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;                // ISO — "applied on"
+}
+
+/** UI view model — adds client-computed avatar bits for list rows. */
+export interface LeaveRequestView extends LeaveRequestResponse {
+  initials: string;
+  avatarColor: string;
 }
 
 const AVATAR_COLORS = ['#6366f1','#ec4899','#f59e0b','#22c55e','#14b8a6','#8b5cf6','#ef4444','#0ea5e9'];
 
 function initialsOf(name: string): string {
-  const p = name.trim().split(/\s+/);
+  const p = (name ?? '').trim().split(/\s+/);
   return ((p[0]?.[0] ?? '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase() || 'U';
 }
 function colorFor(seed: string): string {
@@ -63,25 +92,7 @@ function colorFor(seed: string): string {
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
-/** Map a raw leave request (any of several field-name shapes) into LeaveRequestView. */
-export function normalizeLeaveRequest(raw: any): LeaveRequestView {
-  const id = String(raw?.id ?? raw?.leaveRequestId ?? raw?.uuid ?? '');
-  const employeeName = raw?.userFullName ?? raw?.employeeName ?? raw?.fullName ?? 'Employee';
-  return {
-    id,
-    employeeName,
-    employeeCode: raw?.employeeCode ?? raw?.userCode ?? '',
-    department: raw?.departmentName ?? raw?.department ?? '',
-    initials: initialsOf(employeeName),
-    avatarColor: colorFor(raw?.userId ?? id ?? employeeName),
-    leaveType: raw?.leaveTypeName ?? raw?.leaveType ?? raw?.type ?? '',
-    from: raw?.fromDate ?? raw?.startDate ?? raw?.from ?? raw?.dateFrom ?? '',
-    to: raw?.toDate ?? raw?.endDate ?? raw?.to ?? raw?.dateTo ?? '',
-    days: Number(raw?.numberOfDays ?? raw?.days ?? raw?.totalDays ?? 0),
-    reason: raw?.reason ?? '',
-    status: (raw?.status ?? 'pending') as LeaveStatus,
-    approvalStage: (raw?.approvalStage ?? null) as LeaveApprovalStage,
-    appliedOn: raw?.createdAt ?? raw?.appliedOn ?? raw?.requestedAt ?? '',
-    raw,
-  };
+/** Decorate a server response with avatar bits for the approvals/list UI. */
+export function toLeaveView(r: LeaveRequestResponse): LeaveRequestView {
+  return { ...r, initials: initialsOf(r.userFullName), avatarColor: colorFor(r.userId || r.id) };
 }

@@ -41,14 +41,14 @@ export class LeaveApprovalsComponent implements OnInit {
   detailTarget = signal<LeaveRequestView | null>(null);
 
   readonly leaveTypeOptions = computed(() => {
-    const types = Array.from(new Set(this.all().map(r => r.leaveType).filter(Boolean)));
+    const types = Array.from(new Set(this.all().map(r => r.leaveTypeName).filter(Boolean)));
     return [{ label: 'All Leave Types', value: '' }, ...types.map(t => ({ label: this.typeLabel(t), value: t }))];
   });
 
   readonly filtered = computed(() =>
     this.all().filter(r => {
       if (this.filterStatus() !== 'all' && r.status !== this.filterStatus()) return false;
-      if (this.filterType() && r.leaveType !== this.filterType()) return false;
+      if (this.filterType() && r.leaveTypeName !== this.filterType()) return false;
       return true;
     }));
 

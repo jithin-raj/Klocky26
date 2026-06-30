@@ -119,7 +119,8 @@ export class SidebarComponent {
       icon: 'calendar',
       expanded: false,
       items: [
-        { label: 'Leave Approvals', route: 'app/leaves', icon: 'calendar', roles: MANAGEMENT_ROLES },
+        { label: 'My Leave', route: 'app/leaves/my', icon: 'calendar' },
+        { label: 'Leave Approvals', route: 'app/leaves', icon: 'calendar', exact: true, roles: MANAGEMENT_ROLES },
         { label: 'Tasks', route: 'app/tasks', icon: 'clipboard-check' },
         { label: 'Notifications', route: 'app/notifications', icon: 'bell' },
       ]
