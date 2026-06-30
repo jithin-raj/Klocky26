@@ -1,0 +1,119 @@
+<div class="gf-page">
+
+  <div class="gf-header">
+    <h1>Geofencing</h1>
+    <p>Set an attendance geofence (centre + radius) for an office, department or employee.</p>
+  </div>
+
+  <div class="gf-grid">
+
+    <!-- ── Editor ──────────────────────────────────────────────── -->
+    <section class="gf-card gf-editor">
+
+      <!-- Scope tabs -->
+      <div class="gf-tabs">
+        @for (s of scopes; track s.value) {
+          <button class="gf-tab" [class.active]="scope() === s.value" (click)="setScope(s.value)">{{ s.label }}</button>
+        }
+      </div>
+
+      <div class="gf-editor-body">
+        <!-- Target -->
+        <div class="gf-field">
+          <label>{{ scopeLabel(scope()) }}</label>
+          <ui-select [placeholder]="'Select ' + scopeLabel(scope()).toLowerCase()"
+            [options]="targetOptions()" [searchable]="true"
+            [ngModel]="selectedId()" (ngModelChange)="onSelectTarget($event)"></ui-select>
+        </div>
+
+        <!-- Map -->
+        <div class="gf-map" #mapEl></div>
+        @if (!selectedId()) {
+          <p class="gf-hint">Select a {{ scopeLabel(scope()).toLowerCase() }} to set its geofence.</p>
+        }
+
+        <!-- Center input modes -->
+        <div class="gf-modes">
+          <button class="gf-btn gf-btn--soft" type="button"
+                  [disabled]="!canEdit() || !selectedId() || locating()" (click)="useMyLocation()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z"/>
+            </svg>
+            {{ locating() ? 'Locating…' : 'Use current location' }}
+          </button>
+          <span class="gf-modes-hint">or click / drag on the map</span>
+        </div>
+
+        <div class="gf-row gf-row--3">
+          <div class="gf-field">
+            <label>Latitude</label>
+            <input type="number" step="any" min="-90" max="90" placeholder="—"
+                   [disabled]="!canEdit() || !selectedId()"
+                   [ngModel]="latitude()" (ngModelChange)="onLatInput($event)" />
+          </div>
+          <div class="gf-field">
+            <label>Longitude</label>
+            <input type="number" step="any" min="-180" max="180" placeholder="—"
+                   [disabled]="!canEdit() || !selectedId()"
+                   [ngModel]="longitude()" (ngModelChange)="onLngInput($event)" />
+          </div>
+          <div class="gf-field">
+            <label>Radius (m)</label>
+            <input type="number" min="1" max="100000"
+                   [disabled]="!canEdit() || !selectedId()"
+                   [ngModel]="radiusMeters()" (ngModelChange)="onRadiusInput($event)" />
+          </div>
+        </div>
+
+        @if (latitude() != null && longitude() != null && !hasValidCoords()) {
+          <p class="gf-error">Latitude must be −90..90, longitude −180..180, radius 1..100000 m.</p>
+        }
+
+        <div class="gf-actions" *hasPermission="'geofencing'; minLevel: 2">
+          <button class="gf-btn gf-btn--ghost" type="button"
+                  [disabled]="!selectedId() || saving()" (click)="clearFence()">Clear fence</button>
+          <button class="gf-btn gf-btn--primary" type="button"
+                  [disabled]="!selectedId() || !hasValidCoords() || saving()" (click)="save()">
+            {{ saving() ? 'Saving…' : 'Save geofence' }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Configured fences ───────────────────────────────────── -->
+    <section class="gf-card gf-list">
+      <h2 class="gf-card-title">Configured fences</h2>
+
+      @if (loadingFences()) {
+        <p class="gf-empty">Loading…</p>
+      } @else if (fences().length === 0) {
+        <p class="gf-empty">No geofences configured yet.</p>
+      } @else {
+        <div class="gf-table">
+          <div class="gf-thead">
+            <span>Scope</span><span>Name</span><span>Centre</span><span>Radius</span><span>Source</span><span></span>
+          </div>
+          @for (f of fences(); track f.scope + f.scopeId) {
+            <div class="gf-trow" [class.gf-off]="!f.enabled">
+              <span><span class="gf-scope-pill gf-scope-pill--{{ f.scope }}">{{ scopeLabel(f.scope) }}</span></span>
+              <span class="gf-name">{{ f.scopeName }}</span>
+              <span class="gf-coords">
+                @if (f.enabled && f.latitude != null) { {{ f.latitude }}, {{ f.longitude }} } @else { — }
+              </span>
+              <span>{{ f.enabled && f.radiusMeters != null ? f.radiusMeters + ' m' : '—' }}</span>
+              <span>
+                @if (f.source === 'office') { <span class="gf-src">Inherited</span> }
+                @else if (f.enabled) { <span class="gf-src gf-src--direct">Direct</span> }
+                @else { — }
+              </span>
+              <span class="gf-rowaction">
+                <button class="gf-link" type="button" (click)="editFence(f)">Edit</button>
+              </span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+  </div>
+</div>

@@ -14,7 +14,7 @@ export const routes: Routes = [
   {
     path: 'geofence',
     loadComponent: () =>
-      import('./pages/geofence/geofence.component').then(m => m.GeofenceComponent),
+      import('./pages/geofencing/geofencing.component').then(m => m.GeofencingComponent),
   },
   {
     path: 'face-scan',
