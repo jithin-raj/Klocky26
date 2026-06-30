@@ -3,12 +3,14 @@
   <!-- Header -->
   <div class="ot-header">
     <div class="ot-header__left">
-      <button class="ot-back-btn" (click)="goBack()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-        </svg>
-        Employees
-      </button>
+      @if (canViewEmployees) {
+        <button class="ot-back-btn" (click)="goBack()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Employees
+        </button>
+      }
       <h1 class="ot-title">Organisation Chart</h1>
       <div class="ot-meta">
         <span>{{ viewMode() === 'my' ? 'My view' : 'Full organisation' }}</span>

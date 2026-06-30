@@ -230,6 +230,9 @@
   &:last-child { margin-bottom: 0; }
 }
 
+/* Full-width office street-address field needs the same row spacing below it */
+.op-office-address { margin-bottom: 24px; }
+
 .op-field {
   display: flex;
   flex-direction: column;

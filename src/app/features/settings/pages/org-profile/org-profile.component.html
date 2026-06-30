@@ -464,10 +464,12 @@
               </ui-input>
             </div>
 
-            <ui-input label="Street Address"
-              placeholder="Building, street, area…"
-              [(ngModel)]="offices[i].address" (ngModelChange)="markDirty()">
-            </ui-input>
+            <div class="op-office-address">
+              <ui-input label="Street Address"
+                placeholder="Building, street, area…"
+                [(ngModel)]="offices[i].address" (ngModelChange)="markDirty()">
+              </ui-input>
+            </div>
 
             <div class="op-form-row">
               <ui-select [dark]="false" label="Country" placeholder="Select country…"

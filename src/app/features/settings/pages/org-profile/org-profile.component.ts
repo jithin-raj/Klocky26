@@ -21,6 +21,7 @@ import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
 import { OfficeService } from '../../../../core/services/office.service';
+import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { OfficeRequest, Office as OfficeRecord } from '../../../../core/models/office.model';
 import {
   TenantSettings,
@@ -133,6 +134,7 @@ export class OrgProfileComponent implements OnInit {
   private readonly appState        = inject(AppStateService);
   private readonly orgAuth         = inject(OrgAuthService);
   private readonly officeSvc       = inject(OfficeService);
+  private readonly toast           = inject(ToastService);
   private readonly fb              = inject(FormBuilder);
   private readonly location        = inject(Location);
   private readonly router          = inject(Router);
@@ -887,11 +889,23 @@ export class OrgProfileComponent implements OnInit {
         this.orgThemeService.apply(completeTheme);
         // Persist office adds/edits/deletes, then refresh from the server.
         this._persistOffices().subscribe({
-          next: () => { this._loadOffices(); this.saving.set(false); this.isDirty.set(false); },
-          error: () => { this.saving.set(false); this.isDirty.set(false); },
+          next: () => {
+            this._loadOffices();
+            this.saving.set(false);
+            this.isDirty.set(false);
+            this.toast.success('Settings saved', 'Your organisation settings have been updated.');
+          },
+          error: () => {
+            this.saving.set(false);
+            this.isDirty.set(false);
+            this.toast.success('Settings saved', 'Settings updated, but some office changes may not have saved.');
+          },
         });
       },
-      error: () => { this.saving.set(false); },
+      error: (err) => {
+        this.saving.set(false);
+        this.toast.error('Could not save', err?.error?.message ?? 'Your settings could not be saved.');
+      },
     });
   }
 

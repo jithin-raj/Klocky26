@@ -6,6 +6,7 @@ import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
 import { EmployeeService } from '../../../../core/services/employee.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
+import { PermissionService } from '../../../../core/services/permission.service';
 import { EmployeeHierarchyNode, EmployeeResponse } from '../../models/employee-api.model';
 
 const AVATAR_COLORS = [
@@ -55,7 +56,11 @@ export class OrgTreeComponent implements OnInit {
   private orgNav = inject(OrgNavigationService);
   private employeeService = inject(EmployeeService);
   private appState = inject(AppStateService);
+  private permissions = inject(PermissionService);
   readonly orgTheme = inject(OrgThemeService);
+
+  /** Only show the "Employees" (grid) link when the user can actually open it. */
+  get canViewEmployees(): boolean { return this.permissions.can('employees', 1); }
 
   /** Admin is omitted from the personal "my-view", so admins default to (and only see) the full org. */
   readonly isAdmin = !!this.appState.user()?.isAdmin;
