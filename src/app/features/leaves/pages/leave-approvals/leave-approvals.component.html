@@ -33,11 +33,16 @@
         </button>
       }
     </div>
-    <ui-select [options]="leaveTypeOptions" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)"></ui-select>
+    <ui-select [options]="leaveTypeOptions()" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)"></ui-select>
   </div>
 
   <!-- List -->
   <div class="lv-list">
+    @if (loading()) {
+      <div class="lv-empty">Loading leave requests…</div>
+    } @else if (loadError()) {
+      <div class="lv-empty">{{ loadError() }}</div>
+    }
     @for (req of filtered(); track req.id) {
       <div class="lv-card" [class]="'lv-card--' + req.status">
         <div class="lv-card__left">
@@ -58,6 +63,9 @@
           <span class="lv-status lv-status--{{ req.status }}">
             {{ req.status.charAt(0).toUpperCase() + req.status.slice(1) }}
           </span>
+          @if (req.status === 'pending' && stageLabel(req.approvalStage)) {
+            <span class="lv-stage">{{ stageLabel(req.approvalStage) }}</span>
+          }
           <span class="lv-applied">Applied {{ req.appliedOn | date:'MMM d' }}</span>
         </div>
 
@@ -70,8 +78,8 @@
         </div>
       </div>
     }
-    @if (filtered().length === 0) {
-      <div class="lv-empty">No leave requests match the current filter.</div>
+    @if (!loading() && !loadError() && filtered().length === 0) {
+      <div class="lv-empty">No leave requests awaiting your approval.</div>
     }
   </div>
 

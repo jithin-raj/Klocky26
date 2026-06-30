@@ -1,41 +1,11 @@
 import {
-  Component, ChangeDetectionStrategy, signal, computed
+  Component, ChangeDetectionStrategy, signal, computed, inject, OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiSelectComponent } from '../../../../shared/components';
-
-type LeaveStatus = 'pending' | 'approved' | 'rejected';
-type LeaveType   = 'casual' | 'sick' | 'earned' | 'maternity' | 'paternity' | 'unpaid';
-
-interface LeaveRequest {
-  id: string;
-  employeeName: string;
-  employeeCode: string;
-  initials: string;
-  avatarColor: string;
-  department: string;
-  leaveType: LeaveType;
-  from: string;
-  to: string;
-  days: number;
-  reason: string;
-  status: LeaveStatus;
-  appliedOn: string;
-}
-
-const COLORS = ['#6366f1','#ec4899','#f59e0b','#22c55e','#14b8a6','#8b5cf6','#ef4444','#0ea5e9'];
-
-const MOCK: LeaveRequest[] = [
-  { id:'1', employeeName:'Divya Kumar',    employeeCode:'EMP013', initials:'DK', avatarColor:COLORS[4], department:'HR',          leaveType:'sick',      from:'2026-05-05', to:'2026-05-06', days:2, reason:'Fever and flu — doctor advised rest', status:'pending',  appliedOn:'2026-04-29' },
-  { id:'2', employeeName:'Aman Gupta',     employeeCode:'EMP014', initials:'AG', avatarColor:COLORS[5], department:'Sales',        leaveType:'casual',    from:'2026-05-08', to:'2026-05-09', days:2, reason:'Personal work at home town',          status:'pending',  appliedOn:'2026-04-28' },
-  { id:'3', employeeName:'Sneha Kapoor',   employeeCode:'EMP005', initials:'SK', avatarColor:COLORS[4], department:'Design',       leaveType:'earned',    from:'2026-05-12', to:'2026-05-16', days:5, reason:'Annual vacation',                     status:'pending',  appliedOn:'2026-04-27' },
-  { id:'4', employeeName:'Rohan Desai',    employeeCode:'EMP004', initials:'RD', avatarColor:COLORS[3], department:'Engineering',  leaveType:'casual',    from:'2026-05-02', to:'2026-05-02', days:1, reason:'Family function',                     status:'approved', appliedOn:'2026-04-25' },
-  { id:'5', employeeName:'Rahul Tiwari',   employeeCode:'EMP008', initials:'RT', avatarColor:COLORS[7], department:'Marketing',    leaveType:'sick',      from:'2026-04-22', to:'2026-04-23', days:2, reason:'Medical procedure',                   status:'approved', appliedOn:'2026-04-20' },
-  { id:'6', employeeName:'Ishita Shah',    employeeCode:'EMP019', initials:'IS', avatarColor:COLORS[2], department:'HR',           leaveType:'unpaid',    from:'2026-04-28', to:'2026-04-28', days:1, reason:'Urgent personal matter',              status:'rejected', appliedOn:'2026-04-26' },
-  { id:'7', employeeName:'Nikhil Bansal',  employeeCode:'EMP016', initials:'NB', avatarColor:COLORS[7], department:'Finance',      leaveType:'casual',    from:'2026-05-20', to:'2026-05-22', days:3, reason:'Travel plans',                        status:'pending',  appliedOn:'2026-04-30' },
-  { id:'8', employeeName:'Kavya Iyer',     employeeCode:'EMP007', initials:'KI', avatarColor:COLORS[6], department:'Design',       leaveType:'earned',    from:'2026-06-01', to:'2026-06-07', days:7, reason:'Wedding function',                   status:'pending',  appliedOn:'2026-04-30' },
-];
+import { LeaveService } from '../../../../core/services/leave.service';
+import { LeaveApprovalStage, LeaveRequestView } from '../../../../core/models/leave.model';
 
 @Component({
   selector: 'app-leave-approvals',
@@ -45,28 +15,34 @@ const MOCK: LeaveRequest[] = [
   templateUrl: './leave-approvals.component.html',
   styleUrl: './leave-approvals.component.scss',
 })
-export class LeaveApprovalsComponent {
+export class LeaveApprovalsComponent implements OnInit {
 
-  private all = signal<LeaveRequest[]>(MOCK);
+  private readonly leaveSvc = inject(LeaveService);
+
+  // Manager/HR queue — GET /leave-requests/pending-approval returns only what the
+  // caller can act on at the current stage.
+  private all = signal<LeaveRequestView[]>([]);
+  loading   = signal(true);
+  loadError = signal<string | null>(null);
+  busyId    = signal<string | null>(null);
+
   filterStatus = signal<string>('all');
   filterType   = signal<string>('');
   rejectReason = signal('');
   rejectTarget = signal<string | null>(null);
-  detailTarget = signal<LeaveRequest | null>(null);
+  detailTarget = signal<LeaveRequestView | null>(null);
 
-  readonly leaveTypes: LeaveType[] = ['casual','sick','earned','maternity','paternity','unpaid'];
-  readonly leaveTypeOptions = [
-    { label: 'All Leave Types', value: '' },
-    ...this.leaveTypes.map(t => ({ label: this.typeLabel(t), value: t })),
-  ];
+  readonly leaveTypeOptions = computed(() => {
+    const types = Array.from(new Set(this.all().map(r => r.leaveType).filter(Boolean)));
+    return [{ label: 'All Leave Types', value: '' }, ...types.map(t => ({ label: this.typeLabel(t), value: t }))];
+  });
 
-  readonly filtered = computed(() => {
-    return this.all().filter(r => {
+  readonly filtered = computed(() =>
+    this.all().filter(r => {
       if (this.filterStatus() !== 'all' && r.status !== this.filterStatus()) return false;
       if (this.filterType() && r.leaveType !== this.filterType()) return false;
       return true;
-    });
-  });
+    }));
 
   readonly counts = computed(() => ({
     pending:  this.all().filter(r => r.status === 'pending').length,
@@ -75,8 +51,24 @@ export class LeaveApprovalsComponent {
     total:    this.all().length,
   }));
 
+  ngOnInit() { this.load(); }
+
+  load() {
+    this.loading.set(true);
+    this.loadError.set(null);
+    this.leaveSvc.pendingApproval().subscribe({
+      next: (rows) => { this.all.set(rows); this.loading.set(false); },
+      error: () => { this.loadError.set('Failed to load leave requests.'); this.loading.set(false); },
+    });
+  }
+
   approve(id: string) {
-    this.all.update(list => list.map(r => r.id === id ? { ...r, status: 'approved' } : r));
+    if (this.busyId()) return;
+    this.busyId.set(id);
+    this.leaveSvc.decision(id, { approve: true }).subscribe({
+      next: () => { this._remove(id); this.busyId.set(null); },
+      error: () => { this.busyId.set(null); },
+    });
   }
 
   openReject(id: string) { this.rejectTarget.set(id); this.rejectReason.set(''); }
@@ -84,13 +76,26 @@ export class LeaveApprovalsComponent {
 
   doReject() {
     const id = this.rejectTarget();
-    if (id) this.all.update(list => list.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
-    this.rejectTarget.set(null);
+    if (!id) return;
+    this.busyId.set(id);
+    this.leaveSvc.decision(id, { approve: false, rejectionReason: this.rejectReason() || undefined }).subscribe({
+      next: () => { this._remove(id); this.rejectTarget.set(null); this.busyId.set(null); },
+      error: () => { this.busyId.set(null); },
+    });
   }
 
-  openDetail(r: LeaveRequest) { this.detailTarget.set(r); }
+  private _remove(id: string) { this.all.update(list => list.filter(r => r.id !== id)); }
+
+  openDetail(r: LeaveRequestView) { this.detailTarget.set(r); }
   closeDetail() { this.detailTarget.set(null); }
 
-  typeLabel(t: string)   { return t.charAt(0).toUpperCase() + t.slice(1) + ' Leave'; }
+  /** Comp-off shows two stages (manager → HR); surface which one a request awaits. */
+  stageLabel(stage: LeaveApprovalStage): string {
+    if (stage === 'manager') return 'Awaiting manager';
+    if (stage === 'hr') return 'Awaiting HR';
+    return '';
+  }
+
+  typeLabel(t: string)   { return t ? t.charAt(0).toUpperCase() + t.slice(1) : 'Leave'; }
   statusClass(s: string) { return s; }
 }
