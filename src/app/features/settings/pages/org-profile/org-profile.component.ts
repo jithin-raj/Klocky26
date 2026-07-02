@@ -16,10 +16,11 @@ import { UiSelectComponent } from '../../../../shared/components/ui-select/ui-se
 import { UiToggleComponent } from '../../../../shared/components/ui-toggle/ui-toggle.component';
 import { UiModalComponent } from '../../../../shared/components/ui-modal/ui-modal.component';
 import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, finalize, switchMap } from 'rxjs/operators';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { OrgLogoService } from '../../../../core/services/org-logo.service';
 import { OfficeService } from '../../../../core/services/office.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { Office as OfficeRecord } from '../../../../core/models/office.model';
@@ -135,6 +136,7 @@ export class OrgProfileComponent implements OnInit {
   private readonly appState        = inject(AppStateService);
   private readonly orgAuth         = inject(OrgAuthService);
   private readonly officeSvc       = inject(OfficeService);
+  private readonly logoSvc         = inject(OrgLogoService);
   private readonly toast           = inject(ToastService);
   private readonly fb              = inject(FormBuilder);
   private readonly location        = inject(Location);
@@ -255,6 +257,8 @@ export class OrgProfileComponent implements OnInit {
 
     this.accentColor  = (s.accentColor || this.accentColor).toLowerCase();
     this._loadedLogoUrl = s.logoUrl ?? '';
+    // Show existing logo in the preview area when settings load
+    this.logoPreview.set(s.logoUrl ?? '');
 
     this.primaryEmail     = s.primaryEmail;
     this.secondaryEmails  = [...(s.secondaryEmails ?? [])];
@@ -287,9 +291,9 @@ export class OrgProfileComponent implements OnInit {
     this.halfDayThresholdHrs = s.halfDayThresholdHrs;
     this.overtimeEnabled      = s.overtimeEnabled;
     this.overtimeAfterHrs     = s.overtimeAfterHrs ?? this.overtimeAfterHrs;
-    this.geoFencingEnabled    = s.geoFencingEnabled;
+    this.geoFencingEnabled      = s.geoFencingEnabled;
     this.selectedClockInMethods = [...(s.clockInMethods ?? [])];
-    this.selfieCheckinEnabled = s.selfieVerificationEnabled;
+    this.selfieCheckinEnabled    = s.selfieVerificationEnabled;
     this.autoCheckoutEnabled  = s.autoCheckoutEnabled;
     this.autoCheckoutTime     = s.autoCheckoutTime ? s.autoCheckoutTime.slice(0, 5) : this.autoCheckoutTime;
 
@@ -424,10 +428,11 @@ export class OrgProfileComponent implements OnInit {
   halfDayThresholdHrs  = 4;
   overtimeEnabled      = false;
   overtimeAfterHrs     = 9;
-  geoFencingEnabled    = false;
+  geoFencingEnabled     = false;
+  readLocationOnPunchIn = true;
   /** Sourced from GET /api/tenant/options (clockInMethodOptions) — never a hardcoded list. */
   selectedClockInMethods: string[] = [];
-  selfieCheckinEnabled = false;
+  selfieCheckinEnabled  = false;
   autoCheckoutEnabled  = false;
   autoCheckoutTime     = '20:00';
 
@@ -459,6 +464,8 @@ export class OrgProfileComponent implements OnInit {
   readonly saving              = signal(false);
   readonly loadingSettings     = signal(false);
   readonly logoPreview         = signal('');
+  readonly logoUploading       = signal(false);
+  readonly logoUploadError     = signal('');
   readonly activeSection       = signal('identity');
   readonly showDiscardConfirm  = signal(false);
   readonly holidayMonth        = signal(1);  // 1–12, currently viewed month
@@ -475,14 +482,50 @@ export class OrgProfileComponent implements OnInit {
 
   onLogoSelect(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-      this.logoPreview.set(URL.createObjectURL(file));
-      this.markDirty();
+    if (!file) return;
+
+    // Client-side validation matching the server (100B–5MB, image types only)
+    if (!file.type.startsWith('image/')) {
+      this.logoUploadError.set('Please choose an image file (PNG, JPG, or SVG).');
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      this.logoUploadError.set('File is too large. Maximum size is 5 MB.');
+      return;
+    }
+    if (file.size < 100) {
+      this.logoUploadError.set('File is too small. Minimum size is 100 bytes.');
+      return;
+    }
+
+    this.logoUploadError.set('');
+    this.logoUploading.set(true);
+    // Show local preview immediately while upload is in progress
+    this.logoPreview.set(URL.createObjectURL(file));
+
+    this.logoSvc.uploadLogo(file).subscribe({
+      next: (res) => {
+        this.logoUploading.set(false);
+        this._loadedLogoUrl = res.logoUrl;
+        // Replace the blob URL with the real server URL (cache-busted)
+        this.logoPreview.set(res.logoUrl);
+        // Patch the in-memory user so sidebar/header update immediately
+        this.appState.patchUserLogo(res.logoUrl);
+        this.toast.success('Logo uploaded', 'Your organisation logo has been updated.');
+      },
+      error: (err) => {
+        this.logoUploading.set(false);
+        this.logoPreview.set('');
+        this.logoUploadError.set(err?.error?.error ?? err?.error?.message ?? 'Upload failed. Please try again.');
+      },
+    });
   }
 
   removeLogo(): void {
     this.logoPreview.set('');
+    this.logoUploadError.set('');
+    this._loadedLogoUrl = '';
+    this.appState.patchUserLogo('');
     this.markDirty();
   }
 
@@ -694,10 +737,10 @@ export class OrgProfileComponent implements OnInit {
 
   /** Office adds/edits are upserted via the tenant-settings `offices` array. */
   private _toOfficeDtos(): OfficeSettingDto[] {
-    return this.offices
-      .filter(o => o.name.trim())
+    return (this.offices ?? [])
+      .filter(o => o?.name?.trim())
       .map(o => ({
-        id: o.id.startsWith('new-') ? null : o.id,
+        id: !o.id || o.id.startsWith('new-') ? null : o.id,
         name: o.name.trim(),
         address: o.address || null,
         city: o.city || null,
@@ -779,11 +822,13 @@ export class OrgProfileComponent implements OnInit {
    */
   save(): void {
     if (!this.appState.isOrgAdminAuthenticated()) {
+      console.warn('[OrgProfile] org admin token missing/expired — opening step-up dialog');
       this._pendingAction = 'save';
       this.stepUpError.set('');
       this.stepUpOpen.set(true);
       return;
     }
+    console.log('[OrgProfile] save() → _doSave()');
     this._doSave();
   }
 
@@ -796,31 +841,71 @@ export class OrgProfileComponent implements OnInit {
   }
 
   private _toLeaveTypeDtos(): LeaveTypeDto[] {
-    return this.customLeaveTypes.map(lt => ({
-      id: isServerId(lt.id) ? lt.id : null,
-      name: lt.name,
-      daysPerYear: lt.daysPerYear,
-      isPaid: lt.isPaid,
-      carryForward: lt.carryForward,
-      applicableTo: lt.applicableTo,
+    return (this.customLeaveTypes ?? []).map(lt => ({
+      id: lt?.id && isServerId(lt.id) ? lt.id : null,
+      name: lt?.name ?? '',
+      daysPerYear: lt?.daysPerYear ?? 0,
+      isPaid: lt?.isPaid ?? true,
+      carryForward: lt?.carryForward ?? false,
+      applicableTo: lt?.applicableTo ?? 'all',
     }));
   }
 
   private _toHolidayDtos(): HolidayDto[] {
-    return this.holidays.map(h => ({
-      id: isServerId(h.id) ? h.id : null,
-      name: h.name,
-      month: h.month,
-      day: h.day,
-      type: h.type,
+    return (this.holidays ?? []).map(h => ({
+      id: h?.id && isServerId(h.id) ? h.id : null,
+      name: h?.name ?? '',
+      month: h?.month ?? 1,
+      day: h?.day ?? 1,
+      type: h?.type ?? 'national',
     }));
   }
 
   private _doSave(): void {
     this.saving.set(true);
-    const { checkInRuleType, checkInCustomMinutes } = this._toCheckInRule();
 
-    const payload: UpdateTenantSettingsRequest = {
+    let checkInRuleType: any, checkInCustomMinutes: number | null;
+    let payload: UpdateTenantSettingsRequest;
+
+    try {
+      console.log('[OrgProfile] step 1: _toCheckInRule');
+      ({ checkInRuleType, checkInCustomMinutes } = this._toCheckInRule());
+      console.log('[OrgProfile] step 2: _buildPayload');
+      payload = this._buildPayload(checkInRuleType, checkInCustomMinutes);
+      console.log('[OrgProfile] step 3: payload built OK', payload);
+    } catch (e: any) {
+      console.error('[OrgProfile] payload build failed:', e);
+      this.saving.set(false);
+      this.toast.error('Could not save', e?.message ?? 'An error occurred preparing the settings.');
+      return;
+    }
+
+    this.orgAuth.updateTenantSettings(payload).pipe(
+      switchMap((res) => {
+        this._applySettings(res.data);
+        this.orgThemeService.apply(this.orgThemeService.generateThemeFromColor(this.accentColor));
+        return this._deleteRemovedOffices();
+      }),
+      finalize(() => this.saving.set(false)),
+    ).subscribe({
+      next: () => {
+        this._loadOffices();
+        this.isDirty.set(false);
+        this.toast.success('Settings saved', 'Your organisation settings have been updated.');
+      },
+      error: (err) => {
+        console.error('[OrgProfile] save error:', err);
+        this._loadOffices();
+        this.toast.error('Could not save', err?.error?.message ?? 'Your settings could not be saved.');
+      },
+    });
+  }
+
+  private _buildPayload(
+    checkInRuleType: any,
+    checkInCustomMinutes: number | null,
+  ): UpdateTenantSettingsRequest {
+    return {
       companyName: this.companyName,
       displayName: this.companyName,
       legalName: this.legalName,
@@ -831,7 +916,7 @@ export class OrgProfileComponent implements OnInit {
       website: this.website,
       accentColor: this.accentColor,
       logoUrl: this._loadedLogoUrl || null,
-      secondaryEmails: this.secondaryEmails.filter(e => e.trim().length > 0),
+      secondaryEmails: (this.secondaryEmails ?? []).filter(e => e?.trim()?.length > 0),
       billingEmail: this.billingEmail,
       hrContactName: this.hrContactName,
       hrContactEmail: this.hrContactEmail,
@@ -841,35 +926,35 @@ export class OrgProfileComponent implements OnInit {
       esicNumber: this.esicNumber,
       pfAccount: this.pfAccount,
       industry: this.industry,
-      companySize: toApiCompanySize(this.employeeCount) as any,
-      country: this.country,
-      defaultTimezone: this.defaultTimezone,
-      dateFormat: this.dateFormat,
-      currency: this.currency,
+      companySize: toApiCompanySize(this.employeeCount ?? '51-200') as any,
+      country: this.country ?? 'India',
+      defaultTimezone: this.defaultTimezone ?? 'Asia/Kolkata',
+      dateFormat: this.dateFormat ?? 'DD/MM/YYYY',
+      currency: this.currency ?? 'INR',
       clockInMethods: (this.selectedClockInMethods.length ? this.selectedClockInMethods : ['web']) as any,
-      weekStartDay: this.workWeekStartDay.toLowerCase(),
-      weekEndDay: this.workWeekEndDay.toLowerCase(),
-      workHours: this.workHoursPerDay,
-      workDayStart: this.workDayStart,
-      workDayEnd: this.workDayEnd,
-      autoCheckoutBufferMins: this.autoCheckoutBufferMins,
-      minPunchGapMins: this.minPunchGapMins,
+      weekStartDay: (this.workWeekStartDay ?? 'monday').toLowerCase(),
+      weekEndDay: (this.workWeekEndDay ?? 'friday').toLowerCase(),
+      workHours: this.workHoursPerDay ?? 8,
+      workDayStart: this.workDayStart ?? '09:00',
+      workDayEnd: this.workDayEnd ?? '18:00',
+      autoCheckoutBufferMins: this.autoCheckoutBufferMins ?? 0,
+      minPunchGapMins: this.minPunchGapMins ?? 2,
       checkInRuleType,
       checkInCustomMinutes,
-      halfDayThresholdHrs: this.halfDayThresholdHrs,
+      halfDayThresholdHrs: this.halfDayThresholdHrs ?? 4,
       locationPolicy: this.geoFencingEnabled ? 'geo_fenced_area' : 'no_restrictions',
-      lateThresholdMins: this.gracePeriodMins,
-      overtimeEnabled: this.overtimeEnabled,
-      overtimeAfterHrs: this.overtimeAfterHrs,
+      lateThresholdMins: this.gracePeriodMins ?? 0,
+      overtimeEnabled: this.overtimeEnabled ?? false,
+      overtimeAfterHrs: this.overtimeAfterHrs ?? 9,
       requirePhotoOnClockIn: false,
-      selfieVerificationEnabled: this.selfieCheckinEnabled,
+      selfieVerificationEnabled: this.selfieCheckinEnabled ?? false,
       ipRestrictionEnabled: false,
-      autoCheckoutEnabled: this.autoCheckoutEnabled,
+      autoCheckoutEnabled: this.autoCheckoutEnabled ?? false,
       autoCheckoutTime: this.autoCheckoutEnabled && this.autoCheckoutTime ? `${this.autoCheckoutTime}:00` : null,
-      geoFencingEnabled: this.geoFencingEnabled,
+      geoFencingEnabled: this.geoFencingEnabled ?? false,
       geofencePingIntervalMinutes: 5,
       geofenceMissedPingGraceMinutes: 15,
-      leaveYearStart: this.leaveYearStart.toLowerCase(),
+      leaveYearStart: (this.leaveYearStart ?? 'january').toLowerCase(),
       annualLeaveDays: this.annualLeaveDays,
       sickLeaveDays: this.sickLeaveDays,
       casualLeaveDays: this.casualLeaveDays,
@@ -882,34 +967,6 @@ export class OrgProfileComponent implements OnInit {
       holidays: this._toHolidayDtos(),
       offices: this._toOfficeDtos(),
     };
-
-    this.orgAuth.updateTenantSettings(payload).subscribe({
-      next: (res) => {
-        this._applySettings(res.data);
-        const completeTheme = this.orgThemeService.generateThemeFromColor(this.accentColor);
-        this.orgThemeService.apply(completeTheme);
-        // Office adds/edits were upserted in the payload above; only removals
-        // need an explicit DELETE. Then refresh from the server.
-        this._deleteRemovedOffices().subscribe({
-          next: () => {
-            this._loadOffices();
-            this.saving.set(false);
-            this.isDirty.set(false);
-            this.toast.success('Settings saved', 'Your organisation settings have been updated.');
-          },
-          error: () => {
-            this._loadOffices();
-            this.saving.set(false);
-            this.isDirty.set(false);
-            this.toast.success('Settings saved', 'Settings updated, but removing an office may have failed.');
-          },
-        });
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.toast.error('Could not save', err?.error?.message ?? 'Your settings could not be saved.');
-      },
-    });
   }
 
   discard(): void {

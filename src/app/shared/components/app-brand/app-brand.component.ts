@@ -21,10 +21,11 @@ export type BrandSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
       <!-- ── Org Side ── -->
       <div class="jv-org">
-        <ng-container *ngIf="orgLogoUrl; else orgFallback">
+        <ng-container *ngIf="orgLogoUrl && !_logoFailed; else orgFallback">
           <img [src]="orgLogoUrl"
                [alt]="orgName"
-               class="jv-org-img"/>
+               class="jv-org-img"
+               (error)="_logoFailed = true"/>
         </ng-container>
 
         <ng-template #orgFallback>
@@ -224,8 +225,11 @@ export class AppBrandComponent {
   /** Org Name */
   @Input() orgName = '';
 
-  /** Org Logo */
-  @Input() orgLogoUrl = '';
+  /** Org Logo — resets the broken-image flag whenever the URL changes. */
+  _logoFailed = false;
+  private _orgLogoUrl = '';
+  get orgLogoUrl(): string { return this._orgLogoUrl; }
+  @Input() set orgLogoUrl(url: string) { this._orgLogoUrl = url; this._logoFailed = false; }
 
   /** Org Accent Color */
   @Input() orgAccentColor = '';

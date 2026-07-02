@@ -13,6 +13,11 @@
     <klocky-header (toggleSidebar)="toggleSidebar()" [orgName]="orgName()" [orgLogoUrl]="orgLogoUrl" [orgAccentColor]="orgAccentColor"></klocky-header>
 
     <div class="content">
+      @if (routeLoading()) {
+        <div class="page-loader">
+          <ui-loader variant="klocky" [size]="72"></ui-loader>
+        </div>
+      }
       <router-outlet></router-outlet>
     </div>
   </div>

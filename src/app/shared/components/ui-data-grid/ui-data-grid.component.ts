@@ -4,6 +4,7 @@ import {
   ContentChildren, QueryList, TemplateRef, Directive, Input as DirectiveInput,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { UiLoaderComponent } from '../ui-loader/ui-loader.component';
 
 /**
  * Marks an <ng-template> projected into <ui-data-grid> as the renderer for a
@@ -62,7 +63,7 @@ let _gridSeq = 0;
 @Component({
   selector: 'ui-data-grid',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, UiLoaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="dg-wrap">
@@ -166,7 +167,15 @@ let _gridSeq = 0;
               }
             </tr>
           }
-          @if (!loading && rows.length === 0) {
+          @if (loading) {
+            <tr>
+              <td class="dg-empty" [attr.colspan]="totalColumns">
+                <div class="dg-empty-inner">
+                  <ui-loader variant="klocky" [size]="56"></ui-loader>
+                </div>
+              </td>
+            </tr>
+          } @else if (rows.length === 0) {
             <tr>
               <td class="dg-empty" [attr.colspan]="totalColumns">
                 <div class="dg-empty-inner">

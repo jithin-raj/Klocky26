@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { UiIconComponent, UiIconName } from '../../../../shared/components';
+import { IconClockInComponent, IconClockOutComponent } from '../../../../shared/icons';
 
 interface LeaveBalance {
   type: string;
@@ -39,7 +40,7 @@ interface QuickAction {
   selector: 'app-employee-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, UiIconComponent],
+  imports: [CommonModule, RouterLink, UiIconComponent, IconClockInComponent, IconClockOutComponent],
   templateUrl: './employee-dashboard.component.html',
   styleUrl: './employee-dashboard.component.scss',
 })
@@ -107,6 +108,15 @@ export class EmployeeDashboardComponent implements OnDestroy {
   get isClockedIn()  { return this.attendanceSvc.isClockedIn; }
   get geoStatus()    { return this.attendanceSvc.geoStatus; }
 
+  /** Mobile punch out — mirrors header's toggleClock for the dashboard button */
+  toggleClock(): void {
+    if (this.attendanceSvc.isClockedIn()) {
+      this.attendanceSvc.manualClockOut();
+    } else {
+      this.clockIn();
+    }
+  }
+
   now = new Date();
   todayHours = signal('0h 00m');
 
@@ -119,18 +129,20 @@ export class EmployeeDashboardComponent implements OnDestroy {
    * uploaded capture instead of re-introducing client-side face matching here.
    */
   clockIn(): void {
-    // The timer + hours start automatically once the service reports clockInTime
-    // (see the effect in the constructor) — no need to start it here.
-    if (!navigator.geolocation) {
-      this.attendanceSvc.clockIn('web');
+    const method = (window as any).ReactNativeWebView ? 'mobile' : 'web';
+    // Skip geolocation if org has disabled "read location on punch in"
+    const readLocation = this.appState.user()?.readLocationOnPunchIn !== false;
+
+    if (!readLocation || !navigator.geolocation) {
+      this.attendanceSvc.clockIn(method);
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => this.attendanceSvc.clockIn('mobile', {
+      (pos) => this.attendanceSvc.clockIn(method, {
         latitude: pos.coords.latitude,
         longitude: pos.coords.longitude,
       }),
-      () => this.attendanceSvc.clockIn('web'),
+      () => this.attendanceSvc.clockIn(method),
       { enableHighAccuracy: true, timeout: 10000 },
     );
   }

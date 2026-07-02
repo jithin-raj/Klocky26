@@ -75,7 +75,10 @@ export interface EmployeeUser {
   displayName: string;
   industry: string | null;
   accentColor: string | null;
+  logoUrl: string | null;
   website: string | null;
+  /** Org-level setting: if false, skip geolocation capture on punch in (default true). */
+  readLocationOnPunchIn?: boolean;
 }
 
 /** PUT /api/users/auth/me request — every field optional */

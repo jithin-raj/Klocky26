@@ -139,6 +139,13 @@ export class AppStateService {
     await this._persist({ ...this._state(), user, orgUrlName: user.orgUrlName });
   }
 
+  /** Patches the org logo URL in the persisted user profile (called after a successful upload). */
+  async patchUserLogo(logoUrl: string): Promise<void> {
+    const u = this._state().user;
+    if (!u) return;
+    await this._persist({ ...this._state(), user: { ...u, logoUrl } });
+  }
+
   // ── Org-admin step-up session ─────────────────────────────────────────────
 
   /** Stores the org-admin token from registration (1.3) or org-admin login (2.1). */

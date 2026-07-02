@@ -154,6 +154,21 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/shifts/shifts.routes').then((m) => m.shiftRoutes),
       },
+      {
+        path: 'time-management',
+        loadChildren: () =>
+          import('./features/time-management/time-management.routes').then((m) => m.timeManagementRoutes),
+      },
+      {
+        path: 'compensation',
+        loadChildren: () =>
+          import('./features/compensation/compensation.routes').then((m) => m.compensationRoutes),
+      },
+      {
+        path: 'organisation',
+        loadChildren: () =>
+          import('./features/organisation/organisation.routes').then((m) => m.organisationRoutes),
+      },
     ],
   },
       // Catch-all for invalid /:orgUrlName routes (e.g., /:orgUrlName/xyz)

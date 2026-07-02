@@ -228,10 +228,12 @@
           <div class="op-field">
             <p class="op-field-label">Organisation Logo</p>
             <div class="op-logo-upload">
-              <div class="op-logo-avatar" 
+              <div class="op-logo-avatar"
                    [style.background]="getLogoBackground()"
                    [style.color]="getLogoTextColor()">
-                @if (logoPreview()) {
+                @if (logoUploading()) {
+                  <span class="op-logo-spinner"></span>
+                } @else if (logoPreview()) {
                   <img [src]="logoPreview()" alt="Logo preview" />
                 } @else {
                   {{ companyName.charAt(0).toUpperCase() || '?' }}
@@ -239,17 +241,24 @@
               </div>
               <div class="op-logo-meta">
                 <div class="op-logo-actions">
-                  <button type="button" class="op-btn-outline" (click)="triggerLogo()">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                    Upload Logo
+                  <button type="button" class="op-btn-outline" (click)="triggerLogo()" [disabled]="logoUploading()">
+                    @if (logoUploading()) {
+                      Uploading…
+                    } @else {
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      Upload Logo
+                    }
                   </button>
-                  @if (logoPreview()) {
+                  @if (logoPreview() && !logoUploading()) {
                     <button type="button" class="op-btn-ghost-red" (click)="removeLogo()">Remove</button>
                   }
                 </div>
-                <span class="op-hint">PNG, SVG, or JPG · Recommended 200×200 px</span>
+                <span class="op-hint">PNG, SVG, or JPG · Max 5 MB · Recommended 200×200 px</span>
+                @if (logoUploadError()) {
+                  <span class="op-hint op-hint--error">{{ logoUploadError() }}</span>
+                }
               </div>
             </div>
             <input #logoInput type="file" accept="image/png,image/svg+xml,image/jpeg" class="op-hidden" (change)="onLogoSelect($event)" />
@@ -295,28 +304,31 @@
             <div class="op-brand-preview-wrapper">
               <div class="op-bp-header-row">
                 <div class="op-bp-label">Theme Preview</div>
-                <button type="button" class="op-bp-test-btn" (click)="testTheme()" [disabled]="!isDirty()">
-                  Test Live
-                </button>
               </div>
-              
+
               <!-- Main preview card with background -->
               <div class="op-brand-preview" [style.background]="getPreviewBg()">
-                
-                <!-- Mini Sidebar -->
-                <div class="op-bp-sidebar" 
-                     [style.background]="'linear-gradient(180deg, ' + 
-                       'color-mix(in srgb, ' + accentColor + ' 18%, #0d1117) 0%, ' +
-                       'color-mix(in srgb, ' + accentColor + ' 12%, #0a0e14) 50%, ' +
-                       'color-mix(in srgb, ' + accentColor + ' 8%, #0a0e14) 100%)'">
-                  <!-- Top accent stripe -->
-                  <div class="op-bp-stripe" 
-                       [style.background]="'linear-gradient(90deg, transparent 0%, ' + accentColor + ' 50%, color-mix(in srgb, ' + accentColor + ' 70%, #fff) 85%, transparent 100%)'"></div>
-                  <div class="op-bp-logo" 
-                       [style.background]="'rgba(255, 255, 255, 0.15)'" 
-                       [style.color]="'#ffffff'">
-                    {{ companyName.charAt(0).toUpperCase() || 'K' }}
+
+                <!-- Mini Sidebar — matches real sidebar formula exactly -->
+                <div class="op-bp-sidebar"
+                     [style.background]="'linear-gradient(170deg, ' +
+                       'color-mix(in srgb, ' + accentColor + ' 22%, #06080d) 0%, ' +
+                       'color-mix(in srgb, ' + accentColor + ' 15%, #090c12) 55%, ' +
+                       'color-mix(in srgb, ' + accentColor + ' 10%, #090c12) 100%)'">
+                  <!-- Apps icon button (matches real sb-top) -->
+                  <div class="op-bp-apps-btn" [style.borderColor]="'color-mix(in srgb, ' + accentColor + ' 18%, rgba(255,255,255,0.06))'">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2">
+                      <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                      <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                    </svg>
                   </div>
+                  <!-- Nav items -->
+                  <div class="op-bp-nav-item op-bp-nav-active"
+                       [style.background]="'linear-gradient(140deg, ' + accentColor + ', color-mix(in srgb, ' + accentColor + ' 62%, #000))'">
+                  </div>
+                  <div class="op-bp-nav-item"></div>
+                  <div class="op-bp-nav-item"></div>
+                  <div class="op-bp-nav-item"></div>
                 </div>
                 
                 <!-- Content Preview -->
@@ -742,6 +754,12 @@
             label="Geo-Fencing"
             hint="Restrict check-in to within the office perimeter"
             [(ngModel)]="geoFencingEnabled" (ngModelChange)="markDirty()">
+          </ui-toggle>
+
+          <ui-toggle [row]="true"
+            label="Read Location on Punch In"
+            hint="Capture the employee's GPS coordinates when they clock in"
+            [(ngModel)]="readLocationOnPunchIn" (ngModelChange)="markDirty()">
           </ui-toggle>
 
           <ui-toggle [row]="true"

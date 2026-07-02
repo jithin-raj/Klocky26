@@ -83,9 +83,13 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       // ── 403 Forbidden ──────────────────────────────────────────────────────
+      // Do NOT globally redirect to /404 here: route-level access is already
+      // gated by permissionGuard/roleGuard before a page loads, so a 403 at this
+      // point is an individual API call being denied (often an auxiliary one like
+      // GET /departments on the employee list). Nuking the whole SPA to /404 for
+      // that hid pages that were otherwise fine. Surface a message and let the
+      // calling component handle it inline (loading/error states already exist).
       if (error.status === 403) {
-        // Unauthorized access - redirect to 404
-        router.navigate(['/404']);
         return throwError(() => ({
           ...error,
           userMessage: 'You do not have permission to access this resource.',

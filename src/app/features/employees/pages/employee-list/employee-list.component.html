@@ -79,7 +79,7 @@
   <!-- Stable-height area so loading/error never jumps the layout -->
   @if (loading()) {
     <div class="el-grid-state">
-      <ui-loader variant="spinner" text="Loading employees…"></ui-loader>
+      <ui-loader variant="klocky" [size]="64"></ui-loader>
     </div>
   } @else if (loadError()) {
     <div class="el-grid-state"><p class="el-state-err">{{ loadError() }}</p></div>

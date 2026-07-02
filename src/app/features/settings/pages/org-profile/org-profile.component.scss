@@ -293,6 +293,25 @@
   font-size: 12px;
   color: var(--text-lighter, #94a3b8);
   line-height: 1.4;
+
+  &--error {
+    color: #ef4444;
+    font-weight: 500;
+  }
+}
+
+/* Spinner shown inside the logo avatar while upload is in progress */
+.op-logo-spinner {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255,255,255,.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: op-spin 0.75s linear infinite;
+}
+@keyframes op-spin {
+  to { transform: rotate(360deg); }
 }
 
 // ── Text inputs ──────────────────────────────────────────────────────────────
@@ -559,40 +578,28 @@ textarea {
   }
 }
 
-.op-bp-stripe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  opacity: 0.95;
-  pointer-events: none;
-  z-index: 1;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
-  
-  @media (max-width: 640px) {
-    top: auto;
-    bottom: 0;
-  }
+/* Apps-grid icon button at top of mini sidebar */
+.op-bp-apps-btn {
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.07);
+  border: 1px solid; /* color set via [style.borderColor] */
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 
-.op-bp-logo {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 18px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s;
-  
-  @media (max-width: 640px) {
-    width: 38px;
-    height: 38px;
-    font-size: 16px;
-  }
+/* Mini nav icon tiles */
+.op-bp-nav-item {
+  width: 34px; height: 7px;
+  border-radius: 5px;
+  background: rgba(255,255,255,.1);
+  margin-bottom: 5px;
+  flex-shrink: 0;
+}
+.op-bp-nav-active {
+  /* color set via [style.background] */
+  background: transparent;
 }
 
 .op-bp-content {
