@@ -2,9 +2,6 @@ import { Component, Input, inject, signal, computed } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs';
-import {
-  IconKlockyLogoComponent,
-} from '../../shared/icons';
 import { UiIconComponent } from '../../shared/components';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
@@ -23,6 +20,8 @@ interface MenuItem {
   /** Optional permission gate (spec §1) — hidden unless the resolved /me level for this key ≥ permLevel. */
   permKey?: string;
   permLevel?: AccessLevel;
+  /** Feature not yet built — link routes to the shared Coming Soon page and shows a "Soon" badge. */
+  comingSoon?: boolean;
 }
 
 interface MenuSection {
@@ -36,6 +35,8 @@ interface MenuSection {
 const MANAGEMENT_ROLES: UserRole[] = ['admin', 'hr', 'manager', 'super_admin'];
 const ADMIN_HR_ROLES: UserRole[] = ['admin', 'hr', 'super_admin'];
 const ADMIN_ONLY_ROLES: UserRole[] = ['admin', 'super_admin'];
+/** Personal/employee-facing items — hidden for org admins who manage others, not themselves */
+const NON_ADMIN_ROLES: UserRole[] = ['employee', 'hr', 'manager'];
 
 @Component({
   selector: 'klocky-sidebar',
@@ -43,7 +44,6 @@ const ADMIN_ONLY_ROLES: UserRole[] = ['admin', 'super_admin'];
     CommonModule,
     RouterLink,
     RouterLinkActive,
-    IconKlockyLogoComponent,
     UiIconComponent,
   ],
   templateUrl: './sidebar.component.html',
@@ -84,57 +84,110 @@ export class SidebarComponent {
   // Menu structure with sections (routes without org prefix - added dynamically).
   // `roles` on an item mirrors that route's own roleGuard data (app.routes.ts) —
   // this only hides the link, it isn't the security boundary; the guard is.
+  // Menu structure follows the 10-section product spec. Items flagged
+  // `comingSoon` route to the shared Coming Soon page and render a "Soon" badge;
+  // they are still role/permission gated, so users without access don't see them
+  // at all (per requirement: "if there is no access hide it completely").
   private baseMenuSections: MenuSection[] = [
+    // §2 — Time Management
+    {
+      id: 'time',
+      label: 'Time Management',
+      icon: 'clock',
+      expanded: false,
+      items: [
+        { label: 'Overview', route: 'app/time-management', icon: 'grid', exact: true, comingSoon: true },
+        { label: 'Attendance', route: 'app/attendance', icon: 'calendar', exact: true, roles: NON_ADMIN_ROLES },
+        { label: 'Regularization', route: 'app/attendance/requests', icon: 'repeat', roles: NON_ADMIN_ROLES },
+        { label: 'My Leave', route: 'app/leaves/my', icon: 'calendar', roles: NON_ADMIN_ROLES },
+        { label: 'Leave Approvals', route: 'app/leaves', icon: 'check-circle', exact: true, roles: MANAGEMENT_ROLES },
+        { label: 'Face Scan', route: 'app/attendance/face-scan', icon: 'scan', roles: NON_ADMIN_ROLES },
+      ]
+    },
+    // §3 — Task Box (not yet built)
+    {
+      id: 'tasks',
+      label: 'Task Box',
+      icon: 'clipboard-check',
+      expanded: false,
+      items: [
+        { label: 'Task List', route: 'app/tasks', icon: 'clipboard-check', exact: true, comingSoon: true },
+        { label: 'Task History', route: 'app/tasks/history', icon: 'layers', comingSoon: true },
+        { label: 'Manage Delegation', route: 'app/tasks/delegation', icon: 'repeat', roles: MANAGEMENT_ROLES, comingSoon: true },
+      ]
+    },
+    // §4 — Org View
+    {
+      id: 'org',
+      label: 'Org View',
+      icon: 'tree',
+      expanded: false,
+      items: [
+        // View-only org structure — visible to anyone with employees view access (level 1).
+        { label: 'Org Tree', route: 'app/employees/tree', icon: 'tree', permKey: 'employees', permLevel: 1 },
+      ]
+    },
+    // §5 + §6 — Employee Management (incl. Roles & Permissions)
     {
       id: 'people',
-      label: 'People & Organization',
+      label: 'Employee Management',
       icon: 'users',
       expanded: false,
       items: [
         { label: 'Employees', route: 'app/employees', icon: 'users', exact: true, roles: MANAGEMENT_ROLES, permKey: 'employees', permLevel: 1 },
-        // Org Tree is view-only org structure — visible to anyone with employees view access (level 1).
-        { label: 'Org Tree', route: 'app/employees/tree', icon: 'tree', permKey: 'employees', permLevel: 1 },
         { label: 'Departments & Roles', route: 'app/employees/org-structure', icon: 'sitemap', roles: ADMIN_ONLY_ROLES },
-        // Single canonical Roles & Permissions editor (the old duplicate "Permissions" link was removed).
         { label: 'Roles & Permissions', route: 'app/roles', icon: 'shield', roles: ADMIN_ONLY_ROLES, permKey: 'permissions', permLevel: 3 },
       ]
     },
+    // §7 — Compensation (upcoming)
     {
-      id: 'attendance',
-      label: 'Attendance',
-      icon: 'clock',
+      id: 'compensation',
+      label: 'Compensation',
+      icon: 'briefcase',
       expanded: false,
       items: [
-        { label: 'Attendance', route: 'app/attendance', icon: 'clock', exact: true },
-        { label: 'Regularization', route: 'app/attendance/requests', icon: 'clock' },
-        { label: 'Shifts & Roster', route: 'app/shifts', icon: 'repeat', roles: MANAGEMENT_ROLES },
-        { label: 'Geo-fencing', route: 'app/attendance/geofence', icon: 'map-pin', roles: ADMIN_ONLY_ROLES },
-        { label: 'Face Scan', route: 'app/attendance/face-scan', icon: 'scan' },
-        { label: 'Face Roster', route: 'app/attendance/face-roster', icon: 'users', roles: MANAGEMENT_ROLES },
+        { label: 'Compensation', route: 'app/compensation', icon: 'briefcase', exact: true, roles: MANAGEMENT_ROLES, comingSoon: true },
       ]
     },
+    // §8 — Recruitment (not yet built)
     {
-      id: 'timeoff',
-      label: 'Time Off & Work',
-      icon: 'calendar',
+      id: 'recruitment',
+      label: 'Recruitment',
+      icon: 'user-plus',
       expanded: false,
       items: [
-        { label: 'My Leave', route: 'app/leaves/my', icon: 'calendar' },
-        { label: 'Leave Approvals', route: 'app/leaves', icon: 'calendar', exact: true, roles: MANAGEMENT_ROLES },
-        { label: 'Tasks', route: 'app/tasks', icon: 'clipboard-check' },
-        { label: 'Notifications', route: 'app/notifications', icon: 'bell' },
+        { label: 'Overview', route: 'app/recruitment', icon: 'user-plus', exact: true, roles: ADMIN_HR_ROLES, comingSoon: true },
+        { label: 'My Interviews', route: 'app/recruitment/interviews', icon: 'user-check', comingSoon: true },
+        { label: 'Refer a Buddy', route: 'app/recruitment/refer', icon: 'megaphone', comingSoon: true },
+        { label: 'Referral History', route: 'app/recruitment/referrals', icon: 'layers', comingSoon: true },
+        { label: 'Job Openings', route: 'app/recruitment/jobs', icon: 'briefcase', comingSoon: true },
       ]
     },
+    // §9 — Performance (not yet built)
     {
       id: 'performance',
-      label: 'Performance & HR',
+      label: 'Performance',
       icon: 'bar-chart',
       expanded: false,
       items: [
-        { label: 'Performance', route: 'app/performance', icon: 'bar-chart' },
-        { label: 'HR Analytics', route: 'app/analytics', icon: 'pie-chart', roles: ADMIN_HR_ROLES },
-        { label: 'Engagement', route: 'app/engagement', icon: 'sparkles', roles: MANAGEMENT_ROLES },
-        { label: 'Recruitment', route: 'app/recruitment', icon: 'user-plus', roles: ADMIN_HR_ROLES },
+        { label: 'Overview', route: 'app/performance', icon: 'bar-chart', exact: true, comingSoon: true },
+        { label: 'Appraisals', route: 'app/performance/appraisals', icon: 'award', comingSoon: true },
+        { label: 'Pay Scale', route: 'app/performance/pay-scale', icon: 'pie-chart', roles: ADMIN_HR_ROLES, comingSoon: true },
+        { label: 'Assessments', route: 'app/performance/assessments', icon: 'clipboard-check', comingSoon: true },
+      ]
+    },
+    // §10 — Organisation
+    {
+      id: 'organisation',
+      label: 'Organisation',
+      icon: 'building',
+      expanded: false,
+      items: [
+        { label: 'Org Settings', route: 'app/settings', icon: 'settings', roles: ADMIN_HR_ROLES },
+        { label: 'Documents', route: 'app/organisation/documents', icon: 'layers', comingSoon: true },
+        { label: 'Shifts & Roster', route: 'app/shifts', icon: 'repeat', roles: MANAGEMENT_ROLES, comingSoon: true },
+        { label: 'Geo-fencing', route: 'app/attendance/geofence', icon: 'map-pin', roles: ADMIN_ONLY_ROLES },
+        { label: 'Send Notification', route: 'app/notifications', icon: 'send', roles: MANAGEMENT_ROLES },
       ]
     },
   ];
@@ -168,14 +221,24 @@ export class SidebarComponent {
       .filter(section => section.items.length > 0);
   });
 
+  /** Locks the sidebar open and shows all sections expanded */
+  allOpen = signal(false);
+
+  toggleAllOpen(): void {
+    this.allOpen.update(v => !v);
+    // Reset manual section state when toggling the all-open view
+    this.expandedSections.set(new Set());
+  }
+
   toggleSection(sectionId: string): void {
+    // Exit all-open mode when user manually picks a section
+    this.allOpen.set(false);
     const expanded = this.expandedSections();
     const newExpanded = new Set(expanded);
 
     if (newExpanded.has(sectionId)) {
       newExpanded.delete(sectionId);
     } else {
-      // Close all other sections when opening a new one
       newExpanded.clear();
       newExpanded.add(sectionId);
     }
@@ -184,13 +247,18 @@ export class SidebarComponent {
   }
 
   isSectionExpanded(sectionId: string): boolean {
-    return this.expandedSections().has(sectionId);
+    return this.allOpen() || this.expandedSections().has(sectionId);
   }
 
   /** Close all expanded sections when navigating to a menu item */
   onMenuItemClick(): void {
+    this.allOpen.set(false);
     this.expandedSections.set(new Set());
   }
+
+  isDashboardActive = computed(() =>
+    this.currentUrl().includes('/app/dashboard')
+  );
 
   /** Check if any item in this section is currently active */
   hasSectionActiveChild(section: MenuSection): boolean {
@@ -214,8 +282,11 @@ export class SidebarComponent {
 
   /** Organisation name — triggers joint-venture mode when set */
   @Input() orgName = '';
-  /** Organisation logo URL — shown in JV brand area */
-  @Input() orgLogoUrl = '';
+  /** Organisation logo URL — resets the broken-image flag whenever the URL changes. */
+  logoFailed = false;
+  private _orgLogoUrl = '';
+  get orgLogoUrl(): string { return this._orgLogoUrl; }
+  @Input() set orgLogoUrl(url: string) { this._orgLogoUrl = url; this.logoFailed = false; }
   /** Brand accent hex color — changes sidebar accent in JV mode e.g. '#10b981' */
   @Input() orgAccentColor = '';
 

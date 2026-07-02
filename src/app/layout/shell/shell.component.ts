@@ -1,11 +1,16 @@
-import { Component, OnInit, OnDestroy, computed } from '@angular/core';
-import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { Component, OnInit, OnDestroy, computed, signal, inject } from '@angular/core';
+import {
+  RouterOutlet, Router, NavigationEnd, NavigationStart,
+  NavigationCancel, NavigationError, NavigationSkipped,
+} from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
-import { UiModalOutletComponent } from '../../shared/components';
+import { UiModalOutletComponent, UiLoaderComponent } from '../../shared/components';
 import { Subscription, filter } from 'rxjs';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
+import { OrgLogoService } from '../../core/services/org-logo.service';
+import { UserAuthService } from '../../core/services/user-auth.service';
 import { PermissionService } from '../../core/services/permission.service';
 import { RealtimeService } from '../../core/services/realtime.service';
 import { AttendanceStateService } from '../../core/services/attendance-state.service';
@@ -15,7 +20,7 @@ import { LoadingService } from '../../core/services/loading.service';
 @Component({
   selector: 'klocky-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent, UiModalOutletComponent],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, UiModalOutletComponent, UiLoaderComponent],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss'],
 })
@@ -25,6 +30,10 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   /** True while any HTTP request is in flight — drives the global top loading bar. */
   readonly isApiLoading = computed(() => this.loading.isLoading());
+
+  /** True while the router is navigating (incl. lazy-loading a route chunk) —
+      drives the centered page loader overlay. */
+  readonly routeLoading = signal(false);
 
   // Human-facing org name — prefer the real displayName from GET /me (§3.3).
   // Only fall back to guessing one from the URL slug before /me has loaded
@@ -41,17 +50,24 @@ export class ShellComponent implements OnInit, OnDestroy {
       .join(' ');
   });
 
-  // Joint-venture branding — populated when an org is active.
-  orgLogoUrl = '';
+  // Org logo — prefer the URL stored on the user object (set by /me or after upload);
+  // fall back to the anonymous public endpoint so the logo appears even on first load.
+  get orgLogoUrl(): string {
+    return this.appState.user()?.logoUrl
+      || this.logoSvc.publicLogoUrl(this.appState.orgSlug() ?? '');
+  }
 
   get orgAccentColor(): string {
     return this.orgTheme.current.accent;
   }
 
+  private readonly logoSvc = inject(OrgLogoService);
+
   constructor(
     private router: Router,
     private orgTheme: OrgThemeService,
     private appState: AppStateService,
+    private userAuth: UserAuthService,
     private permissions: PermissionService,
     private realtime: RealtimeService,
     private attendance: AttendanceStateService,
@@ -62,6 +78,21 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Restore org theme from previous session so accent/colors are correct on reload
     this.orgTheme.restoreFromStorage();
+
+    // Refresh user profile on every shell mount (reload / navigation into the app).
+    // This picks up org color/logo changes made by an admin in another session
+    // without requiring the user to log out and back in.
+    if (this.appState.isAuthenticated()) {
+      this.userAuth.getMe().subscribe({
+        next: (res) => {
+          if (res.data.accentColor) {
+            const theme = this.orgTheme.generateThemeFromColor(res.data.accentColor);
+            this.orgTheme.apply(theme);
+          }
+        },
+        error: () => { /* non-fatal — stale theme stays active */ },
+      });
+    }
 
     // A full page reload kills the SignalR socket — reconnect using the
     // still-valid persisted access token.
@@ -79,9 +110,19 @@ export class ShellComponent implements OnInit, OnDestroy {
       this.permissions.load().subscribe({ error: () => { /* guard re-loads on demand */ } });
     }
 
-    this._routerSub = this.router.events
-      .pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe(() => { this.isSidebarOpen = false; });
+    this._routerSub = this.router.events.subscribe(e => {
+      if (e instanceof NavigationStart) {
+        this.routeLoading.set(true);
+      } else if (
+        e instanceof NavigationEnd ||
+        e instanceof NavigationCancel ||
+        e instanceof NavigationError ||
+        e instanceof NavigationSkipped
+      ) {
+        this.routeLoading.set(false);
+        if (e instanceof NavigationEnd) this.isSidebarOpen = false;
+      }
+    });
   }
 
   ngOnDestroy() {

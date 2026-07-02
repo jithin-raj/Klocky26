@@ -1,8 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 /**
- * Clock-Out icon — clock face (offset left) with an outward-pointing
- * arrow on the right side, indicating attendance check-out.
+ * Clock-Out icon — stopwatch body with stop square, indicating session end.
  */
 @Component({
   selector: 'icon-clock-out',
@@ -16,21 +15,16 @@ import { Component, Input } from '@angular/core';
       [attr.fill]="color"
       aria-hidden="true"
     >
-      <!-- Clock ring (same offset as clock-in) -->
+      <!-- Crown stem -->
+      <rect x="10.25" y="1" width="3.5" height="3" rx="1"/>
+      <!-- Stopwatch body ring (outer − inner via evenodd) -->
       <path
         fill-rule="evenodd"
         clip-rule="evenodd"
-        d="M9 5a7 7 0 1 0 0 14A7 7 0 0 0 9 5zm0 1.75a5.25 5.25 0 1 1 0
-           10.5A5.25 5.25 0 0 1 9 6.75z"
+        d="M12 5.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zm0 1.75a6.75 6.75 0 1 1 0 13.5 6.75 6.75 0 0 1 0-13.5z"
       />
-      <!-- Clock hands -->
-      <path d="M9.75 8.5a.75.75 0 0 0-1.5 0v3.44L5.97 14.2a.75.75 0 1
-               0 1.06 1.06l2.41-2.41A.75.75 0 0 0 9.75 12V8.5z"/>
-      <!-- Exiting arrow (→ pointing right, leaving clock) -->
-      <!-- Shaft -->
-      <rect x="15.5" y="11.25" width="5" height="1.5" rx="0.75"/>
-      <!-- Arrowhead pointing right -->
-      <path d="M20.5 9.5L23 12l-2.5 2.5V9.5z"/>
+      <!-- Stop square -->
+      <rect x="9.25" y="11.5" width="5.5" height="5.5" rx="0.75"/>
     </svg>
   `,
 })

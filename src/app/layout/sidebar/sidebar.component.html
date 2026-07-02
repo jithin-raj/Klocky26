@@ -1,41 +1,23 @@
-<div class="sidebar" [class.open]="isOpen" [class.is-jv]="isJv" [style.--accent]="accentColor">
+<div class="sidebar" [class.open]="isOpen" [class.all-open]="allOpen()" [style.--accent]="accentColor">
 
-  <!-- ── Brand ─────────────────────────────────────────────────── -->
-  <div class="brand">
-    @if (isJv) {
-      <div class="brand-mark" [title]="orgName">
-        @if (orgLogoUrl) {
-          <img class="brand-img" [src]="orgLogoUrl" [alt]="orgName" />
-        } @else {
-          {{ orgName.charAt(0).toUpperCase() }}
-        }
-      </div>
-      <div class="brand-info">
-        <span class="brand-org">{{ orgName }}</span>
-        <span class="brand-via">via Klock</span>
-      </div>
-    } @else {
-      <div class="brand-mark">
-        <icon-klocky-logo [size]="20"></icon-klocky-logo>
-      </div>
-      <span class="brand-name">Klock</span>
-    }
+  <!-- ── App launcher button ───────────────────────────────────── -->
+  <div class="sb-top">
+    <button class="sb-apps-btn" [class.active]="allOpen()" (click)="toggleAllOpen()" title="All Apps">
+      <ui-icon name="grid" [size]="20"></ui-icon>
+    </button>
+    <span class="sb-apps-label label">All Apps</span>
   </div>
 
-  <!-- ── Main Navigation with Collapsible Sections ───────────────────────────────────────── -->
+  <!-- ── Main Navigation with Collapsible Sections (scrolls) ───────────────── -->
   <nav class="nav-main">
 
-    <!-- Dashboard — promoted to a standalone top-level link (no "Main" group).
-         Styled to match the section headers so it lines up in the collapsed rail. -->
-    <a [routerLink]="dashboardLink()"
-       routerLinkActive="active"
-       [routerLinkActiveOptions]="{exact: true}"
-       title="Dashboard"
-       (click)="onMenuItemClick()"
-       class="nav-top-link">
-      <span class="nav-top-icon"><ui-icon name="grid" [size]="19"></ui-icon></span>
-      <span class="nav-top-label label">Dashboard</span>
-    </a>
+    <!-- Dashboard — styled identically to section headers so it aligns with the list -->
+    <div class="nav-section" [class.has-active-child]="isDashboardActive()">
+      <a class="nav-section-header" [routerLink]="dashboardLink()" (click)="onMenuItemClick()">
+        <span class="nav-section-icon"><ui-icon name="home" [size]="18"></ui-icon></span>
+        <span class="nav-section-label label">Dashboard</span>
+      </a>
+    </div>
 
     @for (section of menuSections(); track section.id) {
       <div class="nav-section" 

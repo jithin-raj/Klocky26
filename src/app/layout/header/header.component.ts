@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output, OnDestroy, ChangeDetectionStrategy, inject, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { IconSearchComponent } from '../../shared/icons';
+import { IconSearchComponent, IconClockInComponent, IconClockOutComponent } from '../../shared/icons';
 import { UiIconComponent, UiIconName } from '../../shared/components';
 import { AppBrandComponent } from '../../shared/components/app-brand/app-brand.component';
 import { AttendanceStateService } from '../../core/services/attendance-state.service';
@@ -16,7 +16,7 @@ import { UserRole } from '../../core/models/user.model';
   selector: 'klocky-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, IconSearchComponent, UiIconComponent, AppBrandComponent],
+  imports: [CommonModule, IconSearchComponent, IconClockInComponent, IconClockOutComponent, UiIconComponent, AppBrandComponent],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
 })
@@ -50,6 +50,17 @@ export class HeaderComponent implements OnDestroy {
     return this.isJv && this.orgAccentColor ? this.orgAccentColor : '#6366f1';
   }
 
+  /** Dark text on light accent, white on dark accent — keeps initials always readable. */
+  get avatarTextColor(): string {
+    const hex = (this.orgAccentColor || '#6366f1').replace('#', '');
+    const r = parseInt(hex.slice(0, 2), 16) / 255;
+    const g = parseInt(hex.slice(2, 4), 16) / 255;
+    const b = parseInt(hex.slice(4, 6), 16) / 255;
+    // Relative luminance (WCAG)
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return lum > 0.45 ? '#1e293b' : '#ffffff';
+  }
+
   // ── Org-scoped routing ───────────────────────────────────────────
   private orgPrefix = computed(() => `/${this.appState.orgUrlName() || 'default'}`);
 
@@ -58,7 +69,14 @@ export class HeaderComponent implements OnDestroy {
   readonly fullName = computed(() => this.user()?.fullName?.trim() || 'My Account');
   readonly email = computed(() => this.user()?.email ?? '');
   readonly avatarUrl = computed(() => this.user()?.avatarUrl || '');
-  readonly roleLabel = computed(() => this._roleLabel(this.user()?.role));
+  readonly employeeId = computed(() => {
+    const u = this.user();
+    return u?.employeeCode ? `#${u.employeeCode}` : (u?.email ?? '');
+  });
+  readonly roleLabel = computed(() => {
+    const u = this.user();
+    return u?.designationTitle?.trim() || 'Employee';
+  });
   readonly initials = computed(() => {
     const u = this.user();
     const a = (u?.firstName?.[0] ?? '') + (u?.lastName?.[0] ?? '');
@@ -175,6 +193,11 @@ export class HeaderComponent implements OnDestroy {
   }
 
   private _geoClockIn() {
+    // Skip geolocation if org has disabled it or geofencing is not in use
+    if (!this.appState.user()?.readLocationOnPunchIn) {
+      this.geoConfirmPending.set(true);
+      return;
+    }
     if (!navigator.geolocation) {
       this._pendingPosition = null;
       this.geoConfirmPending.set(true);
@@ -202,7 +225,8 @@ export class HeaderComponent implements OnDestroy {
   confirmGeoClockIn() {
     this.geoConfirmPending.set(false);
     const pos = this._pendingPosition;
-    this.attendance.clockIn('mobile', pos ? {
+    const method = (window as any).ReactNativeWebView ? 'mobile' : 'web';
+    this.attendance.clockIn(method, pos ? {
       latitude: pos.coords.latitude,
       longitude: pos.coords.longitude,
     } : {});

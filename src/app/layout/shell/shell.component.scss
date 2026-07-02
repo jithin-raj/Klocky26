@@ -59,6 +59,19 @@
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 0;
+  position: relative;
+}
+
+/* Centered page loader shown while the router is navigating / lazy-loading a chunk. */
+.page-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--canvas-base, #eef1f4) 82%, transparent);
+  backdrop-filter: blur(2px);
 }
 
 /* MOBILE BACKDROP */

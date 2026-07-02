@@ -1,4 +1,7 @@
 import { Routes } from '@angular/router';
+import { PlaceholderPageComponent } from '../../shared/pages/placeholder/placeholder.component';
+
+// Shifts & Roster (spec §10) — not yet built.
 export const shiftRoutes: Routes = [
-  { path: '', loadComponent: () => import('./pages/shifts/shifts.component').then(m => m.ShiftsComponent) },
+  { path: '', component: PlaceholderPageComponent, data: { title: 'Shifts & Roster' } },
 ];

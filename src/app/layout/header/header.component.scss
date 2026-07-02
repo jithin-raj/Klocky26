@@ -147,144 +147,106 @@
   margin: 0 2px;
 }
 
-/* ─── Punch In / Out icon button ────────────────────────────────── */
-.punch-wrap {
-  position: relative;
+/* ─── Clock In / Out button ───────────────────────────────────────── */
+.punch-section {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
-.punch-btn {
-  width: 38px;
-  height: 38px;
-  display: flex;
+.ck-btn {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 10px;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(22,163,74,.35);
+  background: rgba(22,163,74,.07);
+  color: #15803d;
   cursor: pointer;
-  position: relative;
-  transition: background 0.15s, transform 0.12s, color 0.15s;
-  background: #f0fdf4;
-  color: #16a34a;
-}
-
-.punch-btn:hover {
-  background: #dcfce7;
-  transform: scale(1.07);
-}
-
-.punch-btn.punched-in {
-  background: #fff1f2;
-  color: #ef4444;
-}
-
-.punch-btn.punched-in:hover {
-  background: #fee2e2;
-}
-
-.punch-btn:active { transform: scale(0.95); }
-
-/* Pulse ring when punched in */
-.punch-pulse {
-  position: absolute;
-  inset: -3px;
-  border-radius: 13px;
-  border: 2px solid rgba(239, 68, 68, 0.4);
-  animation: punch-pulse 1.8s ease-out infinite;
-  pointer-events: none;
-}
-
-@keyframes punch-pulse {
-  0%   { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.2); }
-}
-
-/* CSS Tooltip */
-.punch-tip {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-  background: #1e293b;
-  color: #f8fafc;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
   white-space: nowrap;
-  padding: 4px 8px;
-  border-radius: 6px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s, transform 0.15s;
-  letter-spacing: 0.2px;
-  z-index: 200;
+  letter-spacing: .1px;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .1s;
+
+  &:hover {
+    background: rgba(22,163,74,.13);
+    border-color: rgba(22,163,74,.55);
+    box-shadow: 0 2px 8px rgba(22,163,74,.14);
+    transform: translateY(-1px);
+  }
+  &:active { transform: scale(.97); }
+
+  /* Clocked-in state */
+  &.is-in {
+    border-color: rgba(22,163,74,.3);
+    background: rgba(22,163,74,.06);
+    color: #16a34a;
+
+    &:hover {
+      background: rgba(220,38,38,.07);
+      border-color: rgba(220,38,38,.3);
+      color: #dc2626;
+    }
+  }
+
+  /* Locating */
+  &.is-locating {
+    border-color: rgba(217,119,6,.3);
+    background: rgba(217,119,6,.07);
+    color: #b45309;
+    pointer-events: none;
+  }
 }
 
-.punch-tip::after {
-  content: '';
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-bottom-color: #1e293b;
-}
-
-.punch-wrap:hover .punch-tip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* Geo-tracked sub-label */
-.punch-tip-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%) translateY(-4px);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s, transform 0.15s;
-  z-index: 200;
-  gap: 2px;
-}
-.punch-wrap:hover .punch-tip-wrap {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-/* Move the original .punch-tip inside .punch-tip-wrap when both exist */
-.punch-tip-wrap .punch-tip {
-  position: static;
-  transform: none;
-  opacity: 1;
-}
-.punch-geo {
-  font-size: 10px;
-  font-weight: 600;
-  color: #22c55e;
-  background: rgba(0,0,0,.7);
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-/* Locating state */
-.punch-btn.locating {
-  background: #fefce8;
-  color: #ca8a04;
-}
-.punch-spin {
-  position: absolute;
-  inset: 4px;
+/* Live green pulse dot */
+.ck-live {
+  width: 6px; height: 6px;
   border-radius: 50%;
-  border: 2px solid rgba(202,138,4,.3);
-  border-top-color: #ca8a04;
-  animation: punch-spin .7s linear infinite;
-  pointer-events: none;
+  background: #22c55e;
+  box-shadow: 0 0 5px rgba(34,197,94,.8);
+  flex-shrink: 0;
+  animation: ck-dot 2.2s ease-in-out infinite;
 }
-@keyframes punch-spin { to { transform: rotate(360deg); } }
+@keyframes ck-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.6)} }
+
+.ck-icon { flex-shrink: 0; display: block; }
+
+.ck-text { font-size: 12px; font-weight: 700; line-height: 1; }
+
+/* "· Clock Out" hint — slides in on hover of the clocked-in button */
+.ck-out-hint {
+  font-weight: 500;
+  font-size: 11px;
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: baseline;
+  transition: opacity .18s, max-width .22s;
+  white-space: nowrap;
+}
+.ck-btn.is-in:hover .ck-out-hint {
+  opacity: .8;
+  max-width: 72px;
+}
+/* When hovered, hide "Clocked In" text and show "Clock Out" cleanly */
+.ck-text--in { transition: color .15s; }
+.ck-btn.is-in:hover .ck-text--in { color: #dc2626; }
+
+/* Locating spinner */
+.ck-spin {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.8px solid rgba(180,83,9,.3);
+  border-top-color: #b45309;
+  animation: ck-spin .7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes ck-spin { to { transform: rotate(360deg); } }
 
 /* Geo toast — bottom-center of header */
 .geo-toast {
@@ -393,7 +355,7 @@
   height: 36px;
   border-radius: 10px;
   border: 2px solid #e2e8f0;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg, var(--accent, #0d9488), color-mix(in srgb, var(--accent, #0d9488) 60%, #000));
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -404,14 +366,14 @@
 }
 
 .avatar-btn:hover {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: var(--accent, #0d9488);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #0d9488) 15%, transparent);
 }
 
 .avatar-initials {
   font-size: 11.5px;
   font-weight: 700;
-  color: #ffffff;
+  /* color set dynamically via [style.color]="avatarTextColor" for contrast safety */
   letter-spacing: 0.5px;
   user-select: none;
 }
@@ -651,8 +613,8 @@
 @media (max-width: 768px) {
   .hamburger { display: flex; }
   .search-wrap { max-width: 180px; }
-  .clock-label { display: none; }
-  .clock-btn { padding: 0 10px; }
+  /* Punch pill moves to the employee dashboard on mobile */
+  .punch-section { display: none; }
 }
 
 @media (max-width: 480px) {

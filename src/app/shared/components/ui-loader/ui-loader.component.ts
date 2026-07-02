@@ -27,20 +27,11 @@ export type LoaderVariant = 'klocky' | 'spinner' | 'dots' | 'bar' | 'pulse';
     <!-- Shared loader shapes -->
     <ng-template #loaderTpl>
 
-      <!-- ── Klocky logo loader (default) ── -->
+      <!-- ── Klock logo loader (default) — animated brand gif ── -->
       <div *ngIf="variant === 'klocky'" class="klocky-loader"
            [style.width.px]="sz" [style.height.px]="sz">
-        <img src="/klocky-logo.png" alt="Loading" class="klocky-logo-img"
-             [style.width.px]="sz * 0.6" [style.height.px]="sz * 0.6"/>
-        <svg class="klocky-ring" [attr.width]="sz" [attr.height]="sz"
-             viewBox="0 0 50 50">
-          <circle cx="25" cy="25" r="21" fill="none"
-                  stroke="#d1fad5" stroke-width="3"/>
-          <circle cx="25" cy="25" r="21" fill="none"
-                  stroke="#22a03c" stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-dasharray="55" stroke-dashoffset="40"/>
-        </svg>
+        <img src="/klock-loader-lg.gif" alt="Loading" class="klocky-logo-img"
+             [style.width.px]="sz" [style.height.px]="sz"/>
       </div>
       <svg *ngIf="variant === 'spinner'" class="spinner" [attr.width]="size" [attr.height]="size"
            viewBox="0 0 50 50">

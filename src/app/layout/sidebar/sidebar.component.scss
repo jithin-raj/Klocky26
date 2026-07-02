@@ -4,20 +4,33 @@
 ═══════════════════════════════════════════════════════════════════════════════════════ */
 
 /* ─── Base ───────────────────────────────────────────────────────── */
+
+/*
+ * Sidebar theming strategy
+ * ─────────────────────────
+ * We always keep the sidebar dark so text/icons remain readable regardless
+ * of the org's accent. The accent is mixed at a low ratio into a near-black
+ * base so the org colour subtly tints the sidebar without overpowering it.
+ *
+ * Edge cases handled by color-mix automatically:
+ *   • Black accent  → mixes with dark base → stays dark  ✓
+ *   • White accent  → mixes with dark base → dark grey   ✓
+ *   • Any other hue → tinted dark sidebar                ✓
+ */
 .sidebar {
   width: 72px;
   height: 100vh;
-  background: linear-gradient(180deg, 
-    color-mix(in srgb, var(--accent) 18%, #0d1117) 0%,
-    color-mix(in srgb, var(--accent) 12%, #0a0e14) 50%,
-    color-mix(in srgb, var(--accent) 8%, #0a0e14) 100%);
+  background: linear-gradient(170deg,
+    color-mix(in srgb, var(--accent, #0d9488) 22%, #06080d) 0%,
+    color-mix(in srgb, var(--accent, #0d9488) 15%, #090c12) 55%,
+    color-mix(in srgb, var(--accent, #0d9488) 10%, #090c12) 100%);
   display: flex;
   flex-direction: column;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.28);
 }
 
 /* Expand on hover */
@@ -26,53 +39,18 @@
   transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Top accent stripe — changes with --accent */
-.sidebar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--accent) 50%,
-    color-mix(in srgb, var(--accent) 70%, #fff) 85%,
-    transparent 100%
-  );
-  opacity: 0.95;
-  pointer-events: none;
-  z-index: 2;
-  box-shadow: 0 3px 12px color-mix(in srgb, var(--accent) 50%, transparent);
-}
-
-/* ─── Brand area ─────────────────────────────────────────────────── */
-.brand {
+/* ─── App launcher top button ─────────────────────────────────────── */
+.sb-top {
+  height: 66px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  height: 72px;
-  padding: 0 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 25%, rgba(255, 255, 255, 0.1));
+  gap: 12px;
+  padding: 0 15px;
   flex-shrink: 0;
-  overflow: hidden;
-  position: relative;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
-    opacity: 0.4;
-  }
+  border-bottom: 1px solid color-mix(in srgb, var(--accent, #0d9488) 18%, rgba(255,255,255,.06));
 }
 
-/* Shared K / org mark square */
-.brand-mark {
+.sb-apps-btn {
   width: 42px;
   height: 42px;
   min-width: 42px;
@@ -80,90 +58,44 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, 
-    color-mix(in srgb, var(--accent) 75%, #1e293b) 0%,
-    color-mix(in srgb, var(--accent) 55%, #0f172a) 100%);
-  border: 1.5px solid color-mix(in srgb, var(--accent) 60%, transparent);
-  box-shadow: 
-    0 4px 16px color-mix(in srgb, var(--accent) 45%, transparent),
-    0 0 20px color-mix(in srgb, var(--accent) 25%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.3px;
-  overflow: hidden;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.6);
+  cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.3s;
-  
-  .sidebar:hover & {
-    box-shadow: 
-      0 6px 24px color-mix(in srgb, var(--accent) 60%, transparent),
-      0 0 28px color-mix(in srgb, var(--accent) 35%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: background .2s, color .2s, box-shadow .2s, border-color .2s;
+
+  &:hover {
+    background: rgba(255,255,255,.11);
+    color: #fff;
+    border-color: rgba(255,255,255,.18);
+  }
+
+  &.active {
+    background: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 62%, #000));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 6px 20px -6px color-mix(in srgb, var(--accent) 70%, transparent),
+                inset 0 1px 0 rgba(255,255,255,.25);
   }
 }
 
-.brand-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Default "Klocky" wordmark */
-.brand-name {
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.4px;
-  color: rgba(255, 255, 255, 0.95);
-  white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.16s ease;
-}
-
-.sidebar:hover .brand-name {
-  opacity: 1;
-  transition-delay: 0.07s;
-}
-
-/* JV: stacked org name + "via Klocky" */
-.brand-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.16s ease;
-}
-
-.sidebar:hover .brand-info {
-  opacity: 1;
-  transition-delay: 0.07s;
-}
-
-.brand-org {
-  font-size: 13px;
+.sb-apps-label {
+  font-size: 14px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
-  letter-spacing: -0.2px;
+  color: rgba(255,255,255,.8);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.brand-via {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  color: rgba(255, 255, 255, 0.55);
-  white-space: nowrap;
+  letter-spacing: -0.1px;
 }
 
 /* ─── Nav containers ─────────────────────────────────────────────── */
 .nav-main {
   flex: 1;
-  padding: 12px 12px 0;
+  /* min-height:0 lets this flex child shrink below its content height so its own
+     overflow-y actually scrolls, instead of growing past the 100vh sidebar and
+     being clipped (admins see all sections, so the list is tall enough to need it). */
+  min-height: 0;
+  padding: 10px 12px 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -217,6 +149,7 @@
   cursor: pointer;
   width: 100%;
   text-align: left;
+  text-decoration: none;
   position: relative;
   
   &::before {
@@ -454,10 +387,25 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  
+
   .nav-item.active & {
     font-weight: 600;
   }
+}
+
+/* "Soon" pill on not-yet-built menu items — pushed to the right edge. */
+.nav-item-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, .7);
+  background: rgba(255, 255, 255, .1);
 }
 
 /* Standalone top-level link (Dashboard) — mirrors .nav-section-header so it
@@ -501,8 +449,14 @@
 
   &.active {
     color: #fff;
-    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    /* No full-width row fill — matches .nav-section-header active, so in the
+       collapsed 72px rail only the icon tile carries the accent (a clean tile
+       rather than a stubby bar). The row tint returns only when expanded. */
     &::before { height: 28px; }
+  }
+
+  .sidebar:hover &.active {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
   }
 }
 
@@ -564,23 +518,13 @@
 }
 
 .nav-bottom {
-  padding: 10px 12px 14px;
+  flex-shrink: 0;
+  padding: 4px 12px 6px;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  border-top: 1px solid color-mix(in srgb, var(--accent) 20%, rgba(255, 255, 255, 0.08));
+  border-top: 1px solid color-mix(in srgb, var(--accent, #0d9488) 18%, rgba(255,255,255,.06));
   position: relative;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
-    opacity: 0.3;
-  }
   
   .nav-item {
     padding-left: 12px;
@@ -659,14 +603,38 @@
   transition: opacity 0.12s ease 0s;
 }
 
+/* ─── All-open locked state (triggered by apps-grid button) ─────── */
+.sidebar.all-open {
+  width: 260px;
+
+  .label {
+    opacity: 1;
+    transition-delay: 0s;
+  }
+
+  .nav-section-arrow {
+    opacity: 1;
+  }
+
+  .nav-section.expanded .nav-section-arrow {
+    transform: rotate(180deg);
+    color: var(--accent);
+  }
+
+  /* Show ALL section items regardless of hover */
+  .nav-section-items {
+    display: flex;
+  }
+}
+
 /* ─── by Klocky footer ───────────────────────────────────────────── */
 .by-klocky {
   display: flex;
   align-items: center;
-  height: 40px;
-  gap: 12px;
+  height: 24px;
+  gap: 9px;
   padding: 0 12px;
-  margin-top: 4px;
+  margin-top: 0;
   border-top: 1px solid color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.04));
 }
 
