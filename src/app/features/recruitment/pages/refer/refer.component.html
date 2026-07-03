@@ -1,0 +1,70 @@
+<div class="page">
+  <div class="page-header">
+    <h2 class="page-title">Refer a Buddy</h2>
+    <p class="page-sub">Know someone great? Refer them for open positions.</p>
+  </div>
+
+  <div class="card">
+    <form (ngSubmit)="submit()" #referForm="ngForm" novalidate>
+      <div class="form-grid">
+
+        <!-- Name -->
+        <div class="form-field">
+          <label class="form-label">Full Name <span class="req">*</span></label>
+          <input
+            class="form-control"
+            type="text"
+            placeholder="Jane Doe"
+            [value]="referredName()"
+            (input)="referredName.set($any($event.target).value)"
+            required />
+        </div>
+
+        <!-- Email -->
+        <div class="form-field">
+          <label class="form-label">Email Address <span class="req">*</span></label>
+          <input
+            class="form-control"
+            type="email"
+            placeholder="jane@example.com"
+            [value]="referredEmail()"
+            (input)="referredEmail.set($any($event.target).value)"
+            required />
+        </div>
+
+        <!-- Phone (optional) -->
+        <div class="form-field">
+          <label class="form-label">Phone <span class="opt">(optional)</span></label>
+          <input
+            class="form-control"
+            type="tel"
+            placeholder="+91 98765 43210"
+            [value]="referredPhone()"
+            (input)="referredPhone.set($any($event.target).value)" />
+        </div>
+
+      </div>
+
+      <!-- Message -->
+      <div class="form-field mt">
+        <label class="form-label">Message <span class="opt">(optional)</span></label>
+        <textarea
+          class="form-control"
+          rows="4"
+          placeholder="Why are you recommending this person?"
+          [value]="message()"
+          (input)="message.set($any($event.target).value)">
+        </textarea>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="!canSubmit">
+          {{ submitting() ? 'Submitting…' : 'Submit Referral' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

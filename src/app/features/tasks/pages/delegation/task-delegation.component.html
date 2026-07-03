@@ -1,0 +1,146 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header__left">
+      <h1 class="page-title">Manage Delegation</h1>
+      <p class="page-sub">Delegate task categories to other employees while you're away.</p>
+    </div>
+    @if (!showForm()) {
+      <button class="btn-primary" (click)="openForm()">+ Add Delegation</button>
+    }
+  </div>
+
+  <!-- Add form -->
+  @if (showForm()) {
+    <div class="card form-card">
+      <h2 class="form-title">New Delegation</h2>
+
+      <div class="form-grid">
+
+        <div class="field">
+          <label class="field__label">Employee ID <span class="req">*</span></label>
+          <input
+            class="field__input"
+            type="text"
+            placeholder="e.g. EMP-042"
+            [value]="form().delegateToEmployeeId"
+            (input)="patchForm({ delegateToEmployeeId: $any($event.target).value })"
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label">Task Category <span class="req">*</span></label>
+          <select
+            class="field__select"
+            [value]="form().taskCategory"
+            (change)="patchForm({ taskCategory: $any($event.target).value })"
+          >
+            @for (opt of categoryOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field__label">Start Date <span class="req">*</span></label>
+          <input
+            class="field__input"
+            type="date"
+            [value]="form().startDate"
+            (change)="patchForm({ startDate: $any($event.target).value })"
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label">End Date <span class="opt">(optional)</span></label>
+          <input
+            class="field__input"
+            type="date"
+            [value]="form().endDate ?? ''"
+            (change)="patchForm({ endDate: $any($event.target).value || undefined })"
+          />
+        </div>
+
+        <div class="field field--full">
+          <label class="field__label">Reason <span class="opt">(optional)</span></label>
+          <textarea
+            class="field__textarea"
+            rows="3"
+            placeholder="Brief reason for delegation…"
+            [value]="form().reason ?? ''"
+            (input)="patchForm({ reason: $any($event.target).value || undefined })"
+          ></textarea>
+        </div>
+
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-ghost" (click)="cancelForm()">Cancel</button>
+        <button class="btn-primary" [disabled]="submitting()" (click)="submit()">
+          {{ submitting() ? 'Saving…' : 'Create Delegation' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="state-center">
+      <div class="spinner"></div>
+      <span>Loading delegations…</span>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!loading() && delegations().length === 0 && !showForm()) {
+    <div class="card state-center">
+      <div class="empty-icon">🤝</div>
+      <p class="empty-text">No delegations yet</p>
+      <p class="empty-sub">Click "Add Delegation" to set one up.</p>
+    </div>
+  }
+
+  <!-- Delegation cards -->
+  @for (d of delegations(); track d.id) {
+    <div class="card delegation-card">
+      <div class="delegation-card__top">
+        <div class="delegation-card__info">
+          <span class="avatar">{{ d.delegateToName.charAt(0).toUpperCase() }}</span>
+          <div>
+            <p class="delegate-name">{{ d.delegateToName }}</p>
+            <p class="delegate-id">ID: {{ d.delegateToEmployeeId }}</p>
+          </div>
+        </div>
+        <div class="delegation-card__right">
+          <span class="badge" [class.badge--green]="d.isActive" [class.badge--gray]="!d.isActive">
+            {{ d.isActive ? 'Active' : 'Inactive' }}
+          </span>
+          <button class="btn-delete" title="Delete delegation" (click)="remove(d)">✕</button>
+        </div>
+      </div>
+
+      <div class="delegation-card__meta">
+        <div class="meta-item">
+          <span class="meta-label">Category</span>
+          <span class="badge badge--violet">{{ categoryLabel(d.taskCategory) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">From</span>
+          <span class="meta-val">{{ formatDate(d.startDate) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">To</span>
+          <span class="meta-val">{{ formatDate(d.endDate) }}</span>
+        </div>
+        @if (d.reason) {
+          <div class="meta-item meta-item--full">
+            <span class="meta-label">Reason</span>
+            <span class="meta-val">{{ d.reason }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+</div>

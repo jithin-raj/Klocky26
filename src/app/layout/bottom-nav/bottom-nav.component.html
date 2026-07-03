@@ -1,0 +1,158 @@
+<!-- ── Bottom Nav Bar ──────────────────────────────────────────────── -->
+<nav class="bn-bar">
+
+  <!-- Home -->
+  <button class="bn-tab" [class.active]="activeTab() === 'home'" (click)="goHome()">
+    <ui-icon name="home" [size]="22"></ui-icon>
+    <span class="bn-label">Home</span>
+  </button>
+
+  <!-- Tasks -->
+  <button class="bn-tab" [class.active]="activeTab() === 'tasks'" (click)="goTasks()">
+    <ui-icon name="clipboard-check" [size]="22"></ui-icon>
+    <span class="bn-label">Tasks</span>
+  </button>
+
+  <!-- FAB (center) -->
+  <button class="bn-fab" [class.open]="activePanel() === 'fab'" (click)="togglePanel('fab')" aria-label="Quick actions">
+    <span class="bn-fab-icon">
+      <ui-icon name="plus" [size]="24" [class.rotated]="activePanel() === 'fab'"></ui-icon>
+    </span>
+  </button>
+
+  <!-- Apps -->
+  <button class="bn-tab" [class.active]="activePanel() === 'apps'" (click)="togglePanel('apps')">
+    <ui-icon name="grid" [size]="22"></ui-icon>
+    <span class="bn-label">Apps</span>
+  </button>
+
+  <!-- My Hub -->
+  <button class="bn-tab hub-tab" [class.active]="activePanel() === 'hub'" (click)="togglePanel('hub')">
+    @if (avatarUrl()) {
+      <img class="bn-avatar" [src]="avatarUrl()!" [alt]="fullName()" />
+    } @else {
+      <span class="bn-initials">{{ initials() }}</span>
+    }
+    @if (unreadCount() > 0) {
+      <span class="bn-badge">{{ unreadCount() > 9 ? '9+' : unreadCount() }}</span>
+    }
+    <span class="bn-label">My Hub</span>
+  </button>
+
+</nav>
+
+<!-- ── Backdrop ─────────────────────────────────────────────────────── -->
+@if (activePanel()) {
+  <div class="bn-backdrop" (click)="closePanel()"></div>
+}
+
+<!-- ── FAB Sheet: Quick Actions ─────────────────────────────────────── -->
+@if (activePanel() === 'fab') {
+  <div class="bn-sheet fab-sheet">
+    <div class="bn-sheet-handle"></div>
+    <h3 class="bn-sheet-title">Quick Actions</h3>
+    <div class="qa-list">
+      @for (a of quickActions(); track a.label) {
+        <button class="qa-row" (click)="go(a.route)">
+          <span class="qa-icon" [style.background]="a.color + '1a'" [style.color]="a.color">
+            <ui-icon [name]="a.icon" [size]="20"></ui-icon>
+          </span>
+          <span class="qa-body">
+            <span class="qa-label">{{ a.label }}</span>
+            <span class="qa-desc">{{ a.desc }}</span>
+          </span>
+          <ui-icon name="arrow-right" [size]="16" class="qa-arrow"></ui-icon>
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<!-- ── Apps Sheet ───────────────────────────────────────────────────── -->
+@if (activePanel() === 'apps') {
+  <div class="bn-sheet apps-sheet">
+    <div class="bn-sheet-handle"></div>
+    <h3 class="bn-sheet-title">Apps</h3>
+    <div class="apps-grid">
+      @for (tile of appTiles(); track tile.label) {
+        <button class="app-tile" (click)="go(tile.route)">
+          <span class="app-tile-icon" [style.background]="tile.color + '18'" [style.color]="tile.color">
+            <ui-icon [name]="tile.icon" [size]="22"></ui-icon>
+          </span>
+          <span class="app-tile-label">{{ tile.label }}</span>
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<!-- ── My Hub Sheet ──────────────────────────────────────────────────── -->
+@if (activePanel() === 'hub') {
+  <div class="bn-sheet hub-sheet">
+    <div class="bn-sheet-handle"></div>
+
+    <!-- Profile header -->
+    <div class="hub-profile">
+      @if (avatarUrl()) {
+        <img class="hub-avatar" [src]="avatarUrl()!" [alt]="fullName()" />
+      } @else {
+        <span class="hub-avatar hub-avatar--initials">{{ initials() }}</span>
+      }
+      <div class="hub-id">
+        <span class="hub-name">{{ fullName() }}</span>
+        <span class="hub-role">{{ roleLabel() }}</span>
+      </div>
+    </div>
+
+    <div class="hub-divider"></div>
+
+    <!-- Notifications row -->
+    <button class="hub-row" (click)="go(orgPrefix() + '/app/notifications')">
+      <span class="hub-row-icon bell-icon">
+        <ui-icon name="bell" [size]="18"></ui-icon>
+        @if (unreadCount() > 0) {
+          <span class="hub-badge">{{ unreadCount() > 9 ? '9+' : unreadCount() }}</span>
+        }
+      </span>
+      <span class="hub-row-label">Notifications</span>
+      @if (unreadCount() > 0) {
+        <span class="hub-count">{{ unreadCount() }}</span>
+      }
+      <ui-icon name="arrow-right" [size]="15" class="hub-arrow"></ui-icon>
+    </button>
+
+    <button class="hub-row" (click)="go(orgPrefix() + '/app/profile')">
+      <span class="hub-row-icon"><ui-icon name="user" [size]="18"></ui-icon></span>
+      <span class="hub-row-label">My Profile</span>
+      <ui-icon name="arrow-right" [size]="15" class="hub-arrow"></ui-icon>
+    </button>
+
+    <div class="hub-divider"></div>
+
+    <button class="hub-row">
+      <span class="hub-row-icon"><ui-icon name="send" [size]="18"></ui-icon></span>
+      <span class="hub-row-label">Help & Feedback</span>
+      <ui-icon name="arrow-right" [size]="15" class="hub-arrow"></ui-icon>
+    </button>
+
+    <button class="hub-row">
+      <span class="hub-row-icon"><ui-icon name="shield" [size]="18"></ui-icon></span>
+      <span class="hub-row-label">Privacy Policy</span>
+      <ui-icon name="arrow-right" [size]="15" class="hub-arrow"></ui-icon>
+    </button>
+
+    <button class="hub-row">
+      <span class="hub-row-icon"><ui-icon name="layers" [size]="18"></ui-icon></span>
+      <span class="hub-row-label">Terms of Service</span>
+      <ui-icon name="arrow-right" [size]="15" class="hub-arrow"></ui-icon>
+    </button>
+
+    <div class="hub-divider"></div>
+
+    <button class="hub-row hub-row--danger" (click)="logout()">
+      <span class="hub-row-icon danger-icon"><ui-icon name="log-out" [size]="18"></ui-icon></span>
+      <span class="hub-row-label">Log Out</span>
+    </button>
+
+  </div>
+}

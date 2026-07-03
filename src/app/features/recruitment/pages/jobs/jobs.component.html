@@ -1,0 +1,56 @@
+<div class="page">
+  <div class="page-header">
+    <h2 class="page-title">Job Openings</h2>
+
+    <!-- Type filter -->
+    <div class="filter-tabs">
+      <button
+        *ngFor="let opt of filterOptions"
+        class="filter-btn"
+        [class.active]="typeFilter() === opt.value"
+        (click)="setFilter(opt.value)">
+        {{ opt.label }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="state-msg">Loading jobs…</div>
+
+  <!-- Empty after filter -->
+  <div *ngIf="!loading() && jobs().length === 0" class="state-msg empty">
+    No job openings match the selected filter.
+  </div>
+
+  <!-- Job cards -->
+  <div *ngIf="!loading()" class="cards">
+    <div class="card" *ngFor="let job of jobs()">
+      <div class="card-top">
+        <div class="job-info">
+          <span class="job-title">{{ job.title }}</span>
+          <span class="job-meta" *ngIf="job.department || job.location">
+            <span *ngIf="job.department">{{ job.department }}</span>
+            <span class="sep" *ngIf="job.department && job.location"> · </span>
+            <span *ngIf="job.location">{{ job.location }}</span>
+          </span>
+        </div>
+
+        <div class="badges">
+          <span class="badge" [ngClass]="'type-' + job.type">
+            {{ typeLabel(job.type) }}
+          </span>
+          <span class="badge" [class.internal]="job.isInternal" [class.external]="!job.isInternal">
+            {{ job.isInternal ? 'Internal' : 'External' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="card-dates">
+        <span>Posted: <strong>{{ formatDate(job.postedAt) }}</strong></span>
+        <span *ngIf="job.closingAt">
+          · Closes: <strong>{{ formatDate(job.closingAt) }}</strong>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

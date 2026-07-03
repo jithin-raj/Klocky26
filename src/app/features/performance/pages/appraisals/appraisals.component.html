@@ -1,0 +1,72 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>{{ isPrivileged ? 'All Appraisals' : 'My Appraisals' }}</h1>
+      <p>{{ isPrivileged ? 'Performance appraisal records across the organisation.' : 'Your performance appraisal history.' }}</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="state-box">
+    <span class="spinner"></span>
+    <span>Loading appraisals…</span>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!loading() && loadError()" class="state-box state-box--error">
+    <span>{{ loadError() }}</span>
+    <button class="btn btn--ghost btn--sm" (click)="load()">Retry</button>
+  </div>
+
+  <!-- Table card -->
+  <div *ngIf="!loading() && !loadError()" class="card">
+
+    <div *ngIf="appraisals().length === 0" class="empty">
+      No appraisals found.
+    </div>
+
+    <div *ngIf="appraisals().length > 0" class="table-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Cycle</th>
+            <th>Status</th>
+            <th>Rating</th>
+            <th>Due Date</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of appraisals()">
+            <td class="td-employee">{{ a.employeeName }}</td>
+            <td>{{ a.cycleName }}</td>
+            <td>
+              <span class="badge" [ngClass]="statusClass(a.status)">
+                {{ statusLabel(a.status) }}
+              </span>
+            </td>
+            <td>
+              <ng-container *ngIf="a.rating != null; else noRating">
+                <div class="stars">
+                  <span *ngFor="let filled of stars(a.rating)"
+                        class="star"
+                        [class.star--filled]="filled">★</span>
+                  <span class="rating-num">{{ a.rating }}</span>
+                </div>
+              </ng-container>
+              <ng-template #noRating>
+                <span class="muted">—</span>
+              </ng-template>
+            </td>
+            <td class="muted">{{ fmt(a.dueDate) }}</td>
+            <td class="muted">{{ fmt(a.createdAt) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,124 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Assessments</h1>
+      <p>Skills and knowledge assessments assigned to you.</p>
+    </div>
+    <button *ngIf="canCreate && !showForm()"
+            class="btn btn--primary"
+            (click)="openForm()">
+      + Create Assessment
+    </button>
+  </div>
+
+  <!-- Create form -->
+  <div *ngIf="showForm()" class="card form-card">
+    <div class="form-head">
+      <h2 class="form-title">New Assessment</h2>
+      <button class="btn-icon" (click)="closeForm()" title="Close">✕</button>
+    </div>
+    <div class="form-body">
+
+      <div class="field">
+        <label>Title <span class="req">*</span></label>
+        <input type="text"
+               [ngModel]="formTitle()"
+               (ngModelChange)="formTitle.set($event)"
+               placeholder="e.g. Q2 Technical Skills" />
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Type</label>
+          <input type="text"
+                 [ngModel]="formType()"
+                 (ngModelChange)="formType.set($event)"
+                 placeholder="e.g. technical, soft-skills" />
+        </div>
+        <div class="field">
+          <label>Due Date</label>
+          <input type="date"
+                 [ngModel]="formDueDate()"
+                 (ngModelChange)="formDueDate.set($event)" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Description</label>
+        <textarea rows="3"
+                  [ngModel]="formDescription()"
+                  (ngModelChange)="formDescription.set($event)"
+                  placeholder="Optional description or instructions…"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Employee IDs <span class="hint">(comma-separated)</span></label>
+        <input type="text"
+               [ngModel]="formEmployeeIds()"
+               (ngModelChange)="formEmployeeIds.set($event)"
+               placeholder="e.g. emp-001, emp-002" />
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn--ghost" (click)="closeForm()" [disabled]="submitting()">Cancel</button>
+        <button class="btn btn--primary"
+                (click)="submit()"
+                [disabled]="!formTitle().trim() || submitting()">
+          <span *ngIf="submitting()" class="spinner spinner--sm"></span>
+          {{ submitting() ? 'Creating…' : 'Create Assessment' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="state-box">
+    <span class="spinner"></span>
+    <span>Loading assessments…</span>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!loading() && loadError()" class="state-box state-box--error">
+    <span>{{ loadError() }}</span>
+    <button class="btn btn--ghost btn--sm" (click)="load()">Retry</button>
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!loading() && !loadError() && assessments().length === 0" class="empty-card">
+    <p>No assessments assigned to you yet.</p>
+  </div>
+
+  <!-- Cards grid -->
+  <div *ngIf="!loading() && !loadError() && assessments().length > 0" class="cards-grid">
+    <div class="a-card" *ngFor="let a of assessments()">
+      <div class="a-card-top">
+        <div class="a-card-meta">
+          <span *ngIf="a.type" class="type-chip">{{ a.type }}</span>
+          <span class="badge" [ngClass]="statusClass(a.status)">{{ statusLabel(a.status) }}</span>
+        </div>
+        <div *ngIf="a.score != null" class="score-badge">
+          Score: <strong>{{ a.score }}</strong>
+        </div>
+      </div>
+
+      <h3 class="a-card-title">{{ a.title }}</h3>
+
+      <p *ngIf="a.description" class="a-card-desc">{{ a.description }}</p>
+
+      <div class="a-card-footer">
+        <span *ngIf="a.dueDate" class="meta-item">
+          <span class="meta-label">Due</span>
+          {{ fmt(a.dueDate) }}
+        </span>
+        <span class="meta-item">
+          <span class="meta-label">Added</span>
+          {{ fmt(a.createdAt) }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>

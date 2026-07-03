@@ -96,7 +96,7 @@ export class SidebarComponent {
       icon: 'clock',
       expanded: false,
       items: [
-        { label: 'Overview', route: 'app/time-management', icon: 'grid', exact: true, comingSoon: true },
+        { label: 'Overview', route: 'app/time-management', icon: 'grid', exact: true },
         { label: 'Attendance', route: 'app/attendance', icon: 'calendar', exact: true, roles: NON_ADMIN_ROLES },
         { label: 'Regularization', route: 'app/attendance/requests', icon: 'repeat', roles: NON_ADMIN_ROLES },
         { label: 'My Leave', route: 'app/leaves/my', icon: 'calendar', roles: NON_ADMIN_ROLES },
@@ -111,9 +111,9 @@ export class SidebarComponent {
       icon: 'clipboard-check',
       expanded: false,
       items: [
-        { label: 'Task List', route: 'app/tasks', icon: 'clipboard-check', exact: true, comingSoon: true },
-        { label: 'Task History', route: 'app/tasks/history', icon: 'layers', comingSoon: true },
-        { label: 'Manage Delegation', route: 'app/tasks/delegation', icon: 'repeat', roles: MANAGEMENT_ROLES, comingSoon: true },
+        { label: 'Task List', route: 'app/tasks', icon: 'clipboard-check', exact: true },
+        { label: 'Task History', route: 'app/tasks/history', icon: 'layers' },
+        { label: 'Manage Delegation', route: 'app/tasks/delegation', icon: 'repeat', roles: MANAGEMENT_ROLES },
       ]
     },
     // §4 — Org View
@@ -146,7 +146,7 @@ export class SidebarComponent {
       icon: 'briefcase',
       expanded: false,
       items: [
-        { label: 'Compensation', route: 'app/compensation', icon: 'briefcase', exact: true, roles: MANAGEMENT_ROLES, comingSoon: true },
+        { label: 'Compensation', route: 'app/compensation', icon: 'briefcase', exact: true, roles: MANAGEMENT_ROLES },
       ]
     },
     // §8 — Recruitment (not yet built)
@@ -156,11 +156,11 @@ export class SidebarComponent {
       icon: 'user-plus',
       expanded: false,
       items: [
-        { label: 'Overview', route: 'app/recruitment', icon: 'user-plus', exact: true, roles: ADMIN_HR_ROLES, comingSoon: true },
-        { label: 'My Interviews', route: 'app/recruitment/interviews', icon: 'user-check', comingSoon: true },
-        { label: 'Refer a Buddy', route: 'app/recruitment/refer', icon: 'megaphone', comingSoon: true },
-        { label: 'Referral History', route: 'app/recruitment/referrals', icon: 'layers', comingSoon: true },
-        { label: 'Job Openings', route: 'app/recruitment/jobs', icon: 'briefcase', comingSoon: true },
+        { label: 'Overview', route: 'app/recruitment', icon: 'user-plus', exact: true, roles: ADMIN_HR_ROLES },
+        { label: 'My Interviews', route: 'app/recruitment/interviews', icon: 'user-check' },
+        { label: 'Refer a Buddy', route: 'app/recruitment/refer', icon: 'megaphone' },
+        { label: 'Referral History', route: 'app/recruitment/referrals', icon: 'layers' },
+        { label: 'Job Openings', route: 'app/recruitment/jobs', icon: 'briefcase' },
       ]
     },
     // §9 — Performance (not yet built)
@@ -170,10 +170,10 @@ export class SidebarComponent {
       icon: 'bar-chart',
       expanded: false,
       items: [
-        { label: 'Overview', route: 'app/performance', icon: 'bar-chart', exact: true, comingSoon: true },
-        { label: 'Appraisals', route: 'app/performance/appraisals', icon: 'award', comingSoon: true },
-        { label: 'Pay Scale', route: 'app/performance/pay-scale', icon: 'pie-chart', roles: ADMIN_HR_ROLES, comingSoon: true },
-        { label: 'Assessments', route: 'app/performance/assessments', icon: 'clipboard-check', comingSoon: true },
+        { label: 'Overview', route: 'app/performance', icon: 'bar-chart', exact: true },
+        { label: 'Appraisals', route: 'app/performance/appraisals', icon: 'award' },
+        { label: 'Pay Scale', route: 'app/performance/pay-scale', icon: 'pie-chart', roles: ADMIN_HR_ROLES },
+        { label: 'Assessments', route: 'app/performance/assessments', icon: 'clipboard-check' },
       ]
     },
     // §10 — Organisation
@@ -184,8 +184,9 @@ export class SidebarComponent {
       expanded: false,
       items: [
         { label: 'Org Settings', route: 'app/settings', icon: 'settings', roles: ADMIN_HR_ROLES },
-        { label: 'Documents', route: 'app/organisation/documents', icon: 'layers', comingSoon: true },
-        { label: 'Shifts & Roster', route: 'app/shifts', icon: 'repeat', roles: MANAGEMENT_ROLES, comingSoon: true },
+        { label: 'Leave Categories', route: 'app/settings/leave-categories', icon: 'calendar', roles: ADMIN_HR_ROLES },
+        { label: 'Documents', route: 'app/organisation/documents', icon: 'layers' },
+        { label: 'Shifts & Roster', route: 'app/shifts', icon: 'repeat', roles: MANAGEMENT_ROLES },
         { label: 'Geo-fencing', route: 'app/attendance/geofence', icon: 'map-pin', roles: ADMIN_ONLY_ROLES },
         { label: 'Send Notification', route: 'app/notifications', icon: 'send', roles: MANAGEMENT_ROLES },
       ]

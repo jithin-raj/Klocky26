@@ -7,7 +7,7 @@ import { UiSelectComponent } from '../../../../shared/components';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { LeaveService } from '../../../../core/services/leave.service';
 import {
-  HalfDaySession, LeaveBalance, LeaveRequestView, LeaveTypeOption,
+  HalfDaySession, LeaveBalance, LeaveRecord, LeaveTypeOption, MyLeavesResponse, ApplyLeaveRequest,
 } from '../../../../core/models/leave.model';
 
 @Component({
@@ -61,7 +61,7 @@ export class MyLeavesComponent implements OnInit {
   });
 
   // ── My requests ──────────────────────────────────────────────────
-  mine = signal<LeaveRequestView[]>([]);
+  records = signal<LeaveRecord[]>([]);
   loadingMine = signal(true);
   busyId = signal<string | null>(null);
 
@@ -72,13 +72,16 @@ export class MyLeavesComponent implements OnInit {
 
   private loadRefs() {
     this.svc.types().subscribe({ next: t => this.types.set(t), error: () => {} });
-    this.svc.balances().subscribe({ next: b => this.balances.set(b), error: () => {} });
   }
 
   loadMine() {
     this.loadingMine.set(true);
-    this.svc.mine().subscribe({
-      next: (rows) => { this.mine.set(rows); this.loadingMine.set(false); },
+    this.svc.my().subscribe({
+      next: res => {
+        this.balances.set(res.balances ?? []);
+        this.records.set(res.records ?? []);
+        this.loadingMine.set(false);
+      },
       error: () => { this.loadingMine.set(false); },
     });
   }
@@ -96,7 +99,7 @@ export class MyLeavesComponent implements OnInit {
   submit() {
     if (!this.canSubmit()) return;
     this.submitting.set(true);
-    this.svc.create({
+    this.svc.apply({
       leaveTypeId: this.leaveTypeId(),
       fromDate: this.fromDate(),
       toDate: this.toDate(),
@@ -110,7 +113,6 @@ export class MyLeavesComponent implements OnInit {
         this.toast.success('Leave applied', 'Your leave request has been submitted.');
         this.reason.set(''); this.workedDate.set(''); this.halfDay.set(false);
         this.loadMine();
-        this.svc.balances().subscribe({ next: b => this.balances.set(b), error: () => {} });
       },
       error: (err) => {
         this.submitting.set(false);
@@ -129,9 +131,15 @@ export class MyLeavesComponent implements OnInit {
   }
 
   /** Pending can always be cancelled; approved only before it starts. */
-  canCancel(r: LeaveRequestView): boolean {
+  canCancel(r: LeaveRecord): boolean {
     if (r.status === 'pending') return true;
     return r.status === 'approved' && r.fromDate > this.todayIso;
+  }
+
+  totalBarPct(b: LeaveBalance, part: 'used' | 'pending'): number {
+    const total = (b.totalDays + b.carriedForward) || 1;
+    const days = part === 'used' ? b.usedDays : b.pendingDays;
+    return Math.min(100, Math.round((days / total) * 100));
   }
 
   stageLabel(stage: string): string {

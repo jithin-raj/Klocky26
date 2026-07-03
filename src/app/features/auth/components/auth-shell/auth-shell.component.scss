@@ -5,7 +5,8 @@
 // ── Host lock ────────────────────────────────────────────────────────
 :host {
   display: block;
-  height: 100dvh;
+  height: 100vh;       /* fallback: old Android / Chrome <108 */
+  height: 100dvh;      /* modern: excludes dynamic browser chrome */
   overflow: hidden;
 }
 

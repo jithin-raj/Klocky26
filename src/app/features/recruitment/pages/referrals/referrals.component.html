@@ -1,0 +1,39 @@
+<div class="page">
+  <div class="page-header">
+    <h2 class="page-title">Referral History</h2>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="state-msg">Loading referrals…</div>
+
+  <!-- Empty -->
+  <div *ngIf="!loading() && referrals().length === 0" class="state-msg empty">
+    No referrals yet. <a routerLink="../refer">Refer someone today!</a>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!loading() && referrals().length > 0" class="card table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Referred On</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of referrals()">
+          <td class="name-cell">{{ r.referredName }}</td>
+          <td class="email-cell">{{ r.referredEmail }}</td>
+          <td>
+            <span class="badge" [ngClass]="statusClass(r.status)">
+              {{ r.status ?? 'Pending' | titlecase }}
+            </span>
+          </td>
+          <td class="date-cell">{{ formatDate(r.createdAt) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -13,4 +13,11 @@ export const routes: Routes = [
         (m) => m.OrgProfileComponent,
       ),
   },
+  {
+    path: 'leave-categories',
+    loadComponent: () =>
+      import('./pages/leave-categories/leave-categories.component').then(
+        (m) => m.LeaveCategoriesComponent,
+      ),
+  },
 ];

@@ -1,21 +1,31 @@
 /* ─── Base ───────────────────────────────────────────────────────── */
 .header {
-  height: 64px;
-  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* viewport-fit=cover lets content sit under the status bar / notch — pad the
-     header by the safe-area insets so the buttons stay tappable below it.
-     env() falls back to 0px on devices without insets (desktop, no-notch). */
+  /* viewport-fit=cover: pad for safe-area insets (notch / status bar). */
   box-sizing: border-box;
   height: calc(64px + env(safe-area-inset-top, 0px));
   padding: env(safe-area-inset-top, 0px) max(24px, env(safe-area-inset-right, 0px)) 0 max(24px, env(safe-area-inset-left, 0px));
-  border-bottom: 1px solid #dde3ed;
-  box-shadow: 0 1px 0 #dde3ed;
   gap: 16px;
   z-index: 100;
   position: relative;
+  /* Frosted-glass surface — tinted ever so slightly with org accent */
+  background: rgba(255, 255, 255, 0.96);
+  background:
+    linear-gradient(90deg,
+      rgba(255,255,255,0.96) 0%,
+      color-mix(in srgb, var(--accent, #6366f1) 3%, rgba(255,255,255,0.96)) 100%);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border-bottom: 1px solid #d8daf5;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent, #6366f1) 10%, #e8ecf2);
+  box-shadow:
+    0 1px 0 #dcddf3,
+    0 4px 24px rgba(15, 23, 42, 0.06);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--accent, #6366f1) 8%, #e8ecf2),
+    0 4px 24px rgba(15, 23, 42, 0.06);
 }
 
 /* ─── Left ───────────────────────────────────────────────────────── */
@@ -33,7 +43,9 @@
   gap: 7px;
   padding: 4px 10px 4px 4px;
   border-radius: 20px;
+  background: #eaeafb;
   background: color-mix(in srgb, var(--org-accent, #6366f1) 10%, #fff);
+  border: 1px solid #c9c9f5;
   border: 1px solid color-mix(in srgb, var(--org-accent, #6366f1) 22%, #e5e7eb);
 }
 
@@ -48,6 +60,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
+  background: #d5d6f9;
   background: color-mix(in srgb, var(--org-accent, #6366f1) 20%, #fff);
   color: var(--accent-dark, var(--org-accent, #6366f1));
   font-size: 11px;
@@ -61,6 +74,7 @@
 .org-name {
   font-size: 12.5px;
   font-weight: 600;
+  color: #5254d4;
   color: color-mix(in srgb, var(--org-accent, #6366f1) 80%, #1e293b);
   letter-spacing: 0.1px;
   white-space: nowrap;
@@ -83,12 +97,16 @@
   transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
 }
 .hamburger:hover {
+  background: rgba(99, 102, 241, 0.08);
   background: color-mix(in srgb, var(--accent, #6366f1) 8%, transparent);
+  border-color: rgba(99, 102, 241, 0.2);
   border-color: color-mix(in srgb, var(--accent, #6366f1) 20%, transparent);
   color: var(--accent, #6366f1);
 }
 .hamburger:active {
+  background: rgba(99, 102, 241, 0.14);
   background: color-mix(in srgb, var(--accent, #6366f1) 14%, transparent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #6366f1) 12%, transparent);
 }
 .hamburger svg {
@@ -106,14 +124,21 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 2px;
+  padding: 0 12px;
   height: 36px;
-  border-bottom: 1.5px solid #e5e7eb;
-  transition: border-color 0.18s ease;
+  background: #f1f1f9;
+  background: color-mix(in srgb, var(--accent, #6366f1) 4%, #f1f5f9);
+  border: 1.5px solid transparent;
+  border-radius: 24px;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .search-wrap:focus-within {
-  border-bottom-color: #6366f1;
+  background: #ffffff;
+  border-color: rgba(99, 102, 241, 0.4);
+  border-color: color-mix(in srgb, var(--accent, #6366f1) 40%, transparent);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #6366f1) 10%, transparent);
 }
 
 .search-wrap input {
@@ -122,12 +147,12 @@
   border: none;
   outline: none;
   font-size: 13.5px;
-  color: #111827;
+  color: #0f172a;
   min-width: 0;
 }
 
 .search-wrap input::placeholder {
-  color: #9ca3af;
+  color: #94a3b8;
 }
 
 /* ─── Right ──────────────────────────────────────────────────────── */
@@ -141,10 +166,10 @@
 /* ─── Vertical separator ─────────────────────────────────────────── */
 .v-sep {
   width: 1px;
-  height: 24px;
-  background: #e2e8f0;
+  height: 22px;
+  background: linear-gradient(to bottom, transparent, #dde3ed 20%, #dde3ed 80%, transparent);
   flex-shrink: 0;
-  margin: 0 2px;
+  margin: 0 4px;
 }
 
 /* ─── Clock In / Out button ───────────────────────────────────────── */
@@ -324,17 +349,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  border: 1.5px solid transparent;
   background: none;
   cursor: pointer;
-  border-radius: 9px;
-  transition: background 0.15s;
+  border-radius: 11px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
   position: relative;
-  color: #6b7280;
+  color: #64748b;
 }
 
 .icon-btn:hover {
-  background: #f1f5f9;
+  background: #eeeef9;
+  background: color-mix(in srgb, var(--accent, #6366f1) 7%, #f1f5f9);
+  border-color: rgba(99, 102, 241, 0.15);
+  border-color: color-mix(in srgb, var(--accent, #6366f1) 15%, transparent);
+  color: var(--accent, #6366f1);
 }
 
 /* Notification dot */
@@ -355,6 +384,7 @@
   height: 36px;
   border-radius: 10px;
   border: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, #0d9488, #085450);
   background: linear-gradient(135deg, var(--accent, #0d9488), color-mix(in srgb, var(--accent, #0d9488) 60%, #000));
   cursor: pointer;
   display: flex;
@@ -367,6 +397,7 @@
 
 .avatar-btn:hover {
   border-color: var(--accent, #0d9488);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #0d9488) 15%, transparent);
 }
 
@@ -390,8 +421,13 @@
 }
 
 .icon-btn.active {
-  background: #f1f5f9;
+  background: #eaebfc;
+  background: color-mix(in srgb, var(--accent, #6366f1) 9%, #f8fafc);
+  border-color: rgba(99, 102, 241, 0.22);
+  border-color: color-mix(in srgb, var(--accent, #6366f1) 22%, transparent);
   color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #6366f1) 10%, transparent);
 }
 
 /* Unread count badge on the bell */
@@ -423,6 +459,7 @@
 
 .avatar-btn.active {
   border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #6366f1) 18%, transparent);
 }
 
@@ -493,8 +530,8 @@
   transition: background .14s;
 
   &:hover { background: #f8fafc; }
-  &.unread { background: color-mix(in srgb, var(--accent, #6366f1) 5%, #fff); }
-  &.unread:hover { background: color-mix(in srgb, var(--accent, #6366f1) 9%, #fff); }
+  &.unread { background: #f0f0fe; background: color-mix(in srgb, var(--accent, #6366f1) 5%, #fff); }
+  &.unread:hover { background: #e8e8fd; background: color-mix(in srgb, var(--accent, #6366f1) 9%, #fff); }
 }
 
 .notif-ico {
@@ -506,6 +543,7 @@
   align-items: center;
   justify-content: center;
   color: var(--nc, #6366f1);
+  background: #dddefe;
   background: color-mix(in srgb, var(--nc, #6366f1) 14%, #fff);
   margin-top: 1px;
 }
@@ -566,6 +604,7 @@
   font-weight: 800;
   color: #fff;
   overflow: hidden;
+  background: linear-gradient(140deg, #6366f1, #2d2f87);
   background: linear-gradient(140deg, var(--accent, #6366f1), color-mix(in srgb, var(--accent, #6366f1) 60%, #000));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25);
 }
@@ -611,10 +650,14 @@
 }
 
 @media (max-width: 768px) {
-  .hamburger { display: flex; }
-  .search-wrap { max-width: 180px; }
-  /* Punch pill moves to the employee dashboard on mobile */
+  /* On mobile the bottom nav handles navigation — hide hamburger, clock-in, profile */
+  .hamburger { display: none; }
   .punch-section { display: none; }
+  /* Hide the v-sep before profile and the profile avatar itself */
+  .right > .v-sep:last-of-type { display: none; }
+  .menu-wrap:last-child { display: none; }
+  /* Compact search */
+  .search-wrap { max-width: 180px; }
 }
 
 @media (max-width: 480px) {

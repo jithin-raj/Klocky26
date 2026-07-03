@@ -88,6 +88,19 @@
                       [ngModel]="form().email" (ngModelChange)="patch('email', $event)" name="email" />
           </ui-form-field>
         </ui-form-grid>
+        <ui-form-grid>
+          <ui-form-field label="Gender" [required]="!isEdit()" [error]="errors()['gender']">
+            <ui-select [options]="genderOptions" [ngModel]="form().gender"
+                       (ngModelChange)="patch('gender', $event)"
+                       placeholder="Select gender…">
+            </ui-select>
+          </ui-form-field>
+          <ui-form-field label="Date of Birth">
+            <ui-datepicker [ngModel]="form().dateOfBirth"
+                           (ngModelChange)="patch('dateOfBirth', $event)" name="dob">
+            </ui-datepicker>
+          </ui-form-field>
+        </ui-form-grid>
       </ui-form-section>
 
       <!-- Section: Work Details -->

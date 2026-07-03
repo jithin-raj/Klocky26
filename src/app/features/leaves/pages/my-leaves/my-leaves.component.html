@@ -5,6 +5,48 @@
     <p>Apply for leave and track the status of your requests.</p>
   </div>
 
+  <!-- ── Balance cards ──────────────────────────────────────────────── -->
+  @if (balances().length > 0) {
+    <div class="ml-balances">
+      @for (b of balances(); track b.leaveTypeId) {
+        <div class="ml-bal-card">
+          <div class="ml-bal-top">
+            <span class="ml-bal-name">{{ b.leaveTypeName ?? 'Leave' }}</span>
+            <span class="ml-bal-year">{{ b.year }}</span>
+          </div>
+
+          <!-- Progress bar: taken vs total -->
+          <div class="ml-bal-bar-wrap">
+            <div class="ml-bal-bar">
+              <div class="ml-bal-fill ml-bal-fill--used"
+                   [style.width.%]="totalBarPct(b, 'used')"></div>
+            </div>
+            <span class="ml-bal-remain">{{ b.remainingDays }} left</span>
+          </div>
+
+          <div class="ml-bal-stats">
+            <div class="ml-bal-stat">
+              <span class="ml-bal-val">{{ b.totalDays }}</span>
+              <span class="ml-bal-lbl">Total</span>
+            </div>
+            <div class="ml-bal-stat">
+              <span class="ml-bal-val ml-bal-val--used">{{ b.usedDays }}</span>
+              <span class="ml-bal-lbl">Taken</span>
+            </div>
+            <div class="ml-bal-stat">
+              <span class="ml-bal-val ml-bal-val--carry">{{ b.carriedForward }}</span>
+              <span class="ml-bal-lbl">Carry Fwd</span>
+            </div>
+            <div class="ml-bal-stat">
+              <span class="ml-bal-val ml-bal-val--remain">{{ b.remainingDays }}</span>
+              <span class="ml-bal-lbl">Remaining</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
   <div class="ml-grid">
 
     <!-- ── Apply form ──────────────────────────────────────────── -->
@@ -76,11 +118,11 @@
 
       @if (loadingMine()) {
         <p class="ml-empty">Loading…</p>
-      } @else if (mine().length === 0) {
+      } @else if (records().length === 0) {
         <p class="ml-empty">You haven't applied for any leave yet.</p>
       } @else {
         <div class="ml-list">
-          @for (r of mine(); track r.id) {
+          @for (r of records(); track r.id) {
             <div class="ml-item ml-item--{{ r.status }}">
               <div class="ml-item-main">
                 <div class="ml-item-top">
@@ -89,12 +131,8 @@
                 </div>
                 <span class="ml-dates">
                   {{ r.fromDate | date:'MMM d' }} – {{ r.toDate | date:'MMM d, y' }}
-                  @if (r.halfDay) { · half day }
                 </span>
                 @if (r.reason) { <span class="ml-reason">{{ r.reason }}</span> }
-                @if (r.status === 'rejected' && r.rejectionReason) {
-                  <span class="ml-reject-note">Rejected: {{ r.rejectionReason }}</span>
-                }
               </div>
               <div class="ml-item-side">
                 <span class="ml-status ml-status--{{ r.status }}">{{ r.status | titlecase }}</span>

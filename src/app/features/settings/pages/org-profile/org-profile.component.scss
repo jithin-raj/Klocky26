@@ -2,7 +2,7 @@
 :host {
   display: block;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip; // clip does not create a scroll container so position:sticky works
 }
 
 .op-page {
@@ -10,7 +10,7 @@
   background: var(--app-bg, linear-gradient(160deg, #eef2f8 0%, #f0f4fa 60%, #ebf0f7 100%));
   padding-bottom: 80px;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   box-sizing: border-box;
   position: relative;
 }
@@ -1688,6 +1688,11 @@ ui-toggle + ui-toggle {
   .op-lt-carry::before { content: 'Carry Fwd'; font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
 }
 
+// ── Mobile tab strip (hidden on desktop) ─────────────────────────────────────
+.op-mobile-tabs {
+  display: none;
+}
+
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 900px) {
   .op-body {
@@ -1697,14 +1702,7 @@ ui-toggle + ui-toggle {
 
   .op-sidenav { display: none; }
   .op-content { padding: 20px 0; }
-}
 
-// ── Mobile tab strip ──────────────────────────────────────────────────────────
-.op-mobile-tabs {
-  display: none; // hidden on desktop
-}
-
-@media (max-width: 900px) {
   .op-mobile-tabs {
     display: flex;
     overflow-x: auto;
@@ -1734,8 +1732,8 @@ ui-toggle + ui-toggle {
     cursor: pointer;
     transition: all 0.14s;
 
-    svg { 
-      flex-shrink: 0; 
+    svg {
+      flex-shrink: 0;
       opacity: 0.7;
       stroke: #000000;
     }
@@ -1743,10 +1741,7 @@ ui-toggle + ui-toggle {
     &:hover {
       border-color: #cbd5e1;
       color: #000000;
-      svg { 
-        opacity: 0.9;
-        stroke: #000000;
-      }
+      svg { opacity: 0.9; stroke: #000000; }
     }
 
     &.active {
@@ -1755,11 +1750,11 @@ ui-toggle + ui-toggle {
       border-color: var(--accent, #6366f1);
       border-width: 2px;
       color: var(--accent, #6366f1);
-      box-shadow: 
+      box-shadow:
         0 2px 8px color-mix(in srgb, var(--accent, #6366f1) 10%, transparent),
         inset 0 0 0 1px color-mix(in srgb, var(--accent, #6366f1) 20%, transparent);
-      
-      svg { 
+
+      svg {
         opacity: 1;
         stroke: var(--accent, #6366f1);
         transform: scale(1.08);

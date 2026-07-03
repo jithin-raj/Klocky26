@@ -1,0 +1,129 @@
+<div class="page">
+  <h1>Time Management Overview</h1>
+
+  <div class="loading-wrap" *ngIf="loading()">
+    <ui-loader variant="klocky" [size]="72"></ui-loader>
+  </div>
+  <div class="error" *ngIf="error()">{{ error() }}</div>
+
+  <ng-container *ngIf="!loading() && !error() && overview() as ov">
+
+    <!-- Section 1: Today's Status -->
+    <div class="card">
+      <div class="card-title">Today's Status</div>
+      <div class="status-row">
+        <span
+          class="status-badge"
+          [style.background]="statusColor() + '1a'"
+          [style.color]="statusColor()"
+        >
+          <span class="status-dot" [style.background]="statusColor()"></span>
+          {{ statusLabel() }}
+        </span>
+        <span class="status-date">{{ ov.date | date:'EEEE, d MMMM yyyy' }}</span>
+      </div>
+
+      <div class="punch-row">
+        <div class="punch-item">
+          <span class="punch-label">Clock In</span>
+          <span class="punch-value">{{ ov.clockInTime ?? '—' }}</span>
+        </div>
+        <div class="punch-divider"></div>
+        <div class="punch-item">
+          <span class="punch-label">Clock Out</span>
+          <span class="punch-value">{{ ov.clockOutTime ?? '—' }}</span>
+        </div>
+        <div class="punch-divider"></div>
+        <div class="punch-item">
+          <span class="punch-label">Work Duration</span>
+          <span class="punch-value">{{ workHours() }}</span>
+        </div>
+        <div class="punch-divider"></div>
+        <div class="punch-item">
+          <span class="punch-label">Punch Method</span>
+          <span class="punch-value">{{ ov.punchMethod ?? '—' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Attendance Metrics -->
+    <div class="card">
+      <div class="card-title">Attendance Metrics (This Month)</div>
+      <div class="stats-row">
+        <div class="stat-tile">
+          <span class="stat-value" style="color:#22c55e">{{ ov.attendanceMetrics.presentDays }}</span>
+          <span class="stat-label">Present Days</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value" style="color:#ef4444">{{ ov.attendanceMetrics.absentDays }}</span>
+          <span class="stat-label">Absent Days</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value" style="color:#f59e0b">{{ ov.attendanceMetrics.latePunches }}</span>
+          <span class="stat-label">Late Punches</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-value">{{ ov.attendanceMetrics.avgWorkHoursThisMonth | number:'1.1-1' }}h</span>
+          <span class="stat-label">Avg Work Hrs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Pending Requests -->
+    <div class="card">
+      <div class="card-title">Pending Requests</div>
+      <ng-container *ngIf="ov.pendingRequests.length > 0; else noRequests">
+        <table class="req-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Status</th>
+              <th>From</th>
+              <th>To</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let req of ov.pendingRequests">
+              <td>
+                <span class="badge" [class.badge-leave]="req.type === 'leave'" [class.badge-reg]="req.type === 'regularization'">
+                  {{ req.type === 'leave' ? 'Leave' : 'Regularization' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge badge-status">{{ req.status }}</span>
+              </td>
+              <td>{{ req.from | date:'d MMM yyyy' }}</td>
+              <td>{{ req.to | date:'d MMM yyyy' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </ng-container>
+      <ng-template #noRequests>
+        <div class="no-data">No pending requests</div>
+      </ng-template>
+    </div>
+
+    <!-- Section 4: Upcoming Events -->
+    <div class="card">
+      <div class="card-title">Upcoming Events (Next 30 Days)</div>
+      <ng-container *ngIf="events().length > 0; else noEvents">
+        <div class="event-list">
+          <div class="event-row" *ngFor="let ev of events()">
+            <span class="badge" [class.badge-holiday]="ev.type === 'holiday'" [class.badge-birthday]="ev.type === 'birthday'">
+              {{ ev.type === 'holiday' ? 'Holiday' : 'Birthday' }}
+            </span>
+            <div class="event-info">
+              <span class="event-title">{{ ev.title }}</span>
+              <span class="event-meta" *ngIf="ev.employeeName">{{ ev.employeeName }}</span>
+            </div>
+            <span class="event-date">{{ ev.date | date:'d MMM yyyy' }}</span>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #noEvents>
+        <div class="no-data">No upcoming events</div>
+      </ng-template>
+    </div>
+
+  </ng-container>
+</div>

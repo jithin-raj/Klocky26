@@ -5,6 +5,7 @@ import {
 } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
+import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
 import { UiModalOutletComponent, UiLoaderComponent } from '../../shared/components';
 import { Subscription, filter } from 'rxjs';
 import { OrgThemeService } from '../../core/services/org-theme.service';
@@ -20,7 +21,7 @@ import { LoadingService } from '../../core/services/loading.service';
 @Component({
   selector: 'klocky-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent, UiModalOutletComponent, UiLoaderComponent],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, BottomNavComponent, UiModalOutletComponent, UiLoaderComponent],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss'],
 })
