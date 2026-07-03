@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 
 import { TimeManagementService } from '../../../../core/services/time-management.service';
+import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
+import { AppStateService } from '../../../../core/services/app-state.service';
 import { TimeOverview, UpcomingEventItem } from '../../../../core/models/time-management.model';
+import { TeamAttendanceItem } from '../../../../core/models/attendance.model';
 import { UiLoaderComponent } from '../../../../shared/components/ui-loader/ui-loader.component';
 
 @Component({
@@ -16,12 +19,38 @@ import { UiLoaderComponent } from '../../../../shared/components/ui-loader/ui-lo
   styleUrl: './overview.component.scss',
 })
 export class TimeOverviewComponent implements OnInit {
-  private readonly svc = inject(TimeManagementService);
+  private readonly svc            = inject(TimeManagementService);
+  private readonly attendanceSvc  = inject(AttendanceStateService);
+  private readonly appState       = inject(AppStateService);
 
-  overview = signal<TimeOverview | null>(null);
-  events   = signal<UpcomingEventItem[]>([]);
-  loading  = signal(true);
-  error    = signal<string | null>(null);
+  overview    = signal<TimeOverview | null>(null);
+  events      = signal<UpcomingEventItem[]>([]);
+  loading     = signal(true);
+  error       = signal<string | null>(null);
+
+  teamItems   = signal<TeamAttendanceItem[]>([]);
+  teamLoading = signal(false);
+
+  readonly isPrivileged = computed(() => {
+    const role = this.appState.userRole();
+    return role === 'admin' || role === 'hr' || role === 'manager' || role === 'super_admin';
+  });
+
+  readonly clockedInEmployees = computed(() =>
+    this.teamItems().filter(e => !!e.today?.isClockedIn)
+  );
+
+  readonly absentEmployees = computed(() =>
+    this.teamItems().filter(e => {
+      const t = e.today;
+      if (!t) return true;
+      return t.status === 'absent' && !t.isClockedIn;
+    })
+  );
+
+  readonly onLeaveEmployees = computed(() =>
+    this.teamItems().filter(e => e.today?.status === 'leave')
+  );
 
   statusLabel = computed(() => {
     const s = this.overview()?.status;
@@ -59,11 +88,35 @@ export class TimeOverviewComponent implements OnInit {
         this.overview.set(overview);
         this.events.set(events);
         this.loading.set(false);
+        if (this.isPrivileged()) {
+          this._loadTeam();
+        }
       },
       error: (err) => {
         this.error.set(err?.error?.message ?? 'Failed to load time management overview.');
         this.loading.set(false);
       },
     });
+  }
+
+  private _loadTeam(): void {
+    this.teamLoading.set(true);
+    this.attendanceSvc.getTeamStatus().subscribe({
+      next: (res) => {
+        this.teamItems.set(res.data ?? []);
+        this.teamLoading.set(false);
+      },
+      error: () => this.teamLoading.set(false),
+    });
+  }
+
+  formatClockIn(item: TeamAttendanceItem): string {
+    const t = item.today?.clockInTime;
+    if (!t) return '—';
+    return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  trackById(_: number, item: TeamAttendanceItem): string {
+    return item.userId;
   }
 }

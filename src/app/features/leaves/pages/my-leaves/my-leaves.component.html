@@ -1,153 +1,228 @@
-<div class="ml-page">
+<div class="lv-page">
 
-  <div class="ml-header">
-    <h1>My Leave</h1>
-    <p>Apply for leave and track the status of your requests.</p>
+  <!-- ── Page header ─────────────────────────────────────────────────── -->
+  <div class="lv-page-head">
+    <div class="lv-head-text">
+      <h1 class="lv-title">My Leave</h1>
+      <p class="lv-sub">{{ currentYear }} leave overview</p>
+    </div>
+    <button class="lv-apply-btn" (click)="navigateToApply()">
+      <ui-icon name="plus" [size]="16"></ui-icon>
+      Apply / Regularise
+    </button>
   </div>
 
-  <!-- ── Balance cards ──────────────────────────────────────────────── -->
-  @if (balances().length > 0) {
-    <div class="ml-balances">
-      @for (b of balances(); track b.leaveTypeId) {
-        <div class="ml-bal-card">
-          <div class="ml-bal-top">
-            <span class="ml-bal-name">{{ b.leaveTypeName ?? 'Leave' }}</span>
-            <span class="ml-bal-year">{{ b.year }}</span>
-          </div>
+  <!-- ── Tab bar ─────────────────────────────────────────────────────── -->
+  <div class="lv-tabs">
+    <button class="lv-tab" [class.active]="activeTab() === 'balance'" (click)="switchTab('balance')">
+      Leave Balance
+    </button>
+    <button class="lv-tab" [class.active]="activeTab() === 'holidays'" (click)="switchTab('holidays')">
+      Holidays
+    </button>
+    <button class="lv-tab" [class.active]="activeTab() === 'history'" (click)="switchTab('history')">
+      History
+      @if (records().length > 0) {
+        <span class="lv-tab-count">{{ records().length }}</span>
+      }
+    </button>
+  </div>
 
-          <!-- Progress bar: taken vs total -->
-          <div class="ml-bal-bar-wrap">
-            <div class="ml-bal-bar">
-              <div class="ml-bal-fill ml-bal-fill--used"
-                   [style.width.%]="totalBarPct(b, 'used')"></div>
-            </div>
-            <span class="ml-bal-remain">{{ b.remainingDays }} left</span>
-          </div>
+  <!-- ══════════════ TAB: LEAVE BALANCE ══════════════════════════════ -->
+  @if (activeTab() === 'balance') {
+    <div class="lv-content">
 
-          <div class="ml-bal-stats">
-            <div class="ml-bal-stat">
-              <span class="ml-bal-val">{{ b.totalDays }}</span>
-              <span class="ml-bal-lbl">Total</span>
+      @if (loading()) {
+        <div class="lv-skeletons">
+          <div class="lv-skel lv-skel--chart"></div>
+          <div class="lv-skel lv-skel--row"></div>
+          <div class="lv-skel lv-skel--row"></div>
+          <div class="lv-skel lv-skel--row"></div>
+        </div>
+      } @else {
+
+        <!-- Monthly chart (only shown when there is data) -->
+        @if (monthlyChartData().totalTaken > 0) {
+          <div class="lv-chart-card">
+            <div class="lv-chart-head">
+              <span class="lv-chart-title">Monthly Usage</span>
+              <span class="lv-chart-sub">{{ currentYear }} &nbsp;·&nbsp; {{ monthlyChartData().totalTaken }} days taken</span>
             </div>
-            <div class="ml-bal-stat">
-              <span class="ml-bal-val ml-bal-val--used">{{ b.usedDays }}</span>
-              <span class="ml-bal-lbl">Taken</span>
-            </div>
-            <div class="ml-bal-stat">
-              <span class="ml-bal-val ml-bal-val--carry">{{ b.carriedForward }}</span>
-              <span class="ml-bal-lbl">Carry Fwd</span>
-            </div>
-            <div class="ml-bal-stat">
-              <span class="ml-bal-val ml-bal-val--remain">{{ b.remainingDays }}</span>
-              <span class="ml-bal-lbl">Remaining</span>
+            <div class="lv-chart">
+              @for (m of monthlyChartData().months; track m.idx) {
+                <div class="lv-chart-col" [class.lv-chart-col--active]="m.total > 0">
+                  <span class="lv-chart-val">{{ m.total > 0 ? m.total : '' }}</span>
+                  <div class="lv-chart-track">
+                    <div class="lv-chart-bar" [style.height.px]="m.heightPx"></div>
+                  </div>
+                  <span class="lv-chart-lbl">{{ m.label }}</span>
+                </div>
+              }
             </div>
           </div>
+        }
+
+        <!-- Leave category cards -->
+        <div class="lv-sec-label">Leave Categories</div>
+
+        @if (filteredBalances().length === 0) {
+          <p class="lv-empty">No leave categories to display.</p>
+        }
+
+        <div class="lv-cat-grid">
+          @for (b of filteredBalances(); track b.leaveTypeId) {
+            <div class="lv-cat-card">
+
+              <div class="lv-cat-header">
+                <span class="lv-cat-dot" [style.background]="typeColor(b.leaveTypeId)"></span>
+                <span class="lv-cat-name">{{ b.leaveTypeName ?? 'Leave' }}</span>
+                <button class="lv-cat-plus" (click)="openApplyFor(b.leaveTypeId)" title="Apply this leave">
+                  <ui-icon name="plus" [size]="13"></ui-icon>
+                </button>
+              </div>
+
+              <div class="lv-cat-bar-row">
+                <div class="lv-cat-bar">
+                  <div class="lv-cat-bar-fill"
+                       [style.width.%]="usedBarPct(b)"
+                       [style.background]="typeColor(b.leaveTypeId)"></div>
+                </div>
+                <span class="lv-cat-remain" [class.lv-cat-remain--low]="b.remainingDays <= 1">
+                  {{ b.remainingDays }} left
+                </span>
+              </div>
+
+              <div class="lv-cat-stats">
+                <div class="lv-cat-stat">
+                  <span class="lv-cat-val">{{ b.totalDays }}</span>
+                  <span class="lv-cat-lbl">Total</span>
+                </div>
+                <div class="lv-cat-stat">
+                  <span class="lv-cat-val lv-cat-val--used">{{ b.usedDays }}</span>
+                  <span class="lv-cat-lbl">Used</span>
+                </div>
+                <div class="lv-cat-stat">
+                  <span class="lv-cat-val lv-cat-val--pending">{{ b.pendingDays }}</span>
+                  <span class="lv-cat-lbl">Pending</span>
+                </div>
+                <div class="lv-cat-stat">
+                  <span class="lv-cat-val lv-cat-val--carry">{{ b.carriedForward }}</span>
+                  <span class="lv-cat-lbl">Carry Fwd</span>
+                </div>
+                <div class="lv-cat-stat">
+                  <span class="lv-cat-val lv-cat-val--remain">{{ b.remainingDays }}</span>
+                  <span class="lv-cat-lbl">Remaining</span>
+                </div>
+              </div>
+
+            </div>
+          }
         </div>
       }
     </div>
   }
 
-  <div class="ml-grid">
-
-    <!-- ── Apply form ──────────────────────────────────────────── -->
-    <section class="ml-card ml-apply">
-      <div class="ml-apply-head">
-        <h2 class="ml-card-title">Apply for Leave</h2>
-        <p>Submit a new leave request for approval.</p>
-      </div>
-
-      <div class="ml-apply-body">
-        <div class="ml-field">
-          <label>Leave Type</label>
-          <ui-select placeholder="Select leave type"
-            [options]="typeOptions()"
-            [ngModel]="leaveTypeId()" (ngModelChange)="leaveTypeId.set($event)"></ui-select>
-          @if (selectedBalance(); as bal) {
-            <span class="ml-balance">{{ bal.remainingDays }} of {{ bal.totalDays }} days remaining</span>
-          }
+  <!-- ══════════════ TAB: HOLIDAYS ═══════════════════════════════════ -->
+  @if (activeTab() === 'holidays') {
+    <div class="lv-content">
+      @if (loadingHolidays()) {
+        <div class="lv-loading-msg">Loading holidays…</div>
+      } @else if (holidays().length === 0) {
+        <div class="lv-empty-state">
+          <ui-icon name="calendar" [size]="42" class="lv-es-icon"></ui-icon>
+          <p class="lv-es-text">No holidays added by your organisation yet.</p>
         </div>
-
-        @if (isCompOff()) {
-          <div class="ml-field">
-            <label>Worked Date <span class="ml-req">*</span></label>
-            <input type="date" [max]="todayIso" [ngModel]="workedDate()" (ngModelChange)="workedDate.set($event)" name="workedDate" />
-            <span class="ml-hint">The day you worked that you're claiming off for.</span>
-          </div>
-        }
-
-        <div class="ml-row">
-          <div class="ml-field">
-            <label>From</label>
-            <input type="date" [ngModel]="fromDate()" (ngModelChange)="onFromChange($event)" name="fromDate" />
-          </div>
-          <div class="ml-field">
-            <label>To</label>
-            <input type="date" [min]="fromDate()" [disabled]="halfDay()"
-                   [ngModel]="toDate()" (ngModelChange)="toDate.set($event)" name="toDate" />
-          </div>
-        </div>
-
-        <label class="ml-check">
-          <input type="checkbox" [ngModel]="halfDay()" (ngModelChange)="onHalfDayToggle($event)" name="halfDay" />
-          <span>Half day</span>
-        </label>
-
-        @if (halfDay()) {
-          <div class="ml-field">
-            <label>Session</label>
-            <ui-select [options]="sessionOptions"
-              [ngModel]="halfDaySession()" (ngModelChange)="halfDaySession.set($event)"></ui-select>
-          </div>
-        }
-
-        <div class="ml-field">
-          <label>Reason</label>
-          <textarea rows="3" maxlength="500" placeholder="Add a note for the approver…"
-                    [ngModel]="reason()" (ngModelChange)="reason.set($event)"></textarea>
-        </div>
-
-        <button class="ml-btn ml-btn--primary" [disabled]="!canSubmit()" (click)="submit()">
-          {{ submitting() ? 'Submitting…' : 'Apply for Leave' }}
-        </button>
-      </div>
-    </section>
-
-    <!-- ── My requests ─────────────────────────────────────────── -->
-    <section class="ml-card ml-mine">
-      <h2 class="ml-card-title">My Requests</h2>
-
-      @if (loadingMine()) {
-        <p class="ml-empty">Loading…</p>
-      } @else if (records().length === 0) {
-        <p class="ml-empty">You haven't applied for any leave yet.</p>
       } @else {
-        <div class="ml-list">
-          @for (r of records(); track r.id) {
-            <div class="ml-item ml-item--{{ r.status }}">
-              <div class="ml-item-main">
-                <div class="ml-item-top">
-                  <span class="ml-type">{{ r.leaveTypeName }}</span>
-                  <span class="ml-days">{{ r.days }} day{{ r.days === 1 ? '' : 's' }}</span>
-                </div>
-                <span class="ml-dates">
-                  {{ r.fromDate | date:'MMM d' }} – {{ r.toDate | date:'MMM d, y' }}
-                </span>
-                @if (r.reason) { <span class="ml-reason">{{ r.reason }}</span> }
+        <div class="lv-hol-list">
+          @for (h of sortedHolidays(); track h.id) {
+            <div class="lv-hol-item">
+              <div class="lv-hol-date-box" [class.lv-hol-date-box--past]="h.date < todayIso">
+                <span class="lv-hol-day">{{ h.date | date:'d' }}</span>
+                <span class="lv-hol-mon">{{ h.date | date:'MMM' }}</span>
               </div>
-              <div class="ml-item-side">
-                <span class="ml-status ml-status--{{ r.status }}">{{ r.status | titlecase }}</span>
-                @if (r.status === 'pending' && stageLabel(r.approvalStage)) {
-                  <span class="ml-stage">{{ stageLabel(r.approvalStage) }}</span>
+              <div class="lv-hol-info">
+                <span class="lv-hol-name">{{ h.name }}</span>
+                <span class="lv-hol-dow">{{ h.date | date:'EEEE, MMMM d, y' }}</span>
+              </div>
+              <div class="lv-hol-right">
+                @if (h.type) {
+                  <span class="lv-htype lv-htype--{{ h.type }}">{{ holidayTypeLabel(h.type) }}</span>
                 }
-                @if (canCancel(r)) {
-                  <button class="ml-btn ml-btn--ghost ml-btn--sm" [disabled]="busyId() === r.id" (click)="cancel(r.id)">Cancel</button>
+                @if (h.type === 'optional' && h.date >= todayIso) {
+                  <button class="lv-hol-take-btn" (click)="takeOptionalHoliday(h)" title="Apply this optional holiday as leave">
+                    Take
+                  </button>
                 }
               </div>
             </div>
           }
         </div>
       }
-    </section>
+    </div>
+  }
 
-  </div>
+  <!-- ══════════════ TAB: HISTORY ════════════════════════════════════ -->
+  @if (activeTab() === 'history') {
+    <div class="lv-content">
+
+      <div class="lv-hist-toolbar">
+        <div class="lv-filter-row">
+          <div class="lv-filter-select">
+            <ui-select placeholder="All months" [options]="monthOptions()"
+              [ngModel]="historyMonth()" (ngModelChange)="historyMonth.set($event)"></ui-select>
+          </div>
+          @if (historyMonth()) {
+            <button class="lv-clear" (click)="historyMonth.set('')">Clear</button>
+          }
+        </div>
+        <button class="lv-reg-btn" (click)="goToRegularisation()">
+          <ui-icon name="repeat" [size]="13"></ui-icon>
+          Regularisation
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div class="lv-loading-msg">Loading…</div>
+      } @else if (filteredRecords().length === 0) {
+        <div class="lv-empty-state">
+          <ui-icon name="calendar" [size]="42" class="lv-es-icon"></ui-icon>
+          <p class="lv-es-text">
+            {{ historyMonth() ? 'No leaves found in ' + monthLabel(historyMonth()) + '.' : 'No leave requests yet.' }}
+          </p>
+        </div>
+      } @else {
+        <div class="lv-hist-list">
+          @for (r of filteredRecords(); track r.id) {
+            <div class="lv-hist-item">
+              <span class="lv-hist-stripe" [style.background]="typeColor(r.leaveTypeId)"></span>
+              <div class="lv-hist-body">
+                <div class="lv-hist-top">
+                  <span class="lv-hist-type">{{ r.leaveTypeName }}</span>
+                  <span class="lv-hst lv-hst--{{ r.status }}">{{ r.status | titlecase }}</span>
+                </div>
+                <div class="lv-hist-mid">
+                  <span class="lv-hist-dates">{{ r.fromDate | date:'MMM d' }} – {{ r.toDate | date:'MMM d, y' }}</span>
+                  <span class="lv-hist-days">{{ r.days }} day{{ r.days === 1 ? '' : 's' }}</span>
+                </div>
+                @if (r.reason) {
+                  <span class="lv-hist-reason">"{{ r.reason }}"</span>
+                }
+                @if (r.status === 'pending' && stageLabel(r.approvalStage)) {
+                  <span class="lv-hist-stage">{{ stageLabel(r.approvalStage) }}</span>
+                }
+              </div>
+              @if (canCancel(r)) {
+                <button class="lv-cancel-btn"
+                        [disabled]="busyId() === r.id"
+                        (click)="cancel(r.id)">
+                  {{ busyId() === r.id ? '…' : 'Cancel' }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
 </div>

@@ -4,6 +4,7 @@ import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { ApiResponse } from '../models/api-response.model';
 import { Holiday, TimeOverview, UpcomingEventItem } from '../models/time-management.model';
+import { TeamAttendanceItem } from '../models/attendance.model';
 
 @Injectable({ providedIn: 'root' })
 export class TimeManagementService {

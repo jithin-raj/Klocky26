@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 import { CommonModule, NgIf } from '@angular/common';
 import { IconKlockyLogoComponent } from '../../icons/icon-klocky-logo.component';
 
@@ -21,11 +21,11 @@ export type BrandSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
       <!-- ── Org Side ── -->
       <div class="jv-org">
-        <ng-container *ngIf="orgLogoUrl && !_logoFailed; else orgFallback">
+        <ng-container *ngIf="orgLogoUrl && !_logoFailed(); else orgFallback">
           <img [src]="orgLogoUrl"
                [alt]="orgName"
                class="jv-org-img"
-               (error)="_logoFailed = true"/>
+               (error)="_logoFailed.set(true)"/>
         </ng-container>
 
         <ng-template #orgFallback>
@@ -202,10 +202,11 @@ export type BrandSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
     .xl .jv-klocky-label { font-size: 13px; }
 
     @media (max-width: 640px) {
-      .jv-org-name { display: none; }
       .jv-klocky-label { display: none; }
       .jv-divider { display: none; }
       .jv-klocky { display: none; }
+      /* Keep .jv-org-name visible so org name shows when logo fails on mobile */
+      .jv-org-name { font-size: 13px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
   `],
 })
@@ -226,10 +227,10 @@ export class AppBrandComponent {
   @Input() orgName = '';
 
   /** Org Logo — resets the broken-image flag whenever the URL changes. */
-  _logoFailed = false;
+  readonly _logoFailed = signal(false);
   private _orgLogoUrl = '';
   get orgLogoUrl(): string { return this._orgLogoUrl; }
-  @Input() set orgLogoUrl(url: string) { this._orgLogoUrl = url; this._logoFailed = false; }
+  @Input() set orgLogoUrl(url: string) { this._orgLogoUrl = url; this._logoFailed.set(false); }
 
   /** Org Accent Color */
   @Input() orgAccentColor = '';

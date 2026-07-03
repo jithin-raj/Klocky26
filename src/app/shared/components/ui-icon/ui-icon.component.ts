@@ -18,7 +18,8 @@ export type UiIconName =
   | 'check-circle' | 'bell' | 'send' | 'settings' | 'calendar' | 'clock'
   | 'briefcase' | 'layers' | 'bar-chart' | 'pie-chart' | 'map-pin' | 'tree'
   | 'arrow-right' | 'plus' | 'award' | 'clipboard-check' | 'megaphone' | 'sparkles'
-  | 'home' | 'log-out' | 'bell-dot' | 'user' | 'scan' | 'repeat' | 'grid';
+  | 'home' | 'log-out' | 'bell-dot' | 'user' | 'scan' | 'repeat' | 'grid'
+  | 'check' | 'x' | 'inbox';
 
 @Component({
   selector: 'ui-icon',
@@ -60,6 +61,9 @@ export type UiIconName =
         @case ('scan') { <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="3" y1="12" x2="21" y2="12"/> }
         @case ('repeat') { <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/> }
         @case ('grid') { <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/> }
+        @case ('check') { <polyline points="20 6 9 17 4 12"/> }
+        @case ('x') { <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/> }
+        @case ('inbox') { <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/> }
       }
     </svg>
   `,

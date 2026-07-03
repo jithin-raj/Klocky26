@@ -10,12 +10,12 @@
 export type AttendanceRequestType = 'missed_punch' | 'wfh' | 'on_duty' | 'correction';
 export type AttendanceRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
-/** POST /api/attendance-requests request body. `clockIn` required; `date` can't be future. */
+/** POST /api/attendance-requests request body. `date` can't be future. */
 export interface CreateAttendanceRequest {
   date: string;          // ISO date (YYYY-MM-DD)
   type: AttendanceRequestType;
-  clockIn: string;       // required — "HH:mm" or ISO time
-  clockOut?: string;
+  clockIn?: string;      // UTC ISO datetime e.g. "2024-01-15T04:00:00.000Z" — omit for WFH
+  clockOut?: string;     // UTC ISO datetime (optional)
   officeId?: string;
   reason?: string;
 }

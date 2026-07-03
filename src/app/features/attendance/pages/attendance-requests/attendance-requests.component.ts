@@ -3,165 +3,440 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { UiSelectComponent } from '../../../../shared/components';
+import { ActivatedRoute } from '@angular/router';
+
+import { UiSelectComponent, UiIconComponent } from '../../../../shared/components';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { AttendanceRequestService } from '../../../../core/services/attendance-request.service';
 import { OfficeService } from '../../../../core/services/office.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
+import { LeaveService } from '../../../../core/services/leave.service';
 import {
   AttendanceRequestResponse,
   AttendanceRequestType,
   ATTENDANCE_REQUEST_TYPE_LABELS,
 } from '../../../../core/models/attendance-request.model';
+import {
+  HalfDaySession,
+  LeaveBalance,
+  LeaveRecord,
+  LeaveTypeOption,
+} from '../../../../core/models/leave.model';
+
+export type HubTab    = 'request' | 'history' | 'approvals';
+export type HubType   = 'leave' | 'missed_punch' | 'wfh' | 'on_duty' | 'correction' | 'encashment';
 
 @Component({
   selector: 'app-attendance-requests',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent],
   templateUrl: './attendance-requests.component.html',
   styleUrl: './attendance-requests.component.scss',
 })
 export class AttendanceRequestsComponent implements OnInit {
 
-  private readonly svc = inject(AttendanceRequestService);
-  private readonly officeSvc = inject(OfficeService);
+  private readonly svc      = inject(AttendanceRequestService);
+  private readonly leaveSvc = inject(LeaveService);
+  private readonly officeSvc= inject(OfficeService);
   private readonly appState = inject(AppStateService);
-  private readonly toast = inject(ToastService);
+  private readonly toast    = inject(ToastService);
+  private readonly route    = inject(ActivatedRoute);
 
-  /** Max selectable date — regularization can't be for a future day. */
   readonly todayIso = new Date().toISOString().slice(0, 10);
 
-  // ── Apply form ───────────────────────────────────────────────────
-  date     = signal(this.todayIso);
-  type     = signal<AttendanceRequestType>('missed_punch');
+  // ── Hub type definitions ──────────────────────────────────────────────
+  readonly hubTypes: { value: HubType; label: string; icon: string; desc: string }[] = [
+    { value: 'leave',       label: 'Leave',          icon: 'calendar',     desc: 'Annual, sick or other leave' },
+    { value: 'missed_punch', label: 'Missed Punch',  icon: 'clock',        desc: 'Fix a missed clock-in / out' },
+    { value: 'wfh',         label: 'Work From Home', icon: 'home',         desc: 'Register a WFH day' },
+    { value: 'on_duty',     label: 'On Duty',        icon: 'briefcase',    desc: 'Official off-site visit' },
+    { value: 'correction',  label: 'Time Correction',icon: 'settings',     desc: 'Correct attendance times' },
+    { value: 'encashment',  label: 'Leave Encashment',icon: 'award',       desc: 'Convert leave balance to pay' },
+  ];
+
+  // ── Tabs ──────────────────────────────────────────────────────────────
+  activeTab = signal<HubTab>('request');
+  hubType   = signal<HubType>('leave');
+
+  // ── Shared form fields ────────────────────────────────────────────────
+  fromDate   = signal(this.todayIso);
+  toDate     = signal(this.todayIso);
+  reason     = signal('');
+  submitting = signal(false);
+
+  // ── Leave-specific ────────────────────────────────────────────────────
+  leaveTypeId    = signal('');
+  halfDay        = signal(false);
+  halfDaySession = signal<HalfDaySession>('first_half');
+  workedDate     = signal('');
+
+  // ── Attendance-specific ───────────────────────────────────────────────
   clockIn  = signal('');
   clockOut = signal('');
   officeId = signal('');
-  reason   = signal('');
-  submitting = signal(false);
 
-  readonly typeOptions = (Object.keys(ATTENDANCE_REQUEST_TYPE_LABELS) as AttendanceRequestType[])
-    .map(v => ({ label: ATTENDANCE_REQUEST_TYPE_LABELS[v], value: v }));
+  // ── Encashment-specific ───────────────────────────────────────────────
+  encashLeaveTypeId = signal('');
+  encashDays        = signal(1);
 
-  /** Office picker (optional) — populated from GET /api/offices. */
-  officeOptions = signal<{ label: string; value: string }[]>([{ label: 'No specific office', value: '' }]);
+  readonly sessionOptions = [
+    { label: 'First half',  value: 'first_half'  },
+    { label: 'Second half', value: 'second_half' },
+  ];
 
-  /** Approvals queue is manager/HR-only — gate the call so employees don't 403. */
+  // ── Data signals ──────────────────────────────────────────────────────
+  leaveTypes    = signal<LeaveTypeOption[]>([]);
+  leaveBalances = signal<LeaveBalance[]>([]);
+  officeOptions = signal<{ label: string; value: string }[]>([
+    { label: 'No specific office', value: '' },
+  ]);
+
+  // ── Computed ──────────────────────────────────────────────────────────
+  readonly leaveTypeOptions = computed(() =>
+    this.leaveTypes().map(t => ({ label: t.name, value: t.leaveTypeId })));
+
+  readonly encashTypeOptions = computed(() =>
+    this.leaveTypes().filter(t => !t.isCompOff).map(t => ({ label: t.name, value: t.leaveTypeId })));
+
+  readonly selectedLeaveType = computed(() =>
+    this.leaveTypes().find(t => t.leaveTypeId === this.leaveTypeId()) ?? null);
+
+  readonly isCompOff = computed(() => !!this.selectedLeaveType()?.isCompOff);
+
+  readonly selectedBalance = computed(() =>
+    this.leaveBalances().find(b => b.leaveTypeId === this.leaveTypeId()) ?? null);
+
+  readonly encashBalance = computed(() =>
+    this.leaveBalances().find(b => b.leaveTypeId === this.encashLeaveTypeId()) ?? null);
+
+  readonly canSubmit = computed(() => {
+    if (this.submitting()) return false;
+    const t = this.hubType();
+    if (t === 'encashment') {
+      if (!this.encashLeaveTypeId()) return false;
+      const bal = this.encashBalance();
+      if (bal && this.encashDays() > bal.remainingDays) return false;
+      return this.encashDays() >= 1;
+    }
+    if (t === 'leave') {
+      if (!this.leaveTypeId() || !this.fromDate() || !this.toDate()) return false;
+      if (this.toDate() < this.fromDate()) return false;
+      if (this.halfDay() && this.fromDate() !== this.toDate()) return false;
+      if (this.isCompOff() && !this.workedDate()) return false;
+      return true;
+    }
+    const dateOk = !!this.fromDate() && this.fromDate() <= this.todayIso;
+    if (this.hubType() === 'wfh') return dateOk;
+    return dateOk && !!this.clockIn();
+  });
+
+  // ── Permissions ───────────────────────────────────────────────────────
   readonly canApprove = (() => {
     const u = this.appState.user();
     return !!(u?.isManager || u?.isHr || u?.isAdmin);
   })();
 
-  readonly canSubmit = computed(() =>
-    !!this.date() && !!this.clockIn() && this.date() <= this.todayIso && !this.submitting());
+  private _fromCalendar = false;
 
-  // ── My requests ──────────────────────────────────────────────────
-  mine = signal<AttendanceRequestResponse[]>([]);
-  loadingMine = signal(true);
+  // ── History ───────────────────────────────────────────────────────────
+  myAttendance   = signal<AttendanceRequestResponse[]>([]);
+  myLeaveRecords = signal<LeaveRecord[]>([]);
+  loadingHistory = signal(false);
+  historyFetched = signal(false);
+  busyId         = signal<string | null>(null);
 
-  // ── Approvals (managers/HR) ──────────────────────────────────────
-  pending = signal<AttendanceRequestResponse[]>([]);
-  hasApprovals = computed(() => this.pending().length > 0);
-  busyId = signal<string | null>(null);
-  rejectTarget = signal<string | null>(null);
-  rejectReason = signal('');
+  // ── Approvals ─────────────────────────────────────────────────────────
+  pending         = signal<AttendanceRequestResponse[]>([]);
+  approvalsBusyId = signal<string | null>(null);
+  rejectTarget    = signal<string | null>(null);
+  rejectReason    = signal('');
 
+  readonly hasApprovals = computed(() => this.pending().length > 0);
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────
   ngOnInit() {
-    this.loadMine();
+    this.loadLeaveData();
     this.loadOffices();
-    // Only managers/HR may call pending-approval (it 403s otherwise, which the
-    // error interceptor would turn into a /404 redirect).
     if (this.canApprove) this.loadPending();
+
+    this.route.queryParams.subscribe(params => {
+      const t = params['type'] as HubType;
+      if (t && this.hubTypes.some(h => h.value === t)) {
+        this.hubType.set(t);
+      }
+      if (params['leaveTypeId']) {
+        this.leaveTypeId.set(params['leaveTypeId']);
+      }
+      if (params['date']) {
+        this.fromDate.set(params['date']);
+        this.toDate.set(params['date']);
+      }
+      if (params['fromCalendar'] === '1') {
+        this._fromCalendar = true;
+        this.clockIn.set('09:00');
+        this.clockOut.set('18:30');
+      }
+    });
+  }
+
+  private loadLeaveData() {
+    this.leaveSvc.types().subscribe({ next: t => this.leaveTypes.set(t), error: () => {} });
+    this.leaveSvc.balances().subscribe({ next: b => this.leaveBalances.set(b), error: () => {} });
   }
 
   private loadOffices() {
     this.officeSvc.getAll().subscribe({
-      next: (res) => this.officeOptions.set([
-        { label: 'No specific office', value: '' },
-        ...(res.data ?? []).map(o => ({ label: o.name, value: o.id })),
-      ]),
-      error: () => { /* offices optional — leave the default */ },
+      next: (res) => {
+        const raw = res.data ?? [];
+        const seen = new Set<string>();
+        const unique = raw.filter((o: any) => !seen.has(o.id) && seen.add(o.id));
+        this.officeOptions.set([
+          { label: 'No specific office', value: '' },
+          ...unique.map((o: any) => ({ label: o.name, value: o.id })),
+        ]);
+        if (this._fromCalendar && !this.officeId() && unique.length > 0) {
+          this.officeId.set(unique[0].id);
+        }
+      },
+      error: () => {},
     });
   }
 
-  loadMine() {
-    this.loadingMine.set(true);
-    this.svc.mine().subscribe({
-      next: (rows) => { this.mine.set(rows); this.loadingMine.set(false); },
-      error: () => { this.loadingMine.set(false); },
-    });
-  }
-
-  /** Best-effort — non-managers get 403, which we swallow (no approvals section shown). */
   loadPending() {
     this.svc.pendingApproval().subscribe({
-      next: (rows) => this.pending.set(rows),
+      next: rows => this.pending.set(rows),
       error: () => this.pending.set([]),
     });
   }
 
-  /** <input type="time"> gives "HH:mm"; the API's time field needs "HH:mm:ss". */
-  private toApiTime(t: string): string | undefined {
-    if (!t) return undefined;
-    return t.length === 5 ? `${t}:00` : t;
+  // ── Tab & type selection ──────────────────────────────────────────────
+  switchTab(tab: HubTab) {
+    this.activeTab.set(tab);
+    if (tab === 'history' && !this.historyFetched()) this.loadHistory();
   }
 
+  selectType(t: HubType) {
+    this.hubType.set(t);
+    this.resetForm();
+  }
+
+  private loadHistory() {
+    this.loadingHistory.set(true);
+    this.historyFetched.set(true);
+    this.svc.mine().subscribe({
+      next: rows => this.myAttendance.set(rows),
+      error: () => {},
+    });
+    this.leaveSvc.my().subscribe({
+      next: res => { this.myLeaveRecords.set(res.records ?? []); this.loadingHistory.set(false); },
+      error: () => this.loadingHistory.set(false),
+    });
+  }
+
+  private resetForm() {
+    this.fromDate.set(this.todayIso);
+    this.toDate.set(this.todayIso);
+    this.reason.set('');
+    this.clockIn.set('');
+    this.clockOut.set('');
+    this.officeId.set('');
+    this.halfDay.set(false);
+    this.workedDate.set('');
+    this.leaveTypeId.set('');
+  }
+
+  // ── Form events ───────────────────────────────────────────────────────
+  onHalfDayToggle(on: boolean) {
+    this.halfDay.set(on);
+    if (on) this.toDate.set(this.fromDate());
+  }
+
+  onFromChange(v: string) {
+    this.fromDate.set(v);
+    if (this.halfDay() || this.toDate() < v) this.toDate.set(v);
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────
   submit() {
     if (!this.canSubmit()) return;
+    if (this.hubType() === 'encashment') {
+      this.submitEncashment();
+      return;
+    }
+    if (this.hubType() === 'leave') {
+      this.submitLeave();
+    } else {
+      this.submitAttendance(this.hubType() as AttendanceRequestType);
+    }
+  }
+
+  private submitLeave() {
     this.submitting.set(true);
+    this.leaveSvc.apply({
+      leaveTypeId:    this.leaveTypeId(),
+      fromDate:       this.fromDate(),
+      toDate:         this.toDate(),
+      reason:         this.reason()    || undefined,
+      halfDay:        this.halfDay(),
+      halfDaySession: this.halfDay()   ? this.halfDaySession() : undefined,
+      workedDate:     this.isCompOff() ? (this.workedDate() || undefined) : undefined,
+    }).subscribe({
+      next: () => {
+        this.submitting.set(false);
+        this.toast.success('Leave applied', 'Your request has been submitted.');
+        this.resetForm();
+        this.historyFetched.set(false);
+      },
+      error: err => {
+        this.submitting.set(false);
+        this.toast.error('Could not apply', err?.error?.message ?? 'Please try again.');
+      },
+    });
+  }
+
+  private submitEncashment() {
+    this.submitting.set(true);
+    this.leaveSvc.encashLeave(this.encashLeaveTypeId(), this.encashDays()).subscribe({
+      next: (res) => {
+        this.submitting.set(false);
+        this.toast.success('Leave encashed', `${this.encashDays()} day(s) encashed. ${res.remainingDays} days remaining.`);
+        this.encashLeaveTypeId.set('');
+        this.encashDays.set(1);
+        // Refresh balances
+        this.leaveSvc.balances().subscribe({ next: b => this.leaveBalances.set(b), error: () => {} });
+      },
+      error: (err) => {
+        this.submitting.set(false);
+        const status = err?.status;
+        const msg = err?.error?.message;
+        if (status === 409) this.toast.error('Encashment denied', msg ?? 'Policy or balance limit reached.');
+        else if (status === 404) this.toast.error('Leave type not found', 'The selected leave type does not support encashment.');
+        else this.toast.error('Encashment failed', msg ?? 'Please try again.');
+      },
+    });
+  }
+
+  private submitAttendance(type: AttendanceRequestType) {
+    this.submitting.set(true);
+    const clockInISO  = this.toISODateTime(this.fromDate(), this.clockIn());
+    const clockOutISO = this.toISODateTime(this.fromDate(), this.clockOut());
+    // WFH doesn't require specific clock times — others do
+    if (type !== 'wfh' && !clockInISO) {
+      this.submitting.set(false);
+      this.toast.error('Clock-in required', 'Please enter the clock-in time.');
+      return;
+    }
     this.svc.create({
-      date: this.date(),
-      type: this.type(),
-      clockIn: this.toApiTime(this.clockIn())!,
-      clockOut: this.toApiTime(this.clockOut()),
+      date:     this.fromDate(),
+      type,
+      clockIn:  clockInISO,
+      clockOut: clockOutISO,
       officeId: this.officeId() || undefined,
-      reason: this.reason() || undefined,
+      reason:   this.reason()   || undefined,
     }).subscribe({
       next: () => {
         this.submitting.set(false);
         this.toast.success('Request submitted', 'Your attendance request is awaiting approval.');
-        this.clockIn.set(''); this.clockOut.set(''); this.reason.set(''); this.officeId.set('');
-        this.loadMine();
+        this.resetForm();
+        this.historyFetched.set(false);
       },
-      error: (err) => {
+      error: err => {
         this.submitting.set(false);
-        this.toast.error('Could not submit', err?.error?.message ?? 'The request could not be submitted.');
+        this.toast.error('Could not submit', err?.error?.message ?? 'Please try again.');
       },
     });
   }
 
-  cancel(id: string) {
+  /** Combines a local date (YYYY-MM-DD) and time (HH:mm) into a UTC ISO-8601 datetime string. */
+  private toISODateTime(date: string, time: string): string | undefined {
+    if (!time || !date) return undefined;
+    const [h, m] = time.split(':').map(Number);
+    const dt = new Date(`${date}T00:00:00`);
+    dt.setHours(h, m, 0, 0);
+    return dt.toISOString();
+  }
+
+  // ── History actions ───────────────────────────────────────────────────
+  cancelAttendance(id: string) {
     if (this.busyId()) return;
     this.busyId.set(id);
     this.svc.cancel(id).subscribe({
-      next: () => { this.busyId.set(null); this.loadMine(); },
-      error: (err) => { this.busyId.set(null); this.toast.error('Could not cancel', err?.error?.message ?? 'Please try again.'); },
+      next: () => { this.busyId.set(null); this.loadHistory(); },
+      error: err => {
+        this.busyId.set(null);
+        this.toast.error('Could not cancel', err?.error?.message ?? 'Please try again.');
+      },
     });
   }
 
-  approve(id: string) {
+  cancelLeave(id: string) {
     if (this.busyId()) return;
     this.busyId.set(id);
-    this.svc.decision(id, { approve: true }).subscribe({
-      next: () => { this._removePending(id); this.busyId.set(null); },
-      error: (err) => { this.busyId.set(null); this.toast.error('Could not approve', err?.error?.message ?? 'Please try again.'); },
+    this.leaveSvc.cancel(id).subscribe({
+      next: () => { this.busyId.set(null); this.loadHistory(); },
+      error: err => {
+        this.busyId.set(null);
+        this.toast.error('Could not cancel', err?.error?.message ?? 'Please try again.');
+      },
     });
   }
 
-  openReject(id: string) { this.rejectTarget.set(id); this.rejectReason.set(''); }
-  cancelReject()         { this.rejectTarget.set(null); }
+  canCancelLeave(r: LeaveRecord): boolean {
+    return r.status === 'pending' || (r.status === 'approved' && r.fromDate > this.todayIso);
+  }
+
+  // ── Approvals ─────────────────────────────────────────────────────────
+  approve(id: string) {
+    if (this.approvalsBusyId()) return;
+    this.approvalsBusyId.set(id);
+    this.svc.decision(id, { approve: true }).subscribe({
+      next: () => { this._removePending(id); this.approvalsBusyId.set(null); },
+      error: err => {
+        this.approvalsBusyId.set(null);
+        this.toast.error('Could not approve', err?.error?.message ?? 'Please try again.');
+      },
+    });
+  }
+
+  openReject(id: string)  { this.rejectTarget.set(id); this.rejectReason.set(''); }
+  cancelReject()          { this.rejectTarget.set(null); }
+
   doReject() {
     const id = this.rejectTarget();
     if (!id) return;
-    this.busyId.set(id);
+    this.approvalsBusyId.set(id);
     this.svc.decision(id, { approve: false, rejectionReason: this.rejectReason() || undefined }).subscribe({
-      next: () => { this._removePending(id); this.rejectTarget.set(null); this.busyId.set(null); },
-      error: (err) => { this.busyId.set(null); this.toast.error('Could not reject', err?.error?.message ?? 'Please try again.'); },
+      next: () => { this._removePending(id); this.rejectTarget.set(null); this.approvalsBusyId.set(null); },
+      error: err => {
+        this.approvalsBusyId.set(null);
+        this.toast.error('Could not reject', err?.error?.message ?? 'Please try again.');
+      },
     });
   }
 
   private _removePending(id: string) { this.pending.update(l => l.filter(r => r.id !== id)); }
 
+  // ── Helpers ───────────────────────────────────────────────────────────
   typeLabel(t: AttendanceRequestType): string { return ATTENDANCE_REQUEST_TYPE_LABELS[t] ?? t; }
+
+  hubLabel(t: HubType): string {
+    return this.hubTypes.find(h => h.value === t)?.label ?? t;
+  }
+
+  /** Format an ISO datetime string (e.g. "2026-07-01T03:30:00Z") or HH:MM to "3:30 AM" */
+  formatTime(raw: string | null | undefined): string {
+    if (!raw) return '—';
+    if (/^\d{2}:\d{2}$/.test(raw)) {
+      const [h, m] = raw.split(':').map(Number);
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const hr = h % 12 || 12;
+      return `${hr}:${String(m).padStart(2, '0')} ${ampm}`;
+    }
+    try {
+      return new Date(raw).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    } catch {
+      return raw;
+    }
+  }
 }

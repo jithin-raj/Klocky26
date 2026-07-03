@@ -32,6 +32,7 @@ export class DocumentsComponent implements OnInit {
 
   documents = signal<Document[]>([]);
   loading = signal(true);
+  loadError = signal('');
   showUploadForm = signal(false);
   uploading = signal(false);
 
@@ -43,6 +44,7 @@ export class DocumentsComponent implements OnInit {
   uploadVisibility: DocumentVisibility = 'all';
 
   readonly canUpload = computed(() => this.permSvc.can('documents', 2));
+  readonly isAdminView = computed(() => this.permSvc.can('documents', 2));
 
   readonly categoryLabels: Record<DocumentCategory, string> = {
     hr_policy: 'HR Policy',
@@ -63,14 +65,16 @@ export class DocumentsComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
+    this.loadError.set('');
     this.docSvc.getAll().subscribe({
       next: (docs) => {
         this.documents.set(docs);
         this.loading.set(false);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
-        this.toast.error('Failed to load', 'Could not load documents.');
+        const msg = err?.error?.message ?? 'Could not load documents. Please try again.';
+        this.loadError.set(msg);
       },
     });
   }

@@ -1,10 +1,14 @@
 import {
-  Component, ChangeDetectionStrategy, signal, computed
+  Component, ChangeDetectionStrategy, signal, computed, inject, OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MOCK_EMPLOYEES } from '../../../employees/models/employee.model';
-import { UiSelectComponent, UiDatePickerComponent } from '../../../../shared/components';
+import { UiSelectComponent, UiDatePickerComponent, UiIconComponent } from '../../../../shared/components';
+import { TaskService } from '../../../../core/services/task.service';
+import { AppStateService } from '../../../../core/services/app-state.service';
+import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { PendingTaskItem, PendingTaskType } from '../../../../core/models/task.model';
 
 type TaskStatus   = 'todo' | 'in_progress' | 'review' | 'done';
 type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
@@ -39,18 +43,22 @@ const MOCK_TASKS: Task[] = [
   selector: 'app-tasks',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent, UiIconComponent],
   templateUrl: './tasks.component.html',
   styleUrl: './tasks.component.scss',
 })
-export class TasksComponent {
+export class TasksComponent implements OnInit {
 
+  private readonly taskSvc  = inject(TaskService);
+  private readonly appState = inject(AppStateService);
+  private readonly toast    = inject(ToastService);
+
+  // ── Kanban board ──────────────────────────────────────────────────────
   private _tasks = signal<Task[]>(MOCK_TASKS);
   showAdd     = signal(false);
   dragItem    = signal<string | null>(null);
   filterPrio  = signal('');
 
-  // New task form
   newTitle    = signal('');
   newDesc     = signal('');
   newPriority = signal<TaskPriority>('medium');
@@ -60,10 +68,10 @@ export class TasksComponent {
 
   readonly employees = MOCK_EMPLOYEES;
   readonly columns: { status: TaskStatus; label: string; color: string }[] = [
-    { status: 'todo',        label: 'To Do',       color: '#94a3b8' },
-    { status: 'in_progress', label: 'In Progress',  color: '#f59e0b' },
-    { status: 'review',      label: 'Review',       color: '#6366f1' },
-    { status: 'done',        label: 'Done',         color: '#22c55e' },
+    { status: 'todo',        label: 'To Do',      color: '#94a3b8' },
+    { status: 'in_progress', label: 'In Progress', color: '#f59e0b' },
+    { status: 'review',      label: 'Review',      color: '#6366f1' },
+    { status: 'done',        label: 'Done',        color: '#22c55e' },
   ];
 
   colTasks(status: TaskStatus) {
@@ -105,12 +113,8 @@ export class TasksComponent {
   }
 
   readonly priorities = ['low','medium','high','critical'] as const;
-
   readonly priorityOptions = this.priorities.map(p => ({ label: p.charAt(0).toUpperCase() + p.slice(1), value: p }));
-  readonly filterPrioOptions = [
-    { label: 'All Priorities', value: '' },
-    ...this.priorityOptions,
-  ];
+  readonly filterPrioOptions = [{ label: 'All Priorities', value: '' }, ...this.priorityOptions];
   readonly assigneeOptions = [
     { label: 'Unassigned', value: '' },
     ...this.employees.map(e => ({ label: `${e.fullName} – ${e.department}`, value: e.id })),
@@ -122,5 +126,83 @@ export class TasksComponent {
 
   isOverdue(due: string) {
     return due && new Date(due) < new Date();
+  }
+
+  // ── Approvals inbox ───────────────────────────────────────────────────
+  readonly canApprove = computed(() => {
+    const u = this.appState.user();
+    return !!(u?.isManager || u?.isHr || u?.isAdmin);
+  });
+
+  pendingTasks   = signal<PendingTaskItem[]>([]);
+  loadingPending = signal(false);
+  inboxBusyId    = signal<string | null>(null);
+
+  rejectTarget   = signal<PendingTaskItem | null>(null);
+  rejectMsg      = signal('');
+
+  readonly pendingCount = computed(() => this.pendingTasks().length);
+
+  ngOnInit() {
+    if (this.canApprove()) this.loadPending();
+  }
+
+  loadPending() {
+    this.loadingPending.set(true);
+    this.taskSvc.getPending().subscribe({
+      next: items => { this.pendingTasks.set(items); this.loadingPending.set(false); },
+      error: ()    => { this.pendingTasks.set([]);   this.loadingPending.set(false); },
+    });
+  }
+
+  approveTask(item: PendingTaskItem) {
+    if (this.inboxBusyId()) return;
+    this.inboxBusyId.set(item.id);
+    this.taskSvc.doAction({ taskType: item.taskType, taskId: item.id, action: 'approve' }).subscribe({
+      next: () => {
+        this.inboxBusyId.set(null);
+        this.pendingTasks.update(l => l.filter(t => t.id !== item.id));
+        this.toast.success('Approved', `${item.title} has been approved.`);
+      },
+      error: err => {
+        this.inboxBusyId.set(null);
+        this.toast.error('Could not approve', err?.error?.message ?? 'Please try again.');
+      },
+    });
+  }
+
+  openRejectTask(item: PendingTaskItem) {
+    this.rejectTarget.set(item);
+    this.rejectMsg.set('');
+  }
+
+  cancelReject() {
+    this.rejectTarget.set(null);
+  }
+
+  confirmReject() {
+    const item = this.rejectTarget();
+    if (!item || !this.rejectMsg().trim()) return;
+    this.inboxBusyId.set(item.id);
+    this.taskSvc.doAction({ taskType: item.taskType, taskId: item.id, action: 'reject', message: this.rejectMsg().trim() }).subscribe({
+      next: () => {
+        this.inboxBusyId.set(null);
+        this.rejectTarget.set(null);
+        this.pendingTasks.update(l => l.filter(t => t.id !== item.id));
+        this.toast.success('Rejected', `${item.title} has been rejected.`);
+      },
+      error: err => {
+        this.inboxBusyId.set(null);
+        this.toast.error('Could not reject', err?.error?.message ?? 'Please try again.');
+      },
+    });
+  }
+
+  taskTypeLabel(t: PendingTaskType): string {
+    return t === 'leave_approval' ? 'Leave' : 'Attendance';
+  }
+
+  taskTypeBadgeClass(t: PendingTaskType): string {
+    return t === 'leave_approval' ? 'tk-badge--leave' : 'tk-badge--attendance';
   }
 }

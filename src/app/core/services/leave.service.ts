@@ -5,6 +5,7 @@ import { ApiService } from './api.service';
 import { ApiResponse, Paged } from '../models/api-response.model';
 import {
   ApplyLeaveRequest,
+  Holiday,
   LeaveBalance,
   LeaveDecisionRequest,
   LeaveRecord,
@@ -12,6 +13,8 @@ import {
   LeaveRequestView,
   LeaveTypeOption,
   MyLeavesResponse,
+  OnLeaveEntry,
+  OnLeaveQuery,
   toLeaveView,
 } from '../models/leave.model';
 
@@ -31,7 +34,7 @@ export class LeaveService {
   }
 
   pendingApproval(): Observable<LeaveRequestView[]> {
-    return this.api.get<ApiResponse<LeaveRequestResponse[] | Paged<LeaveRequestResponse>>>('/leave-requests/pending-approval')
+    return this.api.get<ApiResponse<LeaveRequestResponse[] | Paged<LeaveRequestResponse>>>('/leaves')
       .pipe(map(res => this._list(res.data)));
   }
 
@@ -57,6 +60,32 @@ export class LeaveService {
 
   balances(): Observable<LeaveBalance[]> {
     return this.api.get<ApiResponse<LeaveBalance[]>>('/leave-requests/balances')
+      .pipe(map(res => res.data ?? []));
+  }
+
+  holidays(): Observable<Holiday[]> {
+    return this.api.get<ApiResponse<Holiday[]>>('/leave-requests/holidays')
+      .pipe(map(res => res.data ?? []));
+  }
+
+  /**
+   * GET /api/leaves/on-leave — approved leaves overlapping the given window.
+   * Returns entries ordered by fromDate. Optionally scoped to a department.
+   * Used for team-planning / leave-load calendar views.
+   */
+  encashLeave(leaveTypeId: string, days: number): Observable<{ encashedDays: number; remainingDays: number }> {
+    return this.api.post<ApiResponse<{ encashedDays: number; remainingDays: number }>>(
+      '/leaves/encash', { leaveTypeId, days }
+    ).pipe(map(res => res.data));
+  }
+
+  onLeave(query: OnLeaveQuery): Observable<OnLeaveEntry[]> {
+    const params: Record<string, string> = {
+      from: query.from,
+      to:   query.to,
+    };
+    if (query.departmentId) params['departmentId'] = query.departmentId;
+    return this.api.get<ApiResponse<OnLeaveEntry[]>>('/leaves/on-leave', { params })
       .pipe(map(res => res.data ?? []));
   }
 

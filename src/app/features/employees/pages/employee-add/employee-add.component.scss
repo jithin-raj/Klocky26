@@ -293,6 +293,20 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ─── Password eye toggle ───────────────────────────────── */
+.ea-pwd-eye {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+  color: #94a3b8;
+  border-radius: 4px;
+  transition: color 0.15s;
+  &:hover { color: #475569; }
+}
+
 /* ─── Responsive ────────────────────────────────────────── */
 @media (max-width: 600px) {
   .ea-page { padding: 16px 14px 36px; }

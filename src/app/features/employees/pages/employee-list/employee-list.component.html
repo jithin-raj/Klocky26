@@ -7,21 +7,21 @@
       <span class="el-count">{{ filtered().length }} total</span>
     </div>
     <div class="el-header__right">
-      <button *hasPermission="'employees'; minLevel: 2" class="el-btn el-btn--ghost" (click)="openBulkImport()">
+      <button *hasPermission="'employees'; minLevel: 2" class="el-btn el-btn--teal" title="Import employees from CSV" (click)="openBulkImport()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
         <span>Bulk Import</span>
       </button>
-      <button class="el-btn el-btn--ghost" (click)="viewOrgTree()">
+      <button class="el-btn el-btn--violet" title="View organisation hierarchy" (click)="viewOrgTree()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
           <line x1="12" y1="7" x2="5" y2="17"/><line x1="12" y1="7" x2="19" y2="17"/>
         </svg>
         <span>Org Tree</span>
       </button>
-      <button *hasPermission="'employees'; minLevel: 2" class="el-btn el-btn--primary" (click)="addEmployee()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button *hasPermission="'employees'; minLevel: 2" class="el-btn el-btn--primary" title="Add a new employee" (click)="addEmployee()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
         <span>Add Employee</span>

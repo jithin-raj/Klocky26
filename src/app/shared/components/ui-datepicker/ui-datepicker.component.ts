@@ -27,6 +27,7 @@ const MONTH_LABELS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
+const MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function toIso(d: Date): string {
   const y = d.getFullYear();
@@ -84,37 +85,87 @@ function parseIso(s: string): Date | null {
       @if (isOpen()) {
         <div class="ui-panel" [class.upward]="openUpward()" [style]="panelStyle()">
           <div class="ui-cal-head">
-            <button type="button" class="ui-cal-nav" (click)="shiftMonth(-1)" aria-label="Previous month">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            </button>
-            <span class="ui-cal-title">{{ monthLabel() }} {{ viewYear() }}</span>
-            <button type="button" class="ui-cal-nav" (click)="shiftMonth(1)" aria-label="Next month">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-
-          <div class="ui-cal-weekdays">
-            @for (w of weekdayLabels; track w) { <span>{{ w }}</span> }
-          </div>
-
-          <div class="ui-cal-grid">
-            @for (cell of monthGrid(); track cell.iso) {
-              <button type="button" class="ui-cal-day"
-                      [class.out-month]="!cell.inMonth"
-                      [class.is-today]="cell.isToday"
-                      [class.selected]="cell.iso === value"
-                      (click)="select(cell.iso)">
-                {{ cell.day }}
+            @if (pickerMode() === 'day') {
+              <button type="button" class="ui-cal-nav" (click)="shiftMonth(-1)" aria-label="Previous month">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button type="button" class="ui-cal-title ui-cal-title--btn" (click)="openYearPicker()" title="Pick year">
+                {{ monthLabel() }} {{ viewYear() }}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <button type="button" class="ui-cal-nav" (click)="shiftMonth(1)" aria-label="Next month">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            } @else if (pickerMode() === 'month') {
+              <button type="button" class="ui-cal-nav" (click)="shiftViewYear(-1)" aria-label="Previous year">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button type="button" class="ui-cal-title ui-cal-title--btn" (click)="openYearPicker()" title="Pick year">
+                {{ viewYear() }}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <button type="button" class="ui-cal-nav" (click)="shiftViewYear(1)" aria-label="Next year">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            } @else {
+              <button type="button" class="ui-cal-nav" (click)="shiftYearPage(-1)" aria-label="Earlier years">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button type="button" class="ui-cal-title ui-cal-title--btn" (click)="pickerMode.set('day')">
+                {{ yearPageStart() }} – {{ yearPageStart() + 11 }}
+              </button>
+              <button type="button" class="ui-cal-nav" (click)="shiftYearPage(1)" aria-label="Later years">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             }
           </div>
 
-          <div class="ui-cal-footer">
-            <button type="button" class="ui-cal-today" (click)="goToday()">Today</button>
-            @if (hasValue()) {
-              <button type="button" class="ui-cal-clear" (click)="clear()">Clear</button>
-            }
-          </div>
+          @if (pickerMode() === 'day') {
+            <div class="ui-cal-weekdays">
+              @for (w of weekdayLabels; track w) { <span>{{ w }}</span> }
+            </div>
+
+            <div class="ui-cal-grid">
+              @for (cell of monthGrid(); track cell.iso) {
+                <button type="button" class="ui-cal-day"
+                        [class.out-month]="!cell.inMonth"
+                        [class.is-today]="cell.isToday"
+                        [class.selected]="cell.iso === value"
+                        (click)="select(cell.iso)">
+                  {{ cell.day }}
+                </button>
+              }
+            </div>
+
+            <div class="ui-cal-footer">
+              <button type="button" class="ui-cal-today" (click)="goToday()">Today</button>
+              @if (hasValue()) {
+                <button type="button" class="ui-cal-clear" (click)="clear()">Clear</button>
+              }
+            </div>
+          } @else if (pickerMode() === 'month') {
+            <div class="ui-month-grid">
+              @for (m of monthShortLabels; track $index) {
+                <button type="button" class="ui-month-btn"
+                        [class.is-today-month]="$index === todayMonth && viewYear() === todayYear"
+                        [class.selected]="$index === viewMonthIndex()"
+                        (click)="selectMonth($index)">
+                  {{ m }}
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="ui-year-grid">
+              @for (y of yearPageList(); track y) {
+                <button type="button" class="ui-year-btn"
+                        [class.selected]="y === viewYear()"
+                        [class.is-today-year]="y === todayYear"
+                        (click)="selectYear(y)">
+                  {{ y }}
+                </button>
+              }
+            </div>
+          }
         </div>
       }
 
@@ -170,6 +221,45 @@ function parseIso(s: string): Date | null {
 
     .ui-cal-head { display: flex; align-items: center; justify-content: space-between; }
     .ui-cal-title { font-size: 13.5px; font-weight: 700; color: #1e293b; }
+    .ui-cal-title--btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      border: none; background: none; cursor: pointer; font-size: 13.5px; font-weight: 700;
+      color: #1e293b; padding: 3px 6px; border-radius: 7px; font-family: inherit;
+      transition: background .12s, color .12s;
+    }
+    .ui-cal-title--btn:hover { background: color-mix(in srgb, var(--accent, #4f46e5) 10%, transparent); color: var(--accent, #4f46e5); }
+    .ui-year-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+      padding: 4px 0;
+    }
+    .ui-year-btn {
+      display: flex; align-items: center; justify-content: center;
+      height: 34px; border: none; background: none; border-radius: 8px;
+      font-size: 13px; color: #1e293b; cursor: pointer; font-family: inherit;
+      transition: background .12s, color .12s;
+    }
+    .ui-year-btn:hover { background: #f1f5f9; }
+    .ui-year-btn.is-today-year { font-weight: 700; color: var(--accent, #4f46e5); }
+    .ui-year-btn.selected {
+      background: var(--accent, #4f46e5); color: #fff; font-weight: 700;
+      box-shadow: 0 2px 8px -1px color-mix(in srgb, var(--accent, #4f46e5) 60%, transparent);
+    }
+    .ui-month-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+      padding: 4px 0;
+    }
+    .ui-month-btn {
+      display: flex; align-items: center; justify-content: center;
+      height: 36px; border: none; background: none; border-radius: 8px;
+      font-size: 13px; color: #1e293b; cursor: pointer; font-family: inherit;
+      transition: background .12s, color .12s;
+    }
+    .ui-month-btn:hover { background: #f1f5f9; }
+    .ui-month-btn.is-today-month { font-weight: 700; color: var(--accent, #4f46e5); }
+    .ui-month-btn.selected {
+      background: var(--accent, #4f46e5); color: #fff; font-weight: 700;
+      box-shadow: 0 2px 8px -1px color-mix(in srgb, var(--accent, #4f46e5) 60%, transparent);
+    }
     .ui-cal-nav {
       display: flex; align-items: center; justify-content: center;
       width: 26px; height: 26px; border-radius: 8px; border: none;
@@ -264,15 +354,27 @@ export class UiDatePickerComponent implements ControlValueAccessor, OnDestroy {
   @HostBinding('class.dark') get isDark() { return this.dark; }
 
   readonly weekdayLabels = WEEKDAY_LABELS;
+  readonly monthShortLabels = MONTH_SHORT;
 
   value: string = '';
   isOpen = signal(false);
   openUpward = signal(false);
   panelStyle = signal<Record<string, string>>({});
+  pickerMode = signal<'day' | 'month' | 'year'>('day');
+
+  readonly todayYear  = new Date().getFullYear();
+  readonly todayMonth = new Date().getMonth();
+  private readonly _yearPageBase = signal(Math.floor(new Date().getFullYear() / 12) * 12);
+
+  readonly yearPageStart  = computed(() => this._yearPageBase());
+  readonly yearPageList   = computed(() =>
+    Array.from({ length: 12 }, (_, i) => this._yearPageBase() + i)
+  );
 
   private readonly _viewDate = signal<Date>(new Date());
-  viewYear = computed(() => this._viewDate().getFullYear());
-  monthLabel = computed(() => MONTH_LABELS[this._viewDate().getMonth()]);
+  viewYear       = computed(() => this._viewDate().getFullYear());
+  viewMonthIndex = computed(() => this._viewDate().getMonth());
+  monthLabel     = computed(() => MONTH_LABELS[this._viewDate().getMonth()]);
 
   monthGrid = computed<DayCell[]>(() => {
     const view = this._viewDate();
@@ -348,6 +450,7 @@ export class UiDatePickerComponent implements ControlValueAccessor, OnDestroy {
 
   private close() {
     this.isOpen.set(false);
+    this.pickerMode.set('day');
     this.cdr.markForCheck();
   }
 
@@ -378,8 +481,40 @@ export class UiDatePickerComponent implements ControlValueAccessor, OnDestroy {
     this._viewDate.set(new Date(d.getFullYear(), d.getMonth() + delta, 1));
   }
 
+  openYearPicker() {
+    const base = Math.floor(this.viewYear() / 12) * 12;
+    this._yearPageBase.set(base);
+    this.pickerMode.set('year');
+  }
+
+  closeYearPicker() {
+    this.pickerMode.set('day');
+  }
+
+  shiftYearPage(delta: number) {
+    this._yearPageBase.update(b => b + delta * 12);
+  }
+
+  shiftViewYear(delta: number) {
+    const d = this._viewDate();
+    this._viewDate.set(new Date(d.getFullYear() + delta, d.getMonth(), 1));
+  }
+
+  selectYear(year: number) {
+    const d = this._viewDate();
+    this._viewDate.set(new Date(year, d.getMonth(), 1));
+    this.pickerMode.set('month');
+  }
+
+  selectMonth(monthIndex: number) {
+    const d = this._viewDate();
+    this._viewDate.set(new Date(d.getFullYear(), monthIndex, 1));
+    this.pickerMode.set('day');
+  }
+
   goToday() {
     this._viewDate.set(new Date());
+    this.pickerMode.set('day');
   }
 
   select(iso: string) {
