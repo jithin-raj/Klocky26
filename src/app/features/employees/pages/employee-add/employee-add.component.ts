@@ -39,6 +39,8 @@ interface EmployeeForm {
   isGuest: boolean;
   /** UI-only for now — bound to the API once the backend adds `guestExpiresAt`. */
   guestExpiresAt: string;
+  gender: 'male' | 'female' | 'other' | '';
+  dateOfBirth: string;  // YYYY-MM-DD, optional
 }
 
 type EmployeeTab = 'general' | 'classification' | 'payroll';
@@ -170,6 +172,12 @@ export class EmployeeAddComponent implements OnInit {
   // Access role is no longer shown on the form — the form defaults role to
   // 'employee' and still sends it until the backend makes `role` optional/derived.
 
+  readonly genderOptions = [
+    { label: 'Male', value: 'male' },
+    { label: 'Female', value: 'female' },
+    { label: 'Other', value: 'other' },
+  ];
+
   readonly employmentTypeOptions = [
     { label: 'Full-time', value: 'full_time' },
     { label: 'Part-time', value: 'part_time' },
@@ -260,6 +268,8 @@ export class EmployeeAddComponent implements OnInit {
     isActive: true,
     isGuest: false,
     guestExpiresAt: '',
+    gender: '',
+    dateOfBirth: '',
   });
 
   // ── Dirty tracking (floating save bar) ─────────────────────────
@@ -313,6 +323,8 @@ export class EmployeeAddComponent implements OnInit {
             isActive: emp.isActive,
             isGuest: emp.isGuest ?? false,
             guestExpiresAt: (emp as any).guestExpiresAt ?? '',
+            gender: emp.gender ?? '',
+            dateOfBirth: emp.dateOfBirth ?? '',
           });
           this.loading.set(false);
           this.snapshot();
@@ -361,6 +373,7 @@ export class EmployeeAddComponent implements OnInit {
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) errs['email'] = 'Invalid email address';
     }
     if (!f.dateOfJoining)      errs['dateOfJoining'] = 'Join date is required';
+    if (!this.isEdit() && !f.gender) errs['gender'] = 'Gender is required';
     if (!f.departmentId)       errs['departmentId'] = 'Department is required';
 
     // Duplicate pre-check against the loaded roster — fail fast before saving.
@@ -385,7 +398,7 @@ export class EmployeeAddComponent implements OnInit {
   /** Jump to whichever tab holds the first validation error. */
   private focusErrorTab() {
     const e = this.errors();
-    const general = ['firstName', 'lastName', 'email', 'employeeCode', 'dateOfJoining'];
+    const general = ['firstName', 'lastName', 'email', 'employeeCode', 'dateOfJoining', 'gender'];
     if (general.some(k => e[k])) { this.tab.set('general'); return; }
     if (e['departmentId'] || e['orgRoleId']) this.tab.set('classification');
   }
@@ -411,6 +424,8 @@ export class EmployeeAddComponent implements OnInit {
         dateOfJoining: f.dateOfJoining || undefined,
         overrideOfficeId: f.overrideOfficeId || null,
         isGuest: f.isGuest,
+        ...(f.gender ? { gender: f.gender as 'male' | 'female' | 'other' } : {}),
+        dateOfBirth: f.dateOfBirth || undefined,
       }).subscribe({
         next: () => {
           this.loading.set(false);
@@ -438,6 +453,8 @@ export class EmployeeAddComponent implements OnInit {
         dateOfJoining: f.dateOfJoining || undefined,
         overrideOfficeId: f.overrideOfficeId || null,
         isGuest: f.isGuest,
+        gender: f.gender as 'male' | 'female' | 'other',
+        dateOfBirth: f.dateOfBirth || undefined,
       }).subscribe({
         next: (res) => {
           this.loading.set(false);

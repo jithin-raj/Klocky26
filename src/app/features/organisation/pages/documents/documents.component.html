@@ -1,0 +1,142 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header__left">
+      <h1 class="page-title">Documents</h1>
+      <p class="page-subtitle">Company documents, policies, and handbooks</p>
+    </div>
+    @if (canUpload()) {
+      <button class="btn btn--primary" (click)="toggleUploadForm()">
+        {{ showUploadForm() ? 'Cancel' : '+ Upload Document' }}
+      </button>
+    }
+  </div>
+
+  <!-- Upload Form -->
+  @if (showUploadForm()) {
+    <div class="card upload-form">
+      <h2 class="card-title">Upload Document</h2>
+      <div class="form-grid">
+        <div class="form-group form-group--full">
+          <label class="form-label">File <span class="required">*</span></label>
+          <input
+            type="file"
+            class="file-input"
+            (change)="onFileChange($event)"
+          />
+          @if (selectedFile()) {
+            <span class="file-name">{{ selectedFile()!.name }}</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Title <span class="required">*</span></label>
+          <input
+            type="text"
+            class="form-input"
+            placeholder="e.g. Employee Handbook 2024"
+            [(ngModel)]="uploadTitle"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" [(ngModel)]="uploadCategory">
+            <option value="hr_policy">HR Policy</option>
+            <option value="leave_policy">Leave Policy</option>
+            <option value="handbook">Handbook</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Visible To</label>
+          <select class="form-select" [(ngModel)]="uploadVisibility">
+            <option value="all">All Employees</option>
+            <option value="hr">HR Only</option>
+            <option value="management">Management</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button
+          class="btn btn--ghost"
+          (click)="toggleUploadForm()"
+          [disabled]="uploading()"
+        >Cancel</button>
+        <button
+          class="btn btn--primary"
+          (click)="submitUpload()"
+          [disabled]="uploading() || !uploadTitle.trim() || !selectedFile()"
+        >
+          {{ uploading() ? 'Uploading...' : 'Upload' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Table Card -->
+  <div class="card">
+    @if (loading()) {
+      <div class="empty-state">
+        <span class="empty-icon">⏳</span>
+        <p>Loading documents...</p>
+      </div>
+    } @else if (documents().length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">📄</span>
+        <p>No documents uploaded yet.</p>
+        @if (canUpload()) {
+          <button class="btn btn--primary" (click)="toggleUploadForm()">Upload your first document</button>
+        }
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Visible To</th>
+              <th>Uploaded By</th>
+              <th>Date</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (doc of documents(); track doc.id) {
+              <tr>
+                <td class="doc-title">{{ doc.title }}</td>
+                <td>
+                  <span class="badge badge--category">
+                    {{ categoryLabels[doc.category] }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge--visibility" [class]="'badge--vis-' + doc.visibleTo">
+                    {{ visibilityLabels[doc.visibleTo] }}
+                  </span>
+                </td>
+                <td class="uploader">{{ doc.uploadedBy.name }}</td>
+                <td class="date">{{ formatDate(doc.uploadedAt) }}</td>
+                <td class="actions">
+                  <button class="action-btn action-btn--download" (click)="download(doc)">
+                    Download
+                  </button>
+                  @if (canUpload()) {
+                    <button class="action-btn action-btn--delete" (click)="deleteDoc(doc)">
+                      Delete
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>

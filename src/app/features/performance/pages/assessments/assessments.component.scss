@@ -1,0 +1,316 @@
+:host { display: block; }
+
+.page {
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  h1 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 4px;
+    letter-spacing: -0.3px;
+  }
+
+  p {
+    font-size: 13.5px;
+    color: #64748b;
+    margin: 0;
+  }
+}
+
+/* ── Card base ───────────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+/* ── Create form card ────────────────────────────────────────────────── */
+.form-card { padding: 0; overflow: hidden; }
+
+.form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, rgba(99,102,241,.05), transparent);
+}
+
+.form-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background .15s;
+
+  &:hover { background: #f1f5f9; color: #0f172a; }
+}
+
+.form-body { padding: 20px 22px 22px; }
+
+/* ── Form fields ─────────────────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+
+  label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  input, textarea {
+    border: 1.5px solid #dde3ec;
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 13.5px;
+    color: #111827;
+    font-family: inherit;
+    outline: none;
+    background: #fff;
+    transition: border-color .15s, box-shadow .15s;
+
+    &:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14);
+    }
+  }
+
+  textarea { resize: vertical; }
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.req { color: #ef4444; }
+.hint { font-size: 11.5px; font-weight: 400; color: #94a3b8; }
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ── Assessment cards grid ───────────────────────────────────────────── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.a-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: box-shadow .15s, transform .15s;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+    transform: translateY(-1px);
+  }
+}
+
+.a-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.a-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.type-chip {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+
+.score-badge {
+  font-size: 12px;
+  color: #374151;
+  background: #f1f5f9;
+  padding: 3px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+
+  strong { color: #0f172a; }
+}
+
+.a-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.35;
+}
+
+.a-card-desc {
+  font-size: 13px;
+  color: #475569;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.a-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.meta-item {
+  font-size: 12px;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+}
+
+/* ── Badge ───────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+
+  &--amber { background: #fef3c7; color: #b45309; }
+  &--green { background: #dcfce7; color: #16a34a; }
+  &--blue  { background: #dbeafe; color: #1d4ed8; }
+  &--gray  { background: #f1f5f9; color: #475569; }
+}
+
+/* ── States ──────────────────────────────────────────────────────────── */
+.state-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+
+  &--error { background: #fff5f5; border-color: #fecaca; color: #dc2626; }
+}
+
+.empty-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 40px 24px;
+  text-align: center;
+
+  p { font-size: 14px; color: #94a3b8; margin: 0; }
+}
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  flex-shrink: 0;
+
+  &--sm { width: 14px; height: 14px; border-width: 2px; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+
+  &:disabled { opacity: .55; cursor: not-allowed; }
+  &--sm { padding: 6px 12px; font-size: 12.5px; }
+  &--primary { background: #6366f1; color: #fff; }
+  &--primary:hover:not(:disabled) { background: #4f46e5; }
+  &--ghost { background: #f1f5f9; color: #475569; }
+  &--ghost:hover:not(:disabled) { background: #e2e8f0; }
+}
+
+@media (max-width: 700px) {
+  .page { padding: 16px 14px; }
+  .field-row { grid-template-columns: 1fr; }
+  .page-header { flex-direction: column; }
+}

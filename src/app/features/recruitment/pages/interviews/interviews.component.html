@@ -1,0 +1,75 @@
+<div class="page">
+  <div class="page-header">
+    <h2 class="page-title">My Interviews</h2>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="state-msg">Loading interviews…</div>
+
+  <!-- Empty -->
+  <div *ngIf="!loading() && interviews().length === 0" class="state-msg empty">
+    No interviews scheduled.
+  </div>
+
+  <!-- Interview cards -->
+  <div *ngIf="!loading()" class="cards">
+    <div class="card" *ngFor="let iv of interviews()">
+      <div class="card-top">
+        <div class="candidate">
+          <span class="candidate-name">{{ iv.candidateName }}</span>
+          <span class="position" *ngIf="iv.position">— {{ iv.position }}</span>
+        </div>
+        <div class="badges">
+          <span class="badge mode">{{ modeLabel(iv.mode) }}</span>
+          <span class="badge status" [class]="'status-' + iv.status">
+            {{ iv.status | titlecase }}
+          </span>
+        </div>
+      </div>
+
+      <div class="card-meta">
+        <span class="meta-icon">📅</span>
+        {{ formatDate(iv.scheduledAt) }}
+      </div>
+
+      <!-- Feedback CTA -->
+      <div class="card-actions"
+           *ngIf="!iv.feedbackSubmitted && iv.status === 'scheduled'">
+        <button class="btn btn-primary"
+                (click)="toggleFeedback(iv.id)"
+                [disabled]="submitting() === iv.id">
+          {{ openFeedback() === iv.id ? 'Cancel' : 'Submit Feedback' }}
+        </button>
+      </div>
+
+      <div class="feedback-submitted" *ngIf="iv.feedbackSubmitted">
+        <span>✔ Feedback submitted</span>
+      </div>
+
+      <!-- Inline feedback form -->
+      <div class="feedback-form" *ngIf="openFeedback() === iv.id">
+        <label class="form-label">Feedback</label>
+        <textarea class="form-control"
+                  rows="3"
+                  placeholder="Enter your feedback…"
+                  [value]="feedbackText()[iv.id] ?? ''"
+                  (input)="setFeedbackText(iv.id, $any($event.target).value)">
+        </textarea>
+
+        <label class="form-label mt">Outcome</label>
+        <select class="form-control"
+                [value]="feedbackStatus()[iv.id] ?? 'completed'"
+                (change)="setFeedbackStatus(iv.id, $any($event.target).value)">
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+
+        <button class="btn btn-success mt"
+                (click)="submitFeedback(iv.id)"
+                [disabled]="submitting() === iv.id">
+          {{ submitting() === iv.id ? 'Submitting…' : 'Save Feedback' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

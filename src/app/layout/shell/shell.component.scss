@@ -13,6 +13,7 @@
   height: 3px;
   z-index: 6000;
   overflow: hidden;
+  background: rgba(13, 148, 136, 0.18);
   background: color-mix(in srgb, var(--accent, #0d9488) 18%, transparent);
   pointer-events: none;
 }
@@ -21,6 +22,7 @@
   height: 100%;
   width: 40%;
   border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, transparent, #0d9488, #7bccc8);
   background: linear-gradient(90deg,
     transparent,
     var(--accent, #0d9488),
@@ -50,7 +52,12 @@
      to any org via --accent. */
   --canvas-base: color-mix(in srgb, var(--accent, #0d9488) 6%, #eef1f4);
   --canvas-top:  color-mix(in srgb, var(--accent, #0d9488) 3%, #fbfdfc);
+  background-color: #eef1f4;
   background-color: var(--canvas-base);
+  background-image:
+    radial-gradient(1100px 480px at 100% -10%, rgba(13, 148, 136, 0.15), transparent 56%),
+    radial-gradient(840px 440px at -8% 110%, rgba(13, 148, 136, 0.09), transparent 58%),
+    linear-gradient(180deg, #fbfdfc 0%, #eef1f4 58%);
   background-image:
     radial-gradient(1100px 480px at 100% -10%, color-mix(in srgb, var(--accent, #0d9488) 15%, transparent), transparent 56%),
     radial-gradient(840px 440px at -8% 110%, color-mix(in srgb, var(--accent, #0d9488) 9%, transparent), transparent 58%),
@@ -70,7 +77,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(238, 241, 244, 0.82);
   background: color-mix(in srgb, var(--canvas-base, #eef1f4) 82%, transparent);
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
 
@@ -85,11 +94,17 @@
   transition: opacity 0.25s ease;
 }
 
+/* ── Desktop: hide bottom nav ──────────────────────────────────────── */
+.mobile-bottom-nav {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .layout {
     position: relative;
   }
 
+  /* Sidebar slides in over content on mobile — still functional if hamburger used */
   .mobile-backdrop {
     display: block;
     pointer-events: none;
@@ -102,11 +117,19 @@
 
   .content {
     padding: 16px 12px;
+    /* Leave room for the bottom nav bar */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Show the bottom nav */
+  .mobile-bottom-nav {
+    display: block;
   }
 }
 
 @media (max-width: 480px) {
   .content {
     padding: 12px 10px;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 }

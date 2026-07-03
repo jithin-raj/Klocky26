@@ -1,0 +1,142 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Pay Scale</h1>
+      <p>Salary bands and grade definitions for the organisation.</p>
+    </div>
+    <div class="header-actions" *ngIf="canEdit && !loading() && !loadError()">
+      <ng-container *ngIf="!editing()">
+        <button class="btn btn--primary" (click)="startEdit()">Edit Pay Scale</button>
+      </ng-container>
+      <ng-container *ngIf="editing()">
+        <button class="btn btn--ghost" (click)="cancelEdit()" [disabled]="saving()">Cancel</button>
+        <button class="btn btn--primary" (click)="save()" [disabled]="saving()">
+          <span *ngIf="saving()" class="spinner spinner--sm"></span>
+          {{ saving() ? 'Saving…' : 'Save Changes' }}
+        </button>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading()" class="state-box">
+    <span class="spinner"></span>
+    <span>Loading pay scale…</span>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!loading() && loadError()" class="state-box state-box--error">
+    <span>{{ loadError() }}</span>
+    <button class="btn btn--ghost btn--sm" (click)="load()">Retry</button>
+  </div>
+
+  <!-- Table card -->
+  <div *ngIf="!loading() && !loadError()" class="card">
+
+    <div *ngIf="bands().length === 0" class="empty">
+      No pay bands configured.
+    </div>
+
+    <!-- VIEW MODE -->
+    <div *ngIf="bands().length > 0 && !editing()" class="table-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Grade</th>
+            <th>Title</th>
+            <th>Min Salary</th>
+            <th>Mid Salary</th>
+            <th>Max Salary</th>
+            <th>Currency</th>
+            <th>Sort Order</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let b of bands()">
+            <td class="td-grade">{{ b.grade }}</td>
+            <td>{{ b.title || '—' }}</td>
+            <td class="td-num">{{ fmt(b.minSalary) }}</td>
+            <td class="td-num">{{ fmt(b.midSalary) }}</td>
+            <td class="td-num">{{ fmt(b.maxSalary) }}</td>
+            <td>{{ b.currency || '—' }}</td>
+            <td class="td-center">{{ b.sortOrder }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- EDIT MODE -->
+    <div *ngIf="editing()" class="table-wrap">
+      <table class="tbl tbl--edit">
+        <thead>
+          <tr>
+            <th>Grade</th>
+            <th>Title</th>
+            <th>Min Salary</th>
+            <th>Mid Salary</th>
+            <th>Max Salary</th>
+            <th>Currency</th>
+            <th>Sort Order</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of editRows(); let i = index; trackBy: trackIdx">
+            <td>
+              <input class="tbl-input"
+                     type="text"
+                     [(ngModel)]="editRows()[i].grade"
+                     (ngModelChange)="refreshEdit()"
+                     placeholder="e.g. L1" />
+            </td>
+            <td>
+              <input class="tbl-input"
+                     type="text"
+                     [(ngModel)]="editRows()[i].title"
+                     (ngModelChange)="refreshEdit()"
+                     placeholder="e.g. Junior Engineer" />
+            </td>
+            <td>
+              <input class="tbl-input tbl-input--num"
+                     type="number"
+                     min="0"
+                     [(ngModel)]="editRows()[i].minSalary"
+                     (ngModelChange)="refreshEdit()" />
+            </td>
+            <td>
+              <input class="tbl-input tbl-input--num"
+                     type="number"
+                     min="0"
+                     [(ngModel)]="editRows()[i].midSalary"
+                     (ngModelChange)="refreshEdit()"
+                     placeholder="optional" />
+            </td>
+            <td>
+              <input class="tbl-input tbl-input--num"
+                     type="number"
+                     min="0"
+                     [(ngModel)]="editRows()[i].maxSalary"
+                     (ngModelChange)="refreshEdit()" />
+            </td>
+            <td>
+              <input class="tbl-input tbl-input--short"
+                     type="text"
+                     [(ngModel)]="editRows()[i].currency"
+                     (ngModelChange)="refreshEdit()"
+                     placeholder="INR" />
+            </td>
+            <td>
+              <input class="tbl-input tbl-input--short"
+                     type="number"
+                     min="0"
+                     [(ngModel)]="editRows()[i].sortOrder"
+                     (ngModelChange)="refreshEdit()" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>

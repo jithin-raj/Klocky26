@@ -1,11 +1,24 @@
 import { Routes } from '@angular/router';
-import { PlaceholderPageComponent } from '../../shared/pages/placeholder/placeholder.component';
 
-// Recruitment (spec §8) — not yet built.
 export const recruitmentRoutes: Routes = [
-  { path: '', component: PlaceholderPageComponent, data: { title: 'Recruitment Overview' } },
-  { path: 'interviews', component: PlaceholderPageComponent, data: { title: 'My Interviews' } },
-  { path: 'refer', component: PlaceholderPageComponent, data: { title: 'Refer a Buddy' } },
-  { path: 'referrals', component: PlaceholderPageComponent, data: { title: 'Referral History' } },
-  { path: 'jobs', component: PlaceholderPageComponent, data: { title: 'Job Openings' } },
+  {
+    path: '',
+    loadComponent: () => import('./pages/interviews/interviews.component').then(m => m.InterviewsComponent),
+  },
+  {
+    path: 'interviews',
+    loadComponent: () => import('./pages/interviews/interviews.component').then(m => m.InterviewsComponent),
+  },
+  {
+    path: 'refer',
+    loadComponent: () => import('./pages/refer/refer.component').then(m => m.ReferComponent),
+  },
+  {
+    path: 'referrals',
+    loadComponent: () => import('./pages/referrals/referrals.component').then(m => m.ReferralsComponent),
+  },
+  {
+    path: 'jobs',
+    loadComponent: () => import('./pages/jobs/jobs.component').then(m => m.JobsComponent),
+  },
 ];

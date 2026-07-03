@@ -1,0 +1,251 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header__left">
+      <h1 class="page-title">Leave Categories</h1>
+      <p class="page-subtitle">Manage leave types available to employees</p>
+    </div>
+    <button class="btn btn--primary" (click)="toggleAddForm()">
+      {{ showAddForm() ? 'Cancel' : '+ Add Category' }}
+    </button>
+  </div>
+
+  <!-- Add Form -->
+  @if (showAddForm()) {
+    <div class="card add-form">
+      <h2 class="card-title">New Leave Category</h2>
+      <div class="form-grid">
+
+        <div class="form-group">
+          <label class="form-label">Name <span class="required">*</span></label>
+          <input type="text" class="form-input" placeholder="e.g. Annual Leave" [(ngModel)]="form.name" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Code</label>
+          <input type="text" class="form-input" placeholder="e.g. AL" [(ngModel)]="form.code" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Days Per Year <span class="required">*</span></label>
+          <input type="number" class="form-input" min="0" [(ngModel)]="form.daysPerYear" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Accrual Type</label>
+          <select class="form-select" [(ngModel)]="form.accrualType">
+            @for (opt of accrualTypeOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Approval Flow</label>
+          <select class="form-select" [(ngModel)]="form.approvalFlow">
+            @for (opt of approvalFlowOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Gender Eligibility</label>
+          <select class="form-select" [(ngModel)]="form.genderEligibility">
+            @for (opt of genderOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        @if (form.allowCarryForward) {
+          <div class="form-group">
+            <label class="form-label">Max Carry Forward Days</label>
+            <input type="number" class="form-input" min="0" [(ngModel)]="form.maxCarryForwardDays" />
+          </div>
+        }
+
+      </div>
+
+      <!-- Checkboxes -->
+      <div class="checkbox-row">
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="form.isPaid" />
+          Paid Leave
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="form.isHalfDayAllowed" />
+          Half-day Allowed
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="form.allowCarryForward" />
+          Allow Carry Forward
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="form.requiresApproval" />
+          Requires Approval
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" [(ngModel)]="form.isCompOff" />
+          Comp-off
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn--ghost" (click)="toggleAddForm()" [disabled]="submitting()">Cancel</button>
+        <button
+          class="btn btn--primary"
+          (click)="submitCreate()"
+          [disabled]="submitting() || !form.name.trim()"
+        >
+          {{ submitting() ? 'Creating...' : 'Create Category' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Table Card -->
+  <div class="card">
+    @if (loading()) {
+      <div class="empty-state">
+        <span class="empty-icon">⏳</span>
+        <p>Loading leave categories...</p>
+      </div>
+    } @else if (categories().length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">🏖️</span>
+        <p>No leave categories configured yet.</p>
+        <button class="btn btn--primary" (click)="toggleAddForm()">Add the first category</button>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Code</th>
+              <th>Days/Year</th>
+              <th>Accrual</th>
+              <th>Paid</th>
+              <th>Half-day</th>
+              <th>Carry Fwd</th>
+              <th>Approval</th>
+              <th>Gender</th>
+              <th>Status</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cat of categories(); track cat.id) {
+              <tr [class.row--inactive]="!cat.isActive">
+                <td class="cat-name">
+                  @if (cat.color) {
+                    <span class="color-dot" [style.background]="cat.color"></span>
+                  }
+                  {{ cat.name }}
+                </td>
+                <td class="cat-code">{{ cat.code || '—' }}</td>
+                <td class="number-cell">{{ cat.daysPerYear }}</td>
+                <td>{{ accrualLabel(cat.accrualType) }}</td>
+                <td>
+                  <span class="badge" [class.badge--yes]="cat.isPaid" [class.badge--no]="!cat.isPaid">
+                    {{ cat.isPaid ? 'Paid' : 'Unpaid' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="bool-icon">{{ cat.isHalfDayAllowed ? '✓' : '—' }}</span>
+                </td>
+                <td>
+                  <span class="bool-icon">{{ cat.allowCarryForward ? '✓' : '—' }}</span>
+                </td>
+                <td>{{ approvalLabel(cat.approvalFlow) }}</td>
+                <td class="gender-cell">{{ cat.genderEligibility }}</td>
+                <td>
+                  <span class="badge" [class.badge--active]="cat.isActive" [class.badge--inactive]="!cat.isActive">
+                    {{ cat.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button
+                    class="action-btn"
+                    [class.action-btn--activate]="!cat.isActive"
+                    [class.action-btn--deactivate]="cat.isActive"
+                    [disabled]="busyId() === cat.id"
+                    (click)="toggleActive(cat)"
+                  >
+                    {{ cat.isActive ? 'Deactivate' : 'Activate' }}
+                  </button>
+                  <button
+                    class="action-btn action-btn--delete"
+                    [disabled]="busyId() === cat.id"
+                    (click)="deleteCategory(cat)"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile card list — shows instead of table at ≤640px -->
+      <div class="mob-list">
+        @for (cat of categories(); track cat.id) {
+          <div class="mob-cat" [class.mob-cat--inactive]="!cat.isActive">
+            <div class="mob-cat-top">
+              <div class="mob-cat-name">
+                @if (cat.color) { <span class="color-dot" [style.background]="cat.color"></span> }
+                <span class="mob-name-text">{{ cat.name }}</span>
+                @if (cat.code) { <span class="mob-code">{{ cat.code }}</span> }
+              </div>
+              <span class="badge" [class.badge--active]="cat.isActive" [class.badge--inactive]="!cat.isActive">
+                {{ cat.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            <div class="mob-cat-stats">
+              <div class="mob-stat">
+                <span class="mob-stat-val">{{ cat.daysPerYear }}</span>
+                <span class="mob-stat-lbl">Days/yr</span>
+              </div>
+              <div class="mob-stat">
+                <span class="mob-stat-val">{{ accrualLabel(cat.accrualType) }}</span>
+                <span class="mob-stat-lbl">Accrual</span>
+              </div>
+              <div class="mob-stat">
+                <span class="mob-stat-val">{{ approvalLabel(cat.approvalFlow) }}</span>
+                <span class="mob-stat-lbl">Approval</span>
+              </div>
+              <div class="mob-stat">
+                <span class="mob-stat-val">{{ cat.genderEligibility }}</span>
+                <span class="mob-stat-lbl">Gender</span>
+              </div>
+            </div>
+            <div class="mob-cat-chips">
+              <span class="badge" [class.badge--yes]="cat.isPaid" [class.badge--no]="!cat.isPaid">{{ cat.isPaid ? 'Paid' : 'Unpaid' }}</span>
+              @if (cat.isHalfDayAllowed) { <span class="mob-chip">Half-day ✓</span> }
+              @if (cat.allowCarryForward) { <span class="mob-chip">Carry Fwd ✓</span> }
+              @if (cat.isCompOff) { <span class="mob-chip">Comp-off</span> }
+            </div>
+            <div class="mob-cat-actions">
+              <button
+                class="action-btn"
+                [class.action-btn--activate]="!cat.isActive"
+                [class.action-btn--deactivate]="cat.isActive"
+                [disabled]="busyId() === cat.id"
+                (click)="toggleActive(cat)"
+              >{{ cat.isActive ? 'Deactivate' : 'Activate' }}</button>
+              <button
+                class="action-btn action-btn--delete"
+                [disabled]="busyId() === cat.id"
+                (click)="deleteCategory(cat)"
+              >Delete</button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+</div>
