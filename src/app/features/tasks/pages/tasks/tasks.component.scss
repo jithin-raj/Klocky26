@@ -1,12 +1,79 @@
 :host{display:block}
 .tk-page{padding:24px 28px 48px;max-width:1440px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+
+// ── Approvals Inbox ───────────────────────────────────────────────────────────
+.tk-inbox{background:#fff;border:1.5px solid #e5e7eb;border-radius:16px;overflow:hidden}
+
+.tk-inbox__head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f1f5f9}
+
+.tk-inbox__title{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:700;color:#1e293b}
+
+.tk-inbox__badge{background:var(--accent,#6366f1);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;min-width:20px;text-align:center}
+
+.tk-inbox__empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:32px 20px;font-size:13.5px;color:#94a3b8;text-align:center}
+.tk-inbox__empty-icon{color:#cbd5e1}
+
+.tk-inbox__list{display:flex;flex-direction:column;gap:0}
+
+.tk-inbox-card{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 18px;border-bottom:1px solid #f8fafc;transition:background .12s;
+  &:last-child{border-bottom:none}
+  &:hover{background:#fafbff}
+  &--busy{opacity:.6;pointer-events:none}
+}
+
+.tk-inbox-card__left{display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1}
+
+.tk-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0;margin-top:2px;
+  &--leave{background:rgba(99,102,241,.12);color:#6366f1}
+  &--attendance{background:rgba(245,158,11,.12);color:#b45309}
+}
+
+.tk-inbox-card__info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tk-inbox-card__title{font-size:13.5px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk-inbox-card__dates{font-size:12px;color:#64748b}
+.tk-inbox-card__detail{font-size:12px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.tk-inbox-card__right{display:flex;align-items:center;gap:16px;flex-shrink:0}
+
+.tk-inbox-card__requester{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#475569;font-weight:500}
+.tk-inbox-card__avatar{
+  width:28px;height:28px;border-radius:50%;background:var(--accent,#6366f1);color:#fff;
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+
+.tk-inbox-card__actions{display:flex;gap:8px}
+
+.tk-action-btn{
+  display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;
+  font-size:12.5px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s;
+  &:disabled{opacity:.5;cursor:not-allowed}
+  &--approve{
+    background:rgba(34,197,94,.1);color:#15803d;border-color:rgba(34,197,94,.25);
+    &:not(:disabled):hover{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.4)}
+  }
+  &--reject{
+    background:rgba(239,68,68,.08);color:#dc2626;border-color:rgba(239,68,68,.2);
+    &:not(:disabled):hover{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35)}
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
 .tk-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
   h1{margin:0 0 4px;font-size:22px;font-weight:750;color:#0f172a}p{margin:0;font-size:13.5px;color:#64748b}}
 .tk-header__right{display:flex;gap:10px;align-items:center}
-.tk-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:background .15s;
-  &--primary{background:var(--accent,#6366f1);color:#fff;&:hover:not(:disabled){background:color-mix(in srgb,var(--accent,#6366f1) 85%,#000)}&:disabled{opacity:.6;cursor:not-allowed}}
-  &--ghost{background:#fff;color:#374151;border-color:#e5e7eb;&:hover{background:#f9fafb}}}
-.tk-select{padding:7px 28px 7px 10px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13px;color:#374151;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;cursor:pointer;outline:none;transition:border-color .15s;&:focus{border-color:var(--accent,#6366f1)}&--full{width:100%}}
+
+// ── Buttons ───────────────────────────────────────────────────────────────────
+.tk-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:background .15s;
+  &--primary{background:var(--accent,#6366f1);color:#fff;&:hover:not(:disabled){filter:brightness(.9)}&:disabled{opacity:.6;cursor:not-allowed}}
+  &--ghost{background:#fff;color:#374151;border-color:#e5e7eb;&:hover:not(:disabled){background:#f9fafb}}
+  &--danger{background:#ef4444;color:#fff;&:hover:not(:disabled){background:#dc2626}&:disabled{opacity:.6;cursor:not-allowed}}
+  &--sm{padding:6px 12px;font-size:12.5px}
+}
+
+// ── Kanban ────────────────────────────────────────────────────────────────────
 .tk-board{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start}
 .tk-col{background:#f8fafc;border-radius:14px;overflow:hidden;min-height:200px}
 .tk-col__head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-top:3px solid;background:#fff;border-bottom:1px solid #f1f5f9}
@@ -29,16 +96,30 @@
 .tk-move{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;
   button{padding:3px 8px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:11px;color:#64748b;cursor:pointer;transition:all .15s;&:hover{background:#f1f5f9;color:#374151}}}
 .tk-empty-col{text-align:center;padding:24px 12px;font-size:13px;color:#cbd5e1}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
 .tk-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
-.tk-modal{background:#fff;border-radius:16px;width:100%;max-width:500px;box-shadow:0 20px 50px rgba(0,0,0,.15);overflow:hidden}
+.tk-modal{background:#fff;border-radius:16px;width:100%;max-width:500px;box-shadow:0 20px 50px rgba(0,0,0,.15);overflow:hidden;&--sm{max-width:420px}}
 .tk-modal__head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #f1f5f9;
   h3{margin:0;font-size:16px;font-weight:700;color:#0f172a}
-  button{background:none;border:none;cursor:pointer;font-size:16px;color:#94a3b8;&:hover{color:#374151}}}
+  button{background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;&:hover{color:#374151}}}
 .tk-modal__body{padding:20px;display:flex;flex-direction:column;gap:14px}
 .tk-modal__foot{display:flex;gap:10px;padding:16px 20px;border-top:1px solid #f1f5f9;justify-content:flex-end}
 .tk-field{display:flex;flex-direction:column;gap:5px;label{font-size:12.5px;font-weight:600;color:#374151}}
 .tk-form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .tk-input{padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13.5px;color:#1e293b;outline:none;transition:border-color .15s;width:100%;box-sizing:border-box;&:focus{border-color:var(--accent,#6366f1)}&::placeholder{color:#94a3b8}}
 .tk-textarea{width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13.5px;color:#1e293b;resize:none;outline:none;box-sizing:border-box;font-family:inherit;&:focus{border-color:var(--accent,#6366f1)}}
+.tk-reject-info{margin:0;font-size:13.5px;color:#475569;line-height:1.5}
+.tk-required{color:#ef4444}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media(max-width:900px){
+  .tk-inbox-card{flex-direction:column;align-items:flex-start}
+  .tk-inbox-card__right{width:100%;justify-content:space-between}
+}
 @media(max-width:1100px){.tk-board{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:640px){.tk-page{padding:16px 14px 32px}.tk-board{grid-template-columns:1fr}}
+@media(max-width:640px){
+  .tk-page{padding:16px 14px 32px}
+  .tk-board{grid-template-columns:1fr}
+  .tk-inbox-card__requester span{display:none}
+}

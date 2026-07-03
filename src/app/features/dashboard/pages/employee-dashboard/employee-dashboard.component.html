@@ -1,105 +1,90 @@
 <div class="ed-page">
 
-  <!-- ── Hero ───────────────────────────────────────────────────────────────── -->
-  <div class="ed-hero">
-    <!-- Decorative elements -->
-    <div class="ed-hero-orb ed-hero-orb--1" aria-hidden="true"></div>
-    <div class="ed-hero-orb ed-hero-orb--2" aria-hidden="true"></div>
-    <div class="ed-hero-grid" aria-hidden="true"></div>
+  <!-- ── Hero Banner ─────────────────────────────────────────────────────────── -->
+  <div class="ed-banner">
+    <!-- Decorative blobs -->
+    <div class="ed-banner-orb ed-banner-orb--1" aria-hidden="true"></div>
+    <div class="ed-banner-orb ed-banner-orb--2" aria-hidden="true"></div>
 
-    <div class="ed-hero-body">
-      <!-- Left: avatar + greeting -->
-      <div class="ed-hero-left">
-        <div class="ed-avatar-large">
-          @if (avatarUrl()) {
-            <img class="ed-avatar-img" [src]="avatarUrl()" [alt]="fullName()" />
-          } @else {
-            {{ initials() }}
-          }
-        </div>
-        <div class="ed-greeting-text">
-          <h1 class="ed-greeting-title">{{ greeting() }}, {{ firstName() }}</h1>
-          <p class="ed-greeting-sub">
-            {{ now | date:'EEEE, MMMM d, y' }}@if (userMeta()) { · {{ userMeta() }}}
-          </p>
+    <div class="ed-banner-content">
+      <div class="ed-banner-text">
+        <p class="ed-banner-eyebrow">{{ now | date:'EEEE, MMMM d' }}</p>
+        <h1 class="ed-banner-title">{{ greeting() }},<br>{{ firstName() }}!</h1>
+        @if (userMeta()) {
+          <p class="ed-banner-meta">{{ userMeta() }}</p>
+        }
+
+        <!-- Stat pills inside banner on desktop -->
+        <div class="ed-banner-stats">
+          <div class="ed-stat-pill">
+            <span class="ed-stat-value">{{ todayHours() }}</span>
+            <span class="ed-stat-label">Today</span>
+          </div>
+          <div class="ed-stat-pill">
+            <span class="ed-stat-value">22</span>
+            <span class="ed-stat-label">Present</span>
+          </div>
+          <div class="ed-stat-pill">
+            <span class="ed-stat-value">8</span>
+            <span class="ed-stat-label">Leave left</span>
+          </div>
         </div>
       </div>
 
-      <!-- Right: stat pills -->
-      <div class="ed-hero-stats">
-        <div class="ed-stat-pill">
-          <span class="ed-stat-value">{{ todayHours() }}</span>
-          <span class="ed-stat-label">Today</span>
-        </div>
-        <div class="ed-stat-divider" aria-hidden="true"></div>
-        <div class="ed-stat-pill">
-          <span class="ed-stat-value">22/23</span>
-          <span class="ed-stat-label">Present</span>
-        </div>
-        <div class="ed-stat-divider" aria-hidden="true"></div>
-        <div class="ed-stat-pill">
-          <span class="ed-stat-value">8/18</span>
-          <span class="ed-stat-label">Leave</span>
-        </div>
+      <!-- Illustration placeholder — just abstract shapes for now -->
+      <div class="ed-banner-illo" aria-hidden="true">
+        <div class="ed-illo-circle"></div>
+        <div class="ed-illo-ring"></div>
+        <svg class="ed-illo-svg" viewBox="0 0 120 120" fill="none">
+          <circle cx="60" cy="40" r="18" fill="rgba(255,255,255,0.18)"/>
+          <rect x="35" y="55" width="50" height="40" rx="6" fill="rgba(255,255,255,0.12)"/>
+          <rect x="52" y="45" width="16" height="16" rx="2" fill="rgba(255,255,255,0.22)"/>
+          <line x1="45" y1="68" x2="75" y2="68" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
+          <line x1="45" y1="76" x2="65" y2="76" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
       </div>
     </div>
-
-    <!-- Slim active-session indicator — no buttons, info only -->
-    @if (isClockedIn() && attendanceSvc.clockInTime()) {
-      <div class="ed-hero-strip">
-        <span class="ed-strip-pulse"></span>
-        <span class="ed-strip-text">Active session · since {{ formatTime(attendanceSvc.clockInTime()!) }}</span>
-        @if (geoStatus() === 'watching') {
-          <span class="ed-strip-geo">
-            <ui-icon name="map-pin" [size]="11"></ui-icon> geo-tracked
-          </span>
-        }
-      </div>
-    }
   </div>
 
-  <!-- ── Mobile attendance card (header punch hides at ≤768px) ────── -->
-  <div class="ed-mp-card" [class.is-active]="isClockedIn()">
-    <div class="ed-mp-glow" aria-hidden="true"></div>
-
-    <!-- Left: live status + time -->
-    <div class="ed-mp-info">
-      <div class="ed-mp-badge">
-        @if (isClockedIn()) {
-          <span class="ed-mp-live-dot"></span> Session Active
-        } @else {
-          <span class="ed-mp-off-dot"></span> Not Punched In
+  <!-- ── Clock-in prompt card ─────────────────────────────────────────────── -->
+  <div class="ed-clockin-card" [class.ed-clockin-card--active]="isClockedIn()">
+    <div class="ed-clockin-left">
+      @if (isClockedIn()) {
+        <div class="ed-clockin-status">
+          <span class="ed-live-dot"></span>
+          <span class="ed-clockin-label">Session active</span>
+        </div>
+        <div class="ed-clockin-time">{{ todayHours() }}</div>
+        @if (attendanceSvc.clockInTime()) {
+          <p class="ed-clockin-since">Since {{ formatTime(attendanceSvc.clockInTime()!) }}</p>
         }
-      </div>
-      <div class="ed-mp-row">
-        <span class="ed-mp-time">{{ isClockedIn() ? todayHours() : '--h --m' }}</span>
-        @if (isClockedIn() && attendanceSvc.clockInTime()) {
-          <span class="ed-mp-since">· since {{ formatTime(attendanceSvc.clockInTime()!) }}</span>
-        }
-      </div>
+      } @else {
+        <div class="ed-clockin-label-big">Let's get to work!</div>
+        <p class="ed-clockin-date">{{ now | date:'d MMMM, EEEE' }}</p>
+      }
     </div>
 
-    <!-- Right: action button -->
     <button
-      class="ed-mp-action"
-      [class.is-out]="isClockedIn()"
-      [class.is-locating]="geoStatus() === 'locating'"
+      class="ed-clockin-btn"
+      [class.ed-clockin-btn--out]="isClockedIn()"
+      [class.ed-clockin-btn--locating]="geoStatus() === 'locating'"
       [attr.aria-label]="isClockedIn() ? 'Clock Out' : 'Clock In'"
       (click)="toggleClock()"
     >
       @if (geoStatus() === 'locating') {
-        <span class="ed-mp-spin"></span>
+        <span class="ed-clockin-spin"></span>
+        Locating…
       } @else if (isClockedIn()) {
-        <icon-clock-out [size]="21" color="currentColor"></icon-clock-out>
+        <icon-clock-out [size]="20" color="currentColor"></icon-clock-out>
         Clock Out
       } @else {
-        <icon-clock-in [size]="21" color="currentColor"></icon-clock-in>
+        <icon-clock-in [size]="20" color="currentColor"></icon-clock-in>
         Clock In
       }
     </button>
   </div>
 
-  <!-- ── Quick Action Cards ───────────────────────────────────────── -->
+  <!-- ── Quick Action Cards ───────────────────────────────────────────────── -->
   <div class="ed-quick-actions">
     @for (a of quickActions; track a.label) {
       <button class="ed-action-card"
@@ -110,12 +95,12 @@
           <span class="ed-action-title">{{ a.label }}</span>
           <span class="ed-action-sub">{{ a.sub }}</span>
         </span>
-        <span class="ed-action-arrow"><ui-icon name="arrow-right" [size]="18"></ui-icon></span>
+        <span class="ed-action-arrow"><ui-icon name="arrow-right" [size]="16"></ui-icon></span>
       </button>
     }
   </div>
 
-  <!-- ── Main content ───────────────────────────────────────────── -->
+  <!-- ── Main content grid ─────────────────────────────────────────────────── -->
   <div class="ed-content">
 
     <!-- LEFT column -->
@@ -145,7 +130,7 @@
         </div>
       </div>
 
-      <!-- Upcoming shifts -->
+      <!-- This week -->
       <div class="ed-card">
         <div class="ed-card-header">
           <h2 class="ed-card-title">This Week</h2>
@@ -212,7 +197,40 @@
       </div>
 
     </div>
-
   </div>
 
 </div>
+
+<!-- ── Clock-in Confirmation Modal ─────────────────────────────────────────── -->
+@if (geoConfirmPending()) {
+  <div class="ed-confirm-backdrop" (click)="cancelClockIn()">
+    <div class="ed-confirm-modal" (click)="$event.stopPropagation()">
+      <div class="ed-confirm-icon">
+        <icon-clock-in [size]="28" color="#fff"></icon-clock-in>
+      </div>
+      <h3 class="ed-confirm-title">Clock In?</h3>
+      <p class="ed-confirm-sub">
+        @if (geoHasLocation()) {
+          Your location has been captured. Clock in from this location?
+        } @else {
+          Clock in manually — location not available or not required.
+        }
+      </p>
+      @if (geoHasLocation()) {
+        <div class="ed-confirm-geo-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/>
+          </svg>
+          Geo-verified
+        </div>
+      }
+      <div class="ed-confirm-actions">
+        <button class="ed-confirm-cancel" (click)="cancelClockIn()">Cancel</button>
+        <button class="ed-confirm-ok" (click)="confirmClockIn()">
+          <icon-clock-in [size]="16" color="currentColor"></icon-clock-in>
+          Confirm Clock In
+        </button>
+      </div>
+    </div>
+  </div>
+}

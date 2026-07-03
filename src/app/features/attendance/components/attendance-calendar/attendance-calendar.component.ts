@@ -12,8 +12,10 @@ import {
   effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
+import { AppStateService } from '../../../../core/services/app-state.service';
 import { RealtimeService } from '../../../../core/services/realtime.service';
 import {
   AttendanceRecordResponse,
@@ -103,6 +105,8 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   private readonly attendance = inject(AttendanceStateService);
   private readonly realtime   = inject(RealtimeService);
+  private readonly router     = inject(Router);
+  private readonly appState   = inject(AppStateService);
   private _liveSub?: Subscription;
 
   /** Optional — admin/HR view another employee's calendar; omit for the caller's own. */
@@ -236,8 +240,11 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   readonly _recordMap = signal<Record<string, AttendanceRecord>>({});
   readonly _holidayMap = signal<Record<string, string>>({});
 
-  /** Currently "active" cell on mobile (tap to magnify) */
+  /** Currently "active" cell on mobile (tap to magnify) and for the detail modal */
   activeCell: DayCell | null = null;
+
+  /** The cell shown in the day-detail modal (null = modal closed) */
+  readonly selectedCell = signal<DayCell | null>(null);
 
   /** Controls the summary accordion open/closed state */
   summaryOpen = signal(false);
@@ -269,9 +276,12 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       const isToday = this._sameDay(date, this.today);
       const isPast = !isFuture && !isToday;
       const rec = map[key];
-      const status: AttendanceStatus | null = isOff ? 'off' : (rec?.status ?? null);
-      const hours = rec?.hours;
       const holidayName = rec?.holidayName ?? hmap[key];
+      const rawStatus: AttendanceStatus | null = isOff ? 'off' : (rec?.status ?? null);
+      // Weekday with a holiday name but no clock-in record → show violet holiday bg
+      const status: AttendanceStatus | null =
+        (rawStatus === null && !isOff && !isFuture && !!holidayName) ? 'holiday' : rawStatus;
+      const hours = rec?.hours;
       const required = status ? (REQUIRED_HOURS[status] ?? undefined) : undefined;
       const hoursMet = hours !== undefined && required !== undefined ? hours >= required : true;
       cells.push({ date, day: d, status, isOff, isToday, isFuture, isPast, hours, hoursMet, holidayName });
@@ -417,27 +427,87 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     const { year, month } = this._ym();
     this.viewDate.set(new Date(year, month - 1, 1));
     this.activeCell = null;
+    this.selectedCell.set(null);
   }
 
   nextMonth(): void {
     const { year, month } = this._ym();
     this.viewDate.set(new Date(year, month + 1, 1));
     this.activeCell = null;
+    this.selectedCell.set(null);
   }
 
   // ── Cell interaction ──────────────────────────────────────────────────────
 
-  /** Toggle active (mobile tap-to-magnify) */
-  toggleActive(cell: DayCell): void {
-    this.activeCell = this.activeCell === cell ? null : cell;
+  /** Open the day-detail modal for a cell */
+  openDetail(cell: DayCell): void {
+    this.activeCell = cell;
+    this.selectedCell.set(cell);
   }
 
-  /** Dismiss active cell when clicking outside any cell */
+  /** Close the day-detail modal */
+  closeDetail(): void {
+    this.activeCell = null;
+    this.selectedCell.set(null);
+  }
+
+  /** Whether this cell can be regularized — absent/leave/no-record or hours below required */
+  canRegularize(cell: DayCell): boolean {
+    if (!cell.isPast || cell.isOff || cell.status === 'holiday') return false;
+    if (cell.status === 'absent' || cell.status === 'leave' || cell.status === null) return true;
+    if (cell.status === 'present' && cell.hours !== undefined && cell.hours < 8) return true;
+    if (cell.status === 'half' && cell.hours !== undefined && cell.hours < 4) return true;
+    return false;
+  }
+
+  /** Text shown in the regularize hint area */
+  regularizeHint(cell: DayCell): string {
+    if (cell.status === 'present' && cell.hours !== undefined && cell.hours < 8) {
+      return `You logged ${cell.hours}h — below the 8h required. Submit a correction.`;
+    }
+    if (cell.status === 'half' && cell.hours !== undefined && cell.hours < 4) {
+      return `You logged ${cell.hours}h — below the 4h half-day threshold.`;
+    }
+    return 'This day needs attendance regularization.';
+  }
+
+  /** Navigate to the attendance requests page with this date pre-selected */
+  regularize(cell: DayCell): void {
+    const org = this.appState.orgUrlName() || 'default';
+    const date = this._cellDateKey(cell);
+    this.closeDetail();
+    this.router.navigate([`/${org}/app/attendance/requests`], {
+      queryParams: { type: 'missed_punch', date, fromCalendar: '1' },
+    });
+  }
+
+  /** YYYY-MM-DD string for a cell's date */
+  private _cellDateKey(cell: DayCell): string {
+    const d = cell.date;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  /** Human-readable date label for the modal header */
+  detailDateLabel(cell: DayCell): string {
+    return cell.date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  /** Toggle active (mobile tap-to-magnify) — kept for backward compat, now also opens modal */
+  toggleActive(cell: DayCell): void {
+    if (this.activeCell === cell) {
+      this.closeDetail();
+    } else {
+      this.openDetail(cell);
+    }
+  }
+
+  /** Dismiss active cell when clicking outside any cell or modal */
   @HostListener('document:click', ['$event'])
   onDocumentClick(e: MouseEvent): void {
     const target = e.target as HTMLElement;
-    if (!target.closest('.cal-cell')) {
+    if (!target.closest('.cal-cell') && !target.closest('.cal-detail-modal')) {
       this.activeCell = null;
+      this.selectedCell.set(null);
     }
   }
 

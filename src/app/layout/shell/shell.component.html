@@ -1,9 +1,4 @@
 <div class="layout" [style.--accent]="orgAccentColor || '#0d9488'">
-  <!-- Global API loading bar — animates while any HTTP request is in flight -->
-  @if (isApiLoading()) {
-    <div class="app-loading-bar"><span class="app-loading-bar__inner"></span></div>
-  }
-
   <!-- Mobile backdrop -->
   <div class="mobile-backdrop" [class.visible]="isSidebarOpen" (click)="closeSidebar()"></div>
 
@@ -12,7 +7,7 @@
   <div class="main">
     <klocky-header (toggleSidebar)="toggleSidebar()" [orgName]="orgName()" [orgLogoUrl]="orgLogoUrl" [orgAccentColor]="orgAccentColor"></klocky-header>
 
-    <div class="content">
+    <div class="content" #contentEl>
       @if (routeLoading()) {
         <div class="page-loader">
           <ui-loader variant="klocky" [size]="72"></ui-loader>

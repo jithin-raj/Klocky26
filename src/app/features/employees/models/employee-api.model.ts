@@ -38,11 +38,10 @@ export interface AddEmployeeRequest {
   emergencyContactPhone?: string;
   overrideAllowedClockInMethods?: ClockInMethod[];
   overrideOfficeId?: string | null;
-  /**
-   * Identity flag only (spec §7) — marks a consultant/auditor/vendor as a guest
-   * user. Does NOT change permissions (those are role/matrix driven).
-   */
+  /** Identity flag only — marks consultant/auditor/vendor as guest. Does NOT change permissions. */
   isGuest?: boolean;
+  /** Optional expiry date for guest accounts (YYYY-MM-DD). Only meaningful when isGuest=true. */
+  guestExpiresAt?: string | null;
 }
 
 /**

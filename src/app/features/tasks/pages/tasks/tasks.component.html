@@ -1,5 +1,80 @@
 <div class="tk-page">
 
+  <!-- Approvals Inbox (managers / HR / admin only) -->
+  @if (canApprove()) {
+    <div class="tk-inbox">
+      <div class="tk-inbox__head">
+        <div class="tk-inbox__title">
+          <ui-icon name="inbox" [size]="18"></ui-icon>
+          Approvals Inbox
+          @if (pendingCount() > 0) {
+            <span class="tk-inbox__badge">{{ pendingCount() }}</span>
+          }
+        </div>
+        <button class="tk-btn tk-btn--ghost tk-btn--sm" (click)="loadPending()" [disabled]="loadingPending()">
+          <ui-icon name="repeat" [size]="13"></ui-icon>
+          Refresh
+        </button>
+      </div>
+
+      @if (loadingPending()) {
+        <div class="tk-inbox__empty">Loading pending approvals…</div>
+      } @else if (pendingTasks().length === 0) {
+        <div class="tk-inbox__empty">
+          <ui-icon name="check-circle" [size]="28" class="tk-inbox__empty-icon"></ui-icon>
+          All caught up — no pending approvals
+        </div>
+      } @else {
+        <div class="tk-inbox__list">
+          @for (item of pendingTasks(); track item.id) {
+            <div class="tk-inbox-card" [class.tk-inbox-card--busy]="inboxBusyId() === item.id">
+              <div class="tk-inbox-card__left">
+                <span class="tk-badge" [class]="taskTypeBadgeClass(item.taskType)">
+                  {{ taskTypeLabel(item.taskType) }}
+                </span>
+                <div class="tk-inbox-card__info">
+                  <span class="tk-inbox-card__title">{{ item.title }}</span>
+                  @if (item.from || item.to) {
+                    <span class="tk-inbox-card__dates">
+                      {{ item.from | date:'MMM d' }}
+                      @if (item.to && item.to !== item.from) { – {{ item.to | date:'MMM d, yyyy' }} }
+                      @else { , {{ item.from | date:'yyyy' }} }
+                    </span>
+                  }
+                  @if (item.detail) {
+                    <span class="tk-inbox-card__detail">{{ item.detail }}</span>
+                  }
+                </div>
+              </div>
+              <div class="tk-inbox-card__right">
+                <div class="tk-inbox-card__requester">
+                  <div class="tk-inbox-card__avatar">{{ item.requestedBy.name.charAt(0).toUpperCase() }}</div>
+                  <span>{{ item.requestedBy.name }}</span>
+                </div>
+                <div class="tk-inbox-card__actions">
+                  <button class="tk-action-btn tk-action-btn--approve"
+                          [disabled]="!!inboxBusyId()"
+                          (click)="approveTask(item)"
+                          title="Approve">
+                    <ui-icon name="check" [size]="14"></ui-icon>
+                    Approve
+                  </button>
+                  <button class="tk-action-btn tk-action-btn--reject"
+                          [disabled]="!!inboxBusyId()"
+                          (click)="openRejectTask(item)"
+                          title="Reject">
+                    <ui-icon name="x" [size]="14"></ui-icon>
+                    Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
   <!-- Header -->
   <div class="tk-header">
     <div><h1>Tasks</h1><p>Create, assign, and track work across your team</p></div>
@@ -41,7 +116,6 @@
                   </span>
                 }
               </div>
-              <!-- Move to buttons -->
               <div class="tk-move">
                 @for (c of columns; track c.status) {
                   @if (c.status !== col.status) {
@@ -97,6 +171,38 @@
       <div class="tk-modal__foot">
         <button class="tk-btn tk-btn--ghost" (click)="showAdd.set(false)">Cancel</button>
         <button class="tk-btn tk-btn--primary" (click)="addTask()" [disabled]="!newTitle().trim()">Create Task</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reject reason modal -->
+@if (rejectTarget()) {
+  <div class="tk-overlay" (click)="cancelReject()">
+    <div class="tk-modal tk-modal--sm" (click)="$event.stopPropagation()">
+      <div class="tk-modal__head">
+        <h3>Reject Request</h3>
+        <button (click)="cancelReject()"><ui-icon name="x" [size]="16"></ui-icon></button>
+      </div>
+      <div class="tk-modal__body">
+        <p class="tk-reject-info">
+          Rejecting: <strong>{{ rejectTarget()!.title }}</strong>
+          requested by <strong>{{ rejectTarget()!.requestedBy.name }}</strong>
+        </p>
+        <div class="tk-field">
+          <label for="tk-reject-msg">Reason <span class="tk-required">*</span></label>
+          <textarea id="tk-reject-msg" class="tk-textarea" rows="3"
+                    placeholder="Provide a reason for rejection…"
+                    [ngModel]="rejectMsg()" (ngModelChange)="rejectMsg.set($event)"></textarea>
+        </div>
+      </div>
+      <div class="tk-modal__foot">
+        <button class="tk-btn tk-btn--ghost" (click)="cancelReject()">Cancel</button>
+        <button class="tk-btn tk-btn--danger"
+                [disabled]="!rejectMsg().trim() || !!inboxBusyId()"
+                (click)="confirmReject()">
+          Confirm Reject
+        </button>
       </div>
     </div>
   </div>

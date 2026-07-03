@@ -2,6 +2,38 @@ export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type LeaveApprovalStage = 'manager' | 'hr' | 'completed';
 export type HalfDaySession = 'first_half' | 'second_half';
 
+export interface Holiday {
+  id: string;
+  name: string;
+  date: string;               // ISO date 'YYYY-MM-DD'
+  type?: 'national' | 'optional' | 'regional' | 'company';
+}
+
+/** Entry returned by GET /api/leaves/on-leave — approved leaves overlapping a date window. */
+export interface OnLeaveEntry {
+  id: string;                  // leave request id
+  userId: string;
+  userFullName: string;
+  userInitials?: string;
+  departmentId?: string;
+  departmentName?: string;
+  leaveTypeId: string;
+  leaveTypeName: string;
+  fromDate: string;            // ISO date YYYY-MM-DD
+  toDate: string;
+  days: number;
+  halfDay?: boolean;
+  halfDaySession?: string | null;
+  status: 'approved';
+}
+
+/** Query params for GET /api/leaves/on-leave */
+export interface OnLeaveQuery {
+  from: string;                // ISO date YYYY-MM-DD
+  to: string;                  // ISO date YYYY-MM-DD
+  departmentId?: string;
+}
+
 export interface LeaveBalance {
   leaveTypeId: string;
   leaveTypeName?: string;

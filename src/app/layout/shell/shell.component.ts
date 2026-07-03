@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, computed, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, signal, inject, ElementRef, ViewChild } from '@angular/core';
 import {
   RouterOutlet, Router, NavigationEnd, NavigationStart,
   NavigationCancel, NavigationError, NavigationSkipped,
@@ -26,6 +26,7 @@ import { LoadingService } from '../../core/services/loading.service';
   styleUrls: ['./shell.component.scss'],
 })
 export class ShellComponent implements OnInit, OnDestroy {
+  @ViewChild('contentEl', { static: true }) contentEl!: ElementRef<HTMLElement>;
   isSidebarOpen = false;
   private _routerSub?: Subscription;
 
@@ -121,7 +122,10 @@ export class ShellComponent implements OnInit, OnDestroy {
         e instanceof NavigationSkipped
       ) {
         this.routeLoading.set(false);
-        if (e instanceof NavigationEnd) this.isSidebarOpen = false;
+        if (e instanceof NavigationEnd) {
+          this.isSidebarOpen = false;
+          this.contentEl?.nativeElement?.scrollTo({ top: 0, behavior: 'instant' });
+        }
       }
     });
   }

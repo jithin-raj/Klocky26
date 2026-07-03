@@ -1,10 +1,11 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IconKlockyLogoComponent } from '../../../../shared/icons/icon-klocky-logo.component';
 
 @Component({
   selector: 'klocky-auth-shell',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IconKlockyLogoComponent],
   template: `
     <div class="lk-page">
       <div class="orb orb-1"></div>
@@ -18,16 +19,7 @@ import { CommonModule } from '@angular/common';
         <div class="lk-left">
           <div class="lk-ll-brand">
             <div class="lk-logo-mark">
-              <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-                <rect width="32" height="32" rx="9" fill="url(#lg-left)"/>
-                <path d="M10 8v16M10 16l8-8M10 16l8 8" stroke="#fff" stroke-width="2.5"
-                      stroke-linecap="round" stroke-linejoin="round"/>
-                <defs>
-                  <linearGradient id="lg-left" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#0a6b63"/><stop offset="1" stop-color="#0d9488"/>
-                  </linearGradient>
-                </defs>
-              </svg>
+              <icon-klocky-logo [size]="32"></icon-klocky-logo>
             </div>
             <span class="lk-ll-name">klock</span>
           </div>
@@ -98,16 +90,7 @@ import { CommonModule } from '@angular/common';
             <!-- Brand shown in card on mobile (hidden on desktop) -->
             <div class="lk-brand">
               <div class="lk-logo-mark">
-                <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-                  <rect width="32" height="32" rx="9" fill="url(#lg-card)"/>
-                  <path d="M10 8v16M10 16l8-8M10 16l8 8" stroke="#fff" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round"/>
-                  <defs>
-                    <linearGradient id="lg-card" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                      <stop stop-color="#0a6b63"/><stop offset="1" stop-color="#0d9488"/>
-                    </linearGradient>
-                  </defs>
-                </svg>
+                <icon-klocky-logo [size]="28"></icon-klocky-logo>
               </div>
               @if (orgName) {
                 <span class="lk-logo-name lk-logo-org">{{ orgName }}<span class="lk-logo-tld">.klock</span></span>

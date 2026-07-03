@@ -1,18 +1,40 @@
 <div class="db-page">
 
-  <!-- HEADER -->
-  <div class="db-header">
-    <div class="db-header-left">
-      <div class="db-org-avatar">{{ org.initials }}</div>
-      <div>
-        <p class="db-greeting">{{ greeting() }}, {{ org.admin }}</p>
-        <h1 class="db-org-title">{{ org.name }} <span class="db-role-badge">{{ org.role }}</span></h1>
+  <!-- HERO BANNER -->
+  <div class="db-banner">
+    <div class="db-banner-orb db-banner-orb--1" aria-hidden="true"></div>
+    <div class="db-banner-orb db-banner-orb--2" aria-hidden="true"></div>
+    <div class="db-banner-content">
+      <div class="db-banner-left">
+        <p class="db-banner-eyebrow">
+          <ui-icon name="calendar" [size]="13"></ui-icon>
+          {{ today | date:'EEEE, MMMM d, y' }}
+        </p>
+        <h1 class="db-banner-title">{{ greeting() }}, {{ org.admin }}!</h1>
+        <p class="db-banner-org">
+          <span class="db-banner-org-badge">{{ org.role }}</span>
+          {{ org.name }}
+        </p>
+      </div>
+      <div class="db-banner-pills">
+        @if (employeesLoading()) {
+          <div class="db-pill db-pill--loading">…</div>
+        } @else {
+          <div class="db-pill">
+            <span class="db-pill-val">{{ employees().length }}</span>
+            <span class="db-pill-lbl">Employees</span>
+          </div>
+          <div class="db-pill">
+            <span class="db-pill-val">{{ activeCount() }}</span>
+            <span class="db-pill-lbl">Active</span>
+          </div>
+          <div class="db-pill">
+            <span class="db-pill-val">{{ departments().length }}</span>
+            <span class="db-pill-lbl">Departments</span>
+          </div>
+        }
       </div>
     </div>
-    <span class="db-date-pill">
-      <ui-icon name="calendar" [size]="15"></ui-icon>
-      {{ today | date:'EEE, MMM d, y' }}
-    </span>
   </div>
 
   <!-- STAT CARDS -->

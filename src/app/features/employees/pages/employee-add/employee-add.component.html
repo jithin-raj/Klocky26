@@ -70,7 +70,7 @@
       <!-- Section: Basic Info -->
       <ui-form-section title="Basic information" description="Identity and contact details for this team member.">
         <ui-form-grid [columns]="2">
-          <ui-form-field label="Employee code" [error]="errors()['employeeCode']">
+          <ui-form-field label="Employee code" [required]="true" [error]="errors()['employeeCode']">
             <ui-input placeholder="EMP001" [ngModel]="form().employeeCode" (ngModelChange)="patch('employeeCode', $event)" name="code" />
           </ui-form-field>
           <ui-form-field label="Phone">
@@ -87,11 +87,32 @@
             <ui-input type="email" inputmode="email" placeholder="name@company.com" [disabled]="isEdit()"
                       [ngModel]="form().email" (ngModelChange)="patch('email', $event)" name="email" />
           </ui-form-field>
+          @if (!isEdit()) {
+            <ui-form-field label="Password" [error]="errors()['password']" [full]="true"
+                           hint="Optional — leave blank to auto-generate a temporary password (shown once after creation).">
+              <ui-input [type]="showPassword() ? 'text' : 'password'" placeholder="Min. 8 characters"
+                        [ngModel]="form().password" (ngModelChange)="patch('password', $event)" name="password">
+                <button type="button" suffix class="ea-pwd-eye" (click)="showPassword.set(!showPassword())"
+                        [title]="showPassword() ? 'Hide password' : 'Show password'">
+                  @if (showPassword()) {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  } @else {
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  }
+                </button>
+              </ui-input>
+            </ui-form-field>
+          }
         </ui-form-grid>
         <ui-form-grid>
           <ui-form-field label="Gender" [required]="!isEdit()" [error]="errors()['gender']">
             <ui-select [options]="genderOptions" [ngModel]="form().gender"
                        (ngModelChange)="patch('gender', $event)"
+                       name="gender"
                        placeholder="Select gender…">
             </ui-select>
           </ui-form-field>
@@ -117,6 +138,11 @@
           <ui-form-field label="Date of joining" [required]="true" [error]="errors()['dateOfJoining']">
             <ui-datepicker [ngModel]="form().dateOfJoining" (ngModelChange)="patch('dateOfJoining', $event)" name="doj"></ui-datepicker>
           </ui-form-field>
+          @if (isEdit()) {
+            <ui-form-field label="Date of leaving" hint="Set an exit date when the employee leaves the organisation.">
+              <ui-datepicker [ngModel]="form().dateOfLeaving" (ngModelChange)="patch('dateOfLeaving', $event)" name="dol"></ui-datepicker>
+            </ui-form-field>
+          }
           <ui-form-field [full]="true">
             <div class="ea-guest-toggle">
               <ui-toggle [row]="true" label="Guest user"
@@ -129,6 +155,23 @@
               <ui-datepicker [ngModel]="form().guestExpiresAt" (ngModelChange)="patch('guestExpiresAt', $event)" name="guestExp"></ui-datepicker>
             </ui-form-field>
           }
+        </ui-form-grid>
+      </ui-form-section>
+
+      <!-- Section: Personal & Emergency Contact -->
+      <ui-form-section title="Personal &amp; emergency contact" description="Address and emergency contact details — stored for HR records only.">
+        <ui-form-grid [columns]="1">
+          <ui-form-field label="Home address" hint="Optional — up to 255 characters.">
+            <ui-input placeholder="Street, city, state, PIN" [ngModel]="form().address" (ngModelChange)="patch('address', $event)" name="address" />
+          </ui-form-field>
+        </ui-form-grid>
+        <ui-form-grid [columns]="2">
+          <ui-form-field label="Emergency contact name">
+            <ui-input placeholder="Full name" [ngModel]="form().emergencyContactName" (ngModelChange)="patch('emergencyContactName', $event)" name="ecName" />
+          </ui-form-field>
+          <ui-form-field label="Emergency contact phone">
+            <ui-input type="tel" inputmode="tel" placeholder="+91 98765 43210" [ngModel]="form().emergencyContactPhone" (ngModelChange)="patch('emergencyContactPhone', $event)" name="ecPhone" />
+          </ui-form-field>
         </ui-form-grid>
       </ui-form-section>
     }

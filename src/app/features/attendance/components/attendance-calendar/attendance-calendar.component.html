@@ -125,7 +125,7 @@
                 [style.--s-color]="cellColor(cell)"
                 [style.--s-bg]="cellBg(cell)"
                 [title]="cellTitle(cell)"
-                (click)="toggleActive(cell)"
+                (click)="openDetail(cell)"
               >
                 <span class="day-num">{{ cell.day }}</span>
 
@@ -250,4 +250,79 @@
 
   </div>
 </div>
+
+<!-- ── Day Detail Modal (bottom-sheet on mobile, centered on desktop) ── -->
+@if (selectedCell(); as cell) {
+  <div class="cal-detail-backdrop" (click)="closeDetail()"></div>
+  <div class="cal-detail-modal" role="dialog" aria-modal="true">
+    <div class="cdm-handle"></div>
+
+    <!-- Date header -->
+    <div class="cdm-header">
+      <span class="cdm-date">{{ detailDateLabel(cell) }}</span>
+      <button class="cdm-close" (click)="closeDetail()" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Status badge -->
+    <div class="cdm-status-row">
+      @if (cell.status) {
+        <span class="cdm-status-badge"
+              [style.background]="cellBg(cell)"
+              [style.color]="cellColor(cell)">
+          {{ cell.holidayName ?? statusLabel(cell.status) }}
+        </span>
+      } @else if (cell.isFuture) {
+        <span class="cdm-status-badge cdm-status-badge--future">Upcoming</span>
+      } @else {
+        <span class="cdm-status-badge cdm-status-badge--none">No record</span>
+      }
+    </div>
+
+    <!-- Hours info -->
+    @if (cell.hours !== undefined) {
+      <div class="cdm-hours-row">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>{{ cell.hours }}h logged</span>
+        <span class="cdm-hours-req">/ {{ requiredHours(cell) }}h required</span>
+        @if (!cell.hoursMet) {
+          <span class="cdm-hours-warn">Short</span>
+        }
+      </div>
+      <div class="cdm-bar-track">
+        <div class="cdm-bar-fill"
+             [class.cdm-bar-fill--short]="!cell.hoursMet"
+             [style.width.%]="fillPercent(cell)"></div>
+      </div>
+    }
+
+    <!-- Holiday name -->
+    @if (cell.holidayName) {
+      <div class="cdm-holiday">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#7c3aed" stroke="none">
+          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+        </svg>
+        {{ cell.holidayName }}
+      </div>
+    }
+
+    <!-- Regularize CTA -->
+    @if (canRegularize(cell)) {
+      <div class="cdm-footer">
+        <p class="cdm-footer-hint">{{ regularizeHint(cell) }}</p>
+        <button class="cdm-regularize-btn" (click)="regularize(cell)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/>
+          </svg>
+          Regularize this day
+        </button>
+      </div>
+    }
+  </div>
+}
 

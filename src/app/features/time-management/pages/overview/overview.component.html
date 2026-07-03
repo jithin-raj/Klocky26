@@ -126,4 +126,96 @@
     </div>
 
   </ng-container>
+
+  <!-- Section 5: Team Attendance (admin / HR / manager only) -->
+  <ng-container *ngIf="isPrivileged()">
+
+    <div class="team-header">
+      <h2 class="team-heading">Today's Team Attendance</h2>
+      <span class="team-sub">Live view — admin, HR &amp; manager only</span>
+    </div>
+
+    <div class="team-loading" *ngIf="teamLoading()">
+      <ui-loader variant="klocky" [size]="48"></ui-loader>
+    </div>
+
+    <ng-container *ngIf="!teamLoading()">
+
+      <!-- Clocked-in employees -->
+      <div class="card team-card">
+        <div class="card-title team-card-title team-card-title--green">
+          <span class="team-dot team-dot--green"></span>
+          Clocked In
+          <span class="team-count">{{ clockedInEmployees().length }}</span>
+        </div>
+        <ng-container *ngIf="clockedInEmployees().length > 0; else noClockedIn">
+          <div class="team-list">
+            <div class="team-row" *ngFor="let emp of clockedInEmployees(); trackBy: trackById">
+              <div class="team-avatar">{{ emp.fullName.charAt(0) }}</div>
+              <div class="team-info">
+                <span class="team-name">{{ emp.fullName }}</span>
+                <span class="team-dept">{{ emp.departmentName ?? 'No department' }}</span>
+              </div>
+              <div class="team-meta">
+                <span class="team-time">In: {{ formatClockIn(emp) }}</span>
+                <span class="team-status-badge team-status-badge--green">Active</span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #noClockedIn>
+          <div class="no-data">No employees currently clocked in</div>
+        </ng-template>
+      </div>
+
+      <!-- On leave -->
+      <div class="card team-card" *ngIf="onLeaveEmployees().length > 0">
+        <div class="card-title team-card-title team-card-title--amber">
+          <span class="team-dot team-dot--amber"></span>
+          On Leave
+          <span class="team-count">{{ onLeaveEmployees().length }}</span>
+        </div>
+        <div class="team-list">
+          <div class="team-row" *ngFor="let emp of onLeaveEmployees(); trackBy: trackById">
+            <div class="team-avatar team-avatar--amber">{{ emp.fullName.charAt(0) }}</div>
+            <div class="team-info">
+              <span class="team-name">{{ emp.fullName }}</span>
+              <span class="team-dept">{{ emp.departmentName ?? 'No department' }}</span>
+            </div>
+            <div class="team-meta">
+              <span class="team-status-badge team-status-badge--amber">Leave</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Absent employees -->
+      <div class="card team-card">
+        <div class="card-title team-card-title team-card-title--red">
+          <span class="team-dot team-dot--red"></span>
+          Absent Today
+          <span class="team-count">{{ absentEmployees().length }}</span>
+        </div>
+        <ng-container *ngIf="absentEmployees().length > 0; else noAbsent">
+          <div class="team-list">
+            <div class="team-row" *ngFor="let emp of absentEmployees(); trackBy: trackById">
+              <div class="team-avatar team-avatar--red">{{ emp.fullName.charAt(0) }}</div>
+              <div class="team-info">
+                <span class="team-name">{{ emp.fullName }}</span>
+                <span class="team-dept">{{ emp.departmentName ?? 'No department' }}</span>
+              </div>
+              <div class="team-meta">
+                <span class="team-status-badge team-status-badge--red">Absent</span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #noAbsent>
+          <div class="no-data">No absent employees today</div>
+        </ng-template>
+      </div>
+
+    </ng-container>
+  </ng-container>
+
 </div>

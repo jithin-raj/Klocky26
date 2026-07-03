@@ -108,13 +108,61 @@ export class EmployeeDashboardComponent implements OnDestroy {
   get isClockedIn()  { return this.attendanceSvc.isClockedIn; }
   get geoStatus()    { return this.attendanceSvc.geoStatus; }
 
-  /** Mobile punch out — mirrors header's toggleClock for the dashboard button */
+  /** Pending geo confirmation — same flow as the header widget */
+  geoConfirmPending = signal(false);
+  geoHasLocation    = signal(false);
+  private _pendingPosition: GeolocationPosition | null = null;
+
+  /** Toggle clock — shows confirm modal first (never clocks in immediately) */
   toggleClock(): void {
     if (this.attendanceSvc.isClockedIn()) {
       this.attendanceSvc.manualClockOut();
     } else {
-      this.clockIn();
+      this._startGeoClockIn();
     }
+  }
+
+  private _startGeoClockIn(): void {
+    const readLocation = this.appState.user()?.readLocationOnPunchIn !== false;
+    if (!readLocation || !navigator.geolocation) {
+      this._pendingPosition = null;
+      this.geoHasLocation.set(false);
+      this.geoConfirmPending.set(true);
+      return;
+    }
+    this.attendanceSvc.geoStatus.set('locating');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this._pendingPosition = pos;
+        this.geoHasLocation.set(true);
+        this.attendanceSvc.geoStatus.set('idle');
+        this.geoConfirmPending.set(true);
+      },
+      () => {
+        this._pendingPosition = null;
+        this.geoHasLocation.set(false);
+        this.attendanceSvc.geoStatus.set('idle');
+        this.geoConfirmPending.set(true);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  confirmClockIn(): void {
+    this.geoConfirmPending.set(false);
+    const pos = this._pendingPosition;
+    const method = (window as any).ReactNativeWebView ? 'mobile' : 'web';
+    this.attendanceSvc.clockIn(method, pos ? {
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+    } : {});
+    this._pendingPosition = null;
+  }
+
+  cancelClockIn(): void {
+    this.geoConfirmPending.set(false);
+    this._pendingPosition = null;
+    this.attendanceSvc.geoStatus.set('idle');
   }
 
   now = new Date();
@@ -122,30 +170,8 @@ export class EmployeeDashboardComponent implements OnDestroy {
 
   private timerRef?: ReturnType<typeof setInterval>;
 
-  /**
-   * Clock in via geolocation. No face verification today — there is no
-   * backend face-verification endpoint yet. Once one exists, a 'face' method
-   * clock-in should call attendanceSvc.clockIn('face', { photoUrl }) with an
-   * uploaded capture instead of re-introducing client-side face matching here.
-   */
-  clockIn(): void {
-    const method = (window as any).ReactNativeWebView ? 'mobile' : 'web';
-    // Skip geolocation if org has disabled "read location on punch in"
-    const readLocation = this.appState.user()?.readLocationOnPunchIn !== false;
-
-    if (!readLocation || !navigator.geolocation) {
-      this.attendanceSvc.clockIn(method);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => this.attendanceSvc.clockIn(method, {
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-      }),
-      () => this.attendanceSvc.clockIn(method),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
-  }
+  /** @deprecated internal only — use toggleClock() */
+  clockIn(): void { this._startGeoClockIn(); }
 
   private _renderHours(start: Date) {
     const diff = Date.now() - start.getTime();

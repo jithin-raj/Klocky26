@@ -3,148 +3,212 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { UiSelectComponent } from '../../../../shared/components';
+import { Router } from '@angular/router';
+
+import { UiSelectComponent, UiIconComponent } from '../../../../shared/components';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { LeaveService } from '../../../../core/services/leave.service';
+import { AppStateService } from '../../../../core/services/app-state.service';
 import {
-  HalfDaySession, LeaveBalance, LeaveRecord, LeaveTypeOption, MyLeavesResponse, ApplyLeaveRequest,
+  Holiday, LeaveBalance, LeaveRecord, LeaveTypeOption,
 } from '../../../../core/models/leave.model';
+
+export type LeaveTab = 'balance' | 'holidays' | 'history';
+
+const TYPE_COLORS = ['#6366f1','#f59e0b','#14b8a6','#ec4899','#22c55e','#8b5cf6','#ef4444','#0ea5e9'];
+const BAR_MAX_H   = 52;
 
 @Component({
   selector: 'app-my-leaves',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent],
   templateUrl: './my-leaves.component.html',
-  styleUrl: './my-leaves.component.scss',
+  styleUrl:    './my-leaves.component.scss',
 })
 export class MyLeavesComponent implements OnInit {
+  private readonly svc      = inject(LeaveService);
+  private readonly toast    = inject(ToastService);
+  private readonly appState = inject(AppStateService);
+  private readonly router   = inject(Router);
 
-  private readonly svc = inject(LeaveService);
-  private readonly toast = inject(ToastService);
+  readonly todayIso    = new Date().toISOString().slice(0, 10);
+  readonly currentYear = new Date().getFullYear();
 
-  readonly todayIso = new Date().toISOString().slice(0, 10);
+  // ── Tabs ──────────────────────────────────────────────────────────────
+  activeTab = signal<LeaveTab>('balance');
 
-  // ── Reference data ───────────────────────────────────────────────
-  types = signal<LeaveTypeOption[]>([]);
+  // ── Data ──────────────────────────────────────────────────────────────
+  types    = signal<LeaveTypeOption[]>([]);
   balances = signal<LeaveBalance[]>([]);
-  readonly typeOptions = computed(() =>
-    this.types().map(t => ({ label: t.name, value: t.leaveTypeId })));
+  records  = signal<LeaveRecord[]>([]);
+  loading  = signal(true);
+  busyId   = signal<string | null>(null);
 
-  // ── Apply form ───────────────────────────────────────────────────
-  leaveTypeId    = signal('');
-  fromDate       = signal(this.todayIso);
-  toDate         = signal(this.todayIso);
-  halfDay        = signal(false);
-  halfDaySession = signal<HalfDaySession>('first_half');
-  workedDate     = signal('');
-  reason         = signal('');
-  submitting     = signal(false);
+  // ── Holidays ──────────────────────────────────────────────────────────
+  holidays        = signal<Holiday[]>([]);
+  loadingHolidays = signal(false);
+  holidaysFetched = signal(false);
 
-  readonly selectedType = computed(() =>
-    this.types().find(t => t.leaveTypeId === this.leaveTypeId()) ?? null);
-  readonly isCompOff = computed(() => !!this.selectedType()?.isCompOff);
-  readonly selectedBalance = computed(() =>
-    this.balances().find(b => b.leaveTypeId === this.leaveTypeId()) ?? null);
+  // ── History filter ────────────────────────────────────────────────────
+  historyMonth = signal('');
 
-  readonly sessionOptions = [
-    { label: 'First half', value: 'first_half' },
-    { label: 'Second half', value: 'second_half' },
-  ];
+  // ── Derived ───────────────────────────────────────────────────────────
+  readonly orgPrefix  = computed(() => `/${this.appState.orgUrlName() || 'default'}`);
+  readonly userGender = computed(() => ((this.appState.user() as any)?.gender ?? '').toLowerCase());
 
-  readonly canSubmit = computed(() => {
-    if (!this.leaveTypeId() || !this.fromDate() || !this.toDate() || this.submitting()) return false;
-    if (this.toDate() < this.fromDate()) return false;
-    if (this.halfDay() && this.fromDate() !== this.toDate()) return false;
-    if (this.isCompOff() && !this.workedDate()) return false;
-    return true;
+  readonly typeColorMap = computed(() => {
+    const map = new Map<string, string>();
+    this.types().forEach((t, i) => map.set(t.leaveTypeId, TYPE_COLORS[i % TYPE_COLORS.length]));
+    return map;
   });
 
-  // ── My requests ──────────────────────────────────────────────────
-  records = signal<LeaveRecord[]>([]);
-  loadingMine = signal(true);
-  busyId = signal<string | null>(null);
+  readonly filteredBalances = computed(() => {
+    const g       = this.userGender();
+    const typeMap = new Map(this.types().map(t => [t.leaveTypeId, t]));
+    return this.balances().filter(b => {
+      const t = typeMap.get(b.leaveTypeId);
+      if (!t?.applicableTo || t.applicableTo === 'all') return true;
+      if (g === 'male'   && t.applicableTo === 'female') return false;
+      if (g === 'female' && t.applicableTo === 'male')   return false;
+      return true;
+    });
+  });
 
-  ngOnInit() {
-    this.loadRefs();
-    this.loadMine();
-  }
+  readonly monthlyChartData = computed(() => {
+    const year   = this.currentYear;
+    const LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = LABELS.map((label, idx) => ({ label, idx, total: 0 }));
 
-  private loadRefs() {
+    this.records()
+      .filter(r => r.status !== 'cancelled' && r.status !== 'rejected')
+      .forEach(r => {
+        const d = new Date(r.fromDate);
+        if (d.getFullYear() === year) months[d.getMonth()].total += r.days;
+      });
+
+    const maxDays    = Math.max(...months.map(m => m.total), 1);
+    const totalTaken = months.reduce((s, m) => s + m.total, 0);
+    return {
+      months:     months.map(m => ({ ...m, heightPx: Math.round((m.total / maxDays) * BAR_MAX_H) })),
+      totalTaken,
+    };
+  });
+
+  readonly filteredRecords = computed(() => {
+    const m = this.historyMonth();
+    return m ? this.records().filter(r => r.fromDate.startsWith(m)) : this.records();
+  });
+
+  readonly monthOptions = computed(() => {
+    const seen = new Set<string>();
+    this.records().forEach(r => seen.add(r.fromDate.slice(0, 7)));
+    return [...seen].sort().reverse().map(m => {
+      const [y, mo] = m.split('-');
+      return {
+        label: new Date(+y, +mo - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' }),
+        value: m,
+      };
+    });
+  });
+
+  // ── Lifecycle ─────────────────────────────────────────────────────────
+  ngOnInit() { this.loadData(); }
+
+  private loadData() {
+    this.loading.set(true);
     this.svc.types().subscribe({ next: t => this.types.set(t), error: () => {} });
-  }
-
-  loadMine() {
-    this.loadingMine.set(true);
     this.svc.my().subscribe({
       next: res => {
         this.balances.set(res.balances ?? []);
-        this.records.set(res.records ?? []);
-        this.loadingMine.set(false);
+        this.records.set(res.records   ?? []);
+        this.loading.set(false);
       },
-      error: () => { this.loadingMine.set(false); },
+      error: () => { this.loading.set(false); },
     });
   }
 
-  /** Half-day is a single day — keep toDate pinned to fromDate while it's on. */
-  onHalfDayToggle(on: boolean) {
-    this.halfDay.set(on);
-    if (on) this.toDate.set(this.fromDate());
-  }
-  onFromChange(v: string) {
-    this.fromDate.set(v);
-    if (this.halfDay() || this.toDate() < v) this.toDate.set(v);
+  // ── Tab actions ───────────────────────────────────────────────────────
+  switchTab(tab: LeaveTab) {
+    this.activeTab.set(tab);
+    if (tab === 'holidays' && !this.holidaysFetched()) { this.loadHolidays(); }
   }
 
-  submit() {
-    if (!this.canSubmit()) return;
-    this.submitting.set(true);
-    this.svc.apply({
-      leaveTypeId: this.leaveTypeId(),
-      fromDate: this.fromDate(),
-      toDate: this.toDate(),
-      reason: this.reason() || undefined,
-      halfDay: this.halfDay(),
-      halfDaySession: this.halfDay() ? this.halfDaySession() : undefined,
-      workedDate: this.isCompOff() ? (this.workedDate() || undefined) : undefined,
-    }).subscribe({
-      next: () => {
-        this.submitting.set(false);
-        this.toast.success('Leave applied', 'Your leave request has been submitted.');
-        this.reason.set(''); this.workedDate.set(''); this.halfDay.set(false);
-        this.loadMine();
-      },
-      error: (err) => {
-        this.submitting.set(false);
-        this.toast.error('Could not apply', err?.error?.message ?? 'Your leave request could not be submitted.');
-      },
+  private loadHolidays() {
+    this.loadingHolidays.set(true);
+    this.svc.holidays().subscribe({
+      next: h  => { this.holidays.set(h);  this.loadingHolidays.set(false); this.holidaysFetched.set(true); },
+      error: () => { this.holidays.set([]); this.loadingHolidays.set(false); this.holidaysFetched.set(true); },
     });
+  }
+
+  // Navigate to the unified request hub, optionally pre-selecting a leave type
+  openApplyFor(typeId: string) {
+    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
+      queryParams: { type: 'leave', leaveTypeId: typeId },
+    });
+  }
+
+  navigateToApply() {
+    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests']);
+  }
+
+  goToRegularisation() {
+    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests']);
   }
 
   cancel(id: string) {
     if (this.busyId()) return;
     this.busyId.set(id);
     this.svc.cancel(id).subscribe({
-      next: () => { this.busyId.set(null); this.loadMine(); },
-      error: (err) => { this.busyId.set(null); this.toast.error('Could not cancel', err?.error?.message ?? 'Please try again.'); },
+      next: () => { this.busyId.set(null); this.loadData(); },
+      error: err => {
+        this.busyId.set(null);
+        this.toast.error('Could not cancel', err?.error?.message ?? 'Please try again.');
+      },
     });
   }
 
-  /** Pending can always be cancelled; approved only before it starts. */
+  // ── Helpers ───────────────────────────────────────────────────────────
   canCancel(r: LeaveRecord): boolean {
-    if (r.status === 'pending') return true;
-    return r.status === 'approved' && r.fromDate > this.todayIso;
+    return r.status === 'pending' || (r.status === 'approved' && r.fromDate > this.todayIso);
   }
 
-  totalBarPct(b: LeaveBalance, part: 'used' | 'pending'): number {
+  typeColor(typeId: string): string {
+    return this.typeColorMap().get(typeId) ?? '#6366f1';
+  }
+
+  usedBarPct(b: LeaveBalance): number {
     const total = (b.totalDays + b.carriedForward) || 1;
-    const days = part === 'used' ? b.usedDays : b.pendingDays;
-    return Math.min(100, Math.round((days / total) * 100));
+    return Math.min(100, Math.round((b.usedDays / total) * 100));
+  }
+
+  readonly sortedHolidays = computed(() =>
+    [...this.holidays()].sort((a, b) => a.date.localeCompare(b.date))
+  );
+
+  holidayTypeLabel(type: string): string {
+    const map: Record<string, string> = {
+      national: 'National', optional: 'Optional', regional: 'Regional', company: 'Company',
+    };
+    return map[type] ?? type;
+  }
+
+  takeOptionalHoliday(h: Holiday) {
+    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
+      queryParams: { type: 'leave', date: h.date },
+    });
   }
 
   stageLabel(stage: string): string {
     if (stage === 'manager') return 'Awaiting manager';
-    if (stage === 'hr') return 'Awaiting HR';
+    if (stage === 'hr')      return 'Awaiting HR';
     return '';
+  }
+
+  monthLabel(iso: string): string {
+    if (!iso) return '';
+    const [y, m] = iso.split('-');
+    return new Date(+y, +m - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
   }
 }

@@ -93,8 +93,11 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     const adminOrHr   = this.permissions.isAdmin() || this.permissions.isHr();
     const adminOnly   = this.permissions.isAdmin();
     return [
-      { label: 'Attendance',  icon: 'calendar',     route: `${p}/app/attendance`,                     color: '#6366f1' },
-      { label: 'My Leave',    icon: 'clock',        route: `${p}/app/leaves/my`,                      color: '#f59e0b' },
+      // Employee-facing tiles — hidden for admins who have their own tools
+      ...(!adminOnly ? [
+        { label: 'Attendance',  icon: 'calendar' as UiIconName,  route: `${p}/app/attendance`,   color: '#6366f1' },
+        { label: 'My Leave',    icon: 'clock' as UiIconName,     route: `${p}/app/leaves/my`,    color: '#f59e0b' },
+      ] : []),
       { label: 'Time Mgmt',   icon: 'pie-chart',    route: `${p}/app/time-management`,                color: '#14b8a6' },
       { label: 'Org Tree',    icon: 'tree',         route: `${p}/app/employees/tree`,                 color: '#22c55e' },
       { label: 'Documents',   icon: 'layers',       route: `${p}/app/organisation/documents`,         color: '#8b5cf6' },
@@ -117,11 +120,18 @@ export class BottomNavComponent implements OnInit, OnDestroy {
 
   // ── Quick actions (FAB) ──────────────────────────────────────────────
   readonly quickActions = computed((): QuickAction[] => {
-    const p = this.orgPrefix();
+    const p       = this.orgPrefix();
+    const isAdmin = this.permissions.isAdmin();
     return [
-      { label: 'Apply Leave',          icon: 'calendar',   route: `${p}/app/leaves/my`,           color: '#f59e0b', desc: 'Submit a leave request' },
+      ...(!isAdmin ? [
+        { label: 'Apply Leave',        icon: 'calendar' as UiIconName, route: `${p}/app/leaves/my`,           color: '#f59e0b', desc: 'Submit a leave request' },
+      ] : []),
       { label: 'Request Attendance',   icon: 'repeat',     route: `${p}/app/attendance/requests`, color: '#6366f1', desc: 'Regularize attendance' },
       { label: 'Face Check-in',        icon: 'scan',       route: `${p}/app/attendance/face-scan`,color: '#14b8a6', desc: 'Clock in via face scan' },
+      ...(isAdmin ? [
+        { label: 'Add Employee',       icon: 'user-check' as UiIconName, route: `${p}/app/employees/add`,  color: '#0ea5e9', desc: 'Add a new team member' },
+        { label: 'Leave Approvals',    icon: 'check-circle' as UiIconName, route: `${p}/app/leaves`,       color: '#10b981', desc: 'Review pending leave requests' },
+      ] : []),
     ];
   });
 

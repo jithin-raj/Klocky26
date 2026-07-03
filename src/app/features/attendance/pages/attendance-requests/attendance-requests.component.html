@@ -1,138 +1,422 @@
 <div class="ar-page">
 
-  <div class="ar-header">
-    <h1>Attendance Requests</h1>
-    <p>Apply to regularize a day — missed punch, work from home, on-duty or correction.</p>
+  <!-- ── Page header ─────────────────────────────────────────────────── -->
+  <div class="ar-page-head">
+    <div>
+      <h1 class="ar-title">Requests</h1>
+      <p class="ar-sub">Apply for leave, regularise attendance, WFH, and more</p>
+    </div>
+    @if (canApprove && hasApprovals()) {
+      <button class="ar-appr-pill" (click)="switchTab('approvals')">
+        <span class="ar-appr-dot"></span>
+        {{ pending().length }} pending approval{{ pending().length === 1 ? '' : 's' }}
+      </button>
+    }
   </div>
 
-  <div class="ar-grid">
+  <!-- ── Tab bar ─────────────────────────────────────────────────────── -->
+  <div class="ar-tabs">
+    <button class="ar-tab" [class.ar-tab--active]="activeTab() === 'request'"
+            (click)="switchTab('request')">New Request</button>
+    <button class="ar-tab" [class.ar-tab--active]="activeTab() === 'history'"
+            (click)="switchTab('history')">
+      History
+      @if (myLeaveRecords().length + myAttendance().length > 0) {
+        <span class="ar-tab-badge">{{ myLeaveRecords().length + myAttendance().length }}</span>
+      }
+    </button>
+    @if (canApprove) {
+      <button class="ar-tab" [class.ar-tab--active]="activeTab() === 'approvals'"
+              (click)="switchTab('approvals')">
+        Approvals
+        @if (hasApprovals()) {
+          <span class="ar-tab-badge ar-tab-badge--red">{{ pending().length }}</span>
+        }
+      </button>
+    }
+  </div>
 
-    <!-- ── Apply form ──────────────────────────────────────────── -->
-    <section class="ar-card ar-apply">
-      <div class="ar-apply-head">
-        <h2 class="ar-card-title">Apply for Attendance</h2>
-        <p>Regularize a past or current day.</p>
+  <!-- ══════════════ TAB: NEW REQUEST ══════════════════════════════════ -->
+  @if (activeTab() === 'request') {
+    <div class="ar-request-layout">
+
+      <!-- Request type picker -->
+      <div class="ar-type-rail">
+        @for (t of hubTypes; track t.value) {
+          <button class="ar-type-btn" [class.ar-type-btn--active]="hubType() === t.value"
+                  (click)="selectType(t.value)">
+            <span class="ar-type-icon">
+              <ui-icon [name]="$any(t.icon)" [size]="18"></ui-icon>
+            </span>
+            <div class="ar-type-text">
+              <span class="ar-type-label">{{ t.label }}</span>
+              <span class="ar-type-desc">{{ t.desc }}</span>
+            </div>
+            @if (hubType() === t.value) {
+              <span class="ar-type-check">
+                <ui-icon name="check" [size]="12"></ui-icon>
+              </span>
+            }
+          </button>
+        }
       </div>
 
-      <div class="ar-apply-body">
-        <div class="ar-field">
-          <label>Request Type</label>
-          <div class="ar-seg">
-            @for (opt of typeOptions; track opt.value) {
-              <button type="button" class="ar-seg-btn" [class.active]="type() === opt.value"
-                      (click)="type.set($any(opt.value))">{{ opt.label }}</button>
+      <!-- Dynamic form -->
+      <div class="ar-form-panel">
+        <div class="ar-form-head">
+          <h2 class="ar-form-title">{{ hubLabel(hubType()) }}</h2>
+          @if (hubType() === 'leave' && selectedBalance(); as bal) {
+            <span class="ar-bal-hint">{{ bal.remainingDays }} days remaining</span>
+          }
+        </div>
+
+        <!-- Encashment form -->
+        @if (hubType() === 'encashment') {
+          <div class="ar-form-body">
+
+            <div class="ar-encash-info">
+              <div class="ar-encash-info-icon">
+                <ui-icon name="award" [size]="20"></ui-icon>
+              </div>
+              <p>Convert unused earned leave days into salary. The amount will be calculated and credited in the next payroll cycle.</p>
+            </div>
+
+            <div class="ar-field">
+              <label class="ar-label">Leave Type <span class="ar-req">*</span></label>
+              <ui-select placeholder="Select leave type" [options]="encashTypeOptions()"
+                [ngModel]="encashLeaveTypeId()" (ngModelChange)="encashLeaveTypeId.set($event)"></ui-select>
+            </div>
+
+            @if (encashBalance(); as bal) {
+              <div class="ar-encash-balance">
+                <span class="ar-encash-avail">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                  {{ bal.remainingDays }} days available to encash
+                </span>
+                <span class="ar-encash-detail">{{ bal.usedDays }} used · {{ bal.totalDays }} total</span>
+              </div>
+            }
+
+            <div class="ar-field">
+              <label class="ar-label">Days to Encash <span class="ar-req">*</span></label>
+              <div class="ar-encash-stepper">
+                <button class="ar-step-btn" type="button"
+                  [disabled]="encashDays() <= 1"
+                  (click)="encashDays.set(encashDays() - 1)">−</button>
+                <span class="ar-step-val">{{ encashDays() }}</span>
+                <button class="ar-step-btn" type="button"
+                  [disabled]="!!(encashBalance() && encashDays() >= encashBalance()!.remainingDays)"
+                  (click)="encashDays.set(encashDays() + 1)">+</button>
+              </div>
+            </div>
+
+            <button class="ar-submit-btn" [disabled]="!canSubmit()" (click)="submit()">
+              @if (submitting()) { Processing… } @else { Encash {{ encashDays() }} Day{{ encashDays() === 1 ? '' : 's' }} }
+            </button>
+
+          </div>
+        } @else {
+
+          <div class="ar-form-body">
+
+            <!-- ── LEAVE fields ── -->
+            @if (hubType() === 'leave') {
+
+              <div class="ar-field">
+                <label class="ar-label">Leave Type <span class="ar-req">*</span></label>
+                <ui-select placeholder="Select leave type" [options]="leaveTypeOptions()"
+                  [ngModel]="leaveTypeId()" (ngModelChange)="leaveTypeId.set($event)"></ui-select>
+              </div>
+
+              @if (isCompOff()) {
+                <div class="ar-field">
+                  <label class="ar-label">Worked Date <span class="ar-req">*</span></label>
+                  <div class="ar-input-wrap">
+                    <ui-icon name="calendar" [size]="15" class="ar-input-icon"></ui-icon>
+                    <input class="ar-input ar-input--icon" type="date" [max]="todayIso"
+                           [ngModel]="workedDate()" (ngModelChange)="workedDate.set($event)" />
+                  </div>
+                  <span class="ar-hint">Day you worked and are claiming off for.</span>
+                </div>
+              }
+
+              <div class="ar-date-row">
+                <div class="ar-field">
+                  <label class="ar-label">From</label>
+                  <div class="ar-input-wrap">
+                    <ui-icon name="calendar" [size]="15" class="ar-input-icon"></ui-icon>
+                    <input class="ar-input ar-input--icon" type="date"
+                           [ngModel]="fromDate()" (ngModelChange)="onFromChange($event)" />
+                  </div>
+                </div>
+                <div class="ar-field">
+                  <label class="ar-label">To</label>
+                  <div class="ar-input-wrap">
+                    <ui-icon name="calendar" [size]="15" class="ar-input-icon"></ui-icon>
+                    <input class="ar-input ar-input--icon" type="date"
+                           [min]="fromDate()" [disabled]="halfDay()"
+                           [ngModel]="toDate()" (ngModelChange)="toDate.set($event)" />
+                  </div>
+                </div>
+              </div>
+
+              <label class="ar-check">
+                <input type="checkbox" [ngModel]="halfDay()" (ngModelChange)="onHalfDayToggle($event)" />
+                <span class="ar-check-box"></span>
+                <span>Half day</span>
+              </label>
+
+              @if (halfDay()) {
+                <div class="ar-field">
+                  <label class="ar-label">Session</label>
+                  <ui-select [options]="sessionOptions"
+                    [ngModel]="halfDaySession()" (ngModelChange)="halfDaySession.set($any($event))"></ui-select>
+                </div>
+              }
+
+            }
+
+            <!-- ── ATTENDANCE fields (missed_punch | wfh | on_duty | correction) ── -->
+            @if (hubType() !== 'leave') {
+
+              <div class="ar-field">
+                <label class="ar-label">Date <span class="ar-req">*</span></label>
+                <div class="ar-input-wrap">
+                  <ui-icon name="calendar" [size]="15" class="ar-input-icon"></ui-icon>
+                  <input class="ar-input ar-input--icon" type="date" [max]="todayIso"
+                         [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
+                </div>
+              </div>
+
+              @if (hubType() !== 'wfh') {
+                <div class="ar-time-row">
+                  <div class="ar-field">
+                    <label class="ar-label">Clock In <span class="ar-req">*</span></label>
+                    <div class="ar-input-wrap">
+                      <ui-icon name="clock" [size]="15" class="ar-input-icon"></ui-icon>
+                      <input class="ar-input ar-input--icon" type="time"
+                             [ngModel]="clockIn()" (ngModelChange)="clockIn.set($event)" />
+                    </div>
+                  </div>
+                  <div class="ar-field">
+                    <label class="ar-label">Clock Out <span class="ar-opt">(optional)</span></label>
+                    <div class="ar-input-wrap">
+                      <ui-icon name="clock" [size]="15" class="ar-input-icon"></ui-icon>
+                      <input class="ar-input ar-input--icon" type="time"
+                             [ngModel]="clockOut()" (ngModelChange)="clockOut.set($event)" />
+                    </div>
+                  </div>
+                </div>
+              }
+
+              <div class="ar-field">
+                <label class="ar-label">Office <span class="ar-opt">(optional)</span></label>
+                <ui-select [options]="officeOptions()" [ngModel]="officeId()"
+                           (ngModelChange)="officeId.set($event)"></ui-select>
+              </div>
+
+            }
+
+            <!-- ── Common: Reason ── -->
+            <div class="ar-field">
+              <label class="ar-label">Reason <span class="ar-opt">(optional)</span></label>
+              <textarea class="ar-input ar-textarea" rows="3"
+                        placeholder="Add a note for the approver…"
+                        [ngModel]="reason()" (ngModelChange)="reason.set($event)"></textarea>
+            </div>
+
+            <button class="ar-submit" [disabled]="!canSubmit()" (click)="submit()">
+              @if (submitting()) {
+                <span class="ar-spinner"></span> Submitting…
+              } @else {
+                Submit Request
+              }
+            </button>
+
+          </div>
+        }
+      </div>
+
+    </div>
+  }
+
+  <!-- ══════════════ TAB: HISTORY ═══════════════════════════════════════ -->
+  @if (activeTab() === 'history') {
+    <div class="ar-history">
+
+      @if (loadingHistory()) {
+        <div class="ar-loading">
+          <div class="ar-skel ar-skel--row"></div>
+          <div class="ar-skel ar-skel--row"></div>
+          <div class="ar-skel ar-skel--row"></div>
+        </div>
+      } @else {
+
+        <!-- Leave history -->
+        <div class="ar-hist-section">
+          <div class="ar-hist-section-head">
+            <h3 class="ar-hist-section-title">Leave Requests</h3>
+            @if (myLeaveRecords().length > 0) {
+              <span class="ar-hist-count">{{ myLeaveRecords().length }}</span>
             }
           </div>
+
+          @if (myLeaveRecords().length === 0) {
+            <p class="ar-hist-empty">No leave requests yet.</p>
+          } @else {
+            <div class="ar-hist-list">
+              @for (r of myLeaveRecords(); track r.id) {
+                <div class="ar-hist-item">
+                  <div class="ar-hist-stripe ar-hist-stripe--{{ r.status }}"></div>
+                  <div class="ar-hist-body">
+                    <div class="ar-hist-top">
+                      <span class="ar-hist-type">{{ r.leaveTypeName }}</span>
+                      <span class="ar-status ar-status--{{ r.status }}">{{ r.status | titlecase }}</span>
+                    </div>
+                    <div class="ar-hist-mid">
+                      <ui-icon name="calendar" [size]="12" class="ar-hist-icon"></ui-icon>
+                      <span class="ar-hist-dates">{{ r.fromDate | date:'MMM d' }} – {{ r.toDate | date:'MMM d, y' }}</span>
+                      <span class="ar-hist-days">{{ r.days }} day{{ r.days === 1 ? '' : 's' }}</span>
+                    </div>
+                    @if (r.reason) {
+                      <span class="ar-hist-reason">"{{ r.reason }}"</span>
+                    }
+                  </div>
+                  @if (canCancelLeave(r)) {
+                    <button class="ar-revoke-btn" [disabled]="busyId() === r.id"
+                            (click)="cancelLeave(r.id)">
+                      {{ busyId() === r.id ? '…' : 'Revoke' }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
 
-        <div class="ar-field">
-          <label>Date</label>
-          <input type="date" [max]="todayIso" [ngModel]="date()" (ngModelChange)="date.set($event)" />
-        </div>
-
-        <div class="ar-row">
-          <div class="ar-field">
-            <label>Clock In <span class="ar-req">*</span></label>
-            <input type="time" [ngModel]="clockIn()" (ngModelChange)="clockIn.set($event)" />
+        <!-- Attendance requests history -->
+        <div class="ar-hist-section">
+          <div class="ar-hist-section-head">
+            <h3 class="ar-hist-section-title">Attendance Requests</h3>
+            @if (myAttendance().length > 0) {
+              <span class="ar-hist-count">{{ myAttendance().length }}</span>
+            }
           </div>
-          <div class="ar-field">
-            <label>Clock Out</label>
-            <input type="time" [ngModel]="clockOut()" (ngModelChange)="clockOut.set($event)" />
-          </div>
+
+          @if (myAttendance().length === 0) {
+            <p class="ar-hist-empty">No attendance requests yet.</p>
+          } @else {
+            <div class="ar-hist-list">
+              @for (r of myAttendance(); track r.id) {
+                <div class="ar-hist-item">
+                  <div class="ar-hist-stripe ar-hist-stripe--{{ r.status }}"></div>
+                  <div class="ar-hist-body">
+                    <div class="ar-hist-top">
+                      <span class="ar-hist-type">{{ typeLabel(r.type) }}</span>
+                      <span class="ar-status ar-status--{{ r.status }}">{{ r.status | titlecase }}</span>
+                    </div>
+                    <div class="ar-hist-mid">
+                      <ui-icon name="calendar" [size]="12" class="ar-hist-icon"></ui-icon>
+                      <span class="ar-hist-dates">{{ r.date | date:'EEE, MMM d, y' }}</span>
+                      @if (r.requestedClockIn) {
+                        <span class="ar-hist-times">
+                          <ui-icon name="clock" [size]="11" class="ar-hist-icon"></ui-icon>
+                          {{ formatTime(r.requestedClockIn) }}
+                          @if (r.requestedClockOut) { – {{ formatTime(r.requestedClockOut) }} }
+                        </span>
+                      }
+                    </div>
+                    @if (r.reason) {
+                      <span class="ar-hist-reason">"{{ r.reason }}"</span>
+                    }
+                    @if (r.status === 'rejected' && r.rejectionReason) {
+                      <span class="ar-hist-reject">Rejected: {{ r.rejectionReason }}</span>
+                    }
+                  </div>
+                  @if (r.status === 'pending') {
+                    <button class="ar-revoke-btn" [disabled]="busyId() === r.id"
+                            (click)="cancelAttendance(r.id)">
+                      {{ busyId() === r.id ? '…' : 'Revoke' }}
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
         </div>
 
-        <div class="ar-field">
-          <label>Office <span class="ar-opt">(optional)</span></label>
-          <ui-select [options]="officeOptions()" [ngModel]="officeId()" (ngModelChange)="officeId.set($event)"></ui-select>
+      }
+    </div>
+  }
+
+  <!-- ══════════════ TAB: APPROVALS ════════════════════════════════════ -->
+  @if (activeTab() === 'approvals' && canApprove) {
+    <div class="ar-approvals">
+
+      @if (!hasApprovals()) {
+        <div class="ar-empty-state">
+          <ui-icon name="check-circle" [size]="40" class="ar-es-icon"></ui-icon>
+          <p class="ar-es-text">No pending approvals.</p>
         </div>
-
-        <div class="ar-field">
-          <label>Reason</label>
-          <textarea rows="3" placeholder="Add a note for the approver…"
-                    [ngModel]="reason()" (ngModelChange)="reason.set($event)"></textarea>
-        </div>
-
-        <button class="ar-btn ar-btn--primary" [disabled]="!canSubmit()" (click)="submit()">
-          {{ submitting() ? 'Submitting…' : 'Submit Request' }}
-        </button>
-      </div>
-    </section>
-
-    <!-- ── My requests ─────────────────────────────────────────── -->
-    <section class="ar-card ar-mine">
-      <h2 class="ar-card-title">My Requests</h2>
-
-      @if (loadingMine()) {
-        <p class="ar-empty">Loading…</p>
-      } @else if (mine().length === 0) {
-        <p class="ar-empty">You haven't raised any attendance requests yet.</p>
       } @else {
-        <div class="ar-list">
-          @for (r of mine(); track r.id) {
-            <div class="ar-item">
-              <div class="ar-item-main">
-                <span class="ar-type">{{ typeLabel(r.type) }}</span>
-                <span class="ar-date">{{ r.date | date:'EEE, MMM d, y' }}</span>
-                <span class="ar-times">
-                  {{ r.requestedClockIn || '—' }}@if (r.requestedClockOut) { – {{ r.requestedClockOut }} }
-                </span>
-                @if (r.reason) { <span class="ar-reason">{{ r.reason }}</span> }
-                @if (r.status === 'rejected' && r.rejectionReason) {
-                  <span class="ar-reject-note">Rejected: {{ r.rejectionReason }}</span>
-                }
+        <div class="ar-appr-grid">
+          @for (r of pending(); track r.id) {
+            <div class="ar-appr-card">
+              <div class="ar-appr-emp">
+                <span class="ar-appr-avatar">{{ (r.userFullName || 'U')[0] }}</span>
+                <div class="ar-appr-info">
+                  <span class="ar-appr-name">{{ r.userFullName }}</span>
+                  <span class="ar-appr-meta">{{ typeLabel(r.type) }} · {{ r.date | date:'MMM d, y' }}</span>
+                </div>
               </div>
-              <div class="ar-item-side">
-                <span class="ar-status ar-status--{{ r.status }}">{{ r.status | titlecase }}</span>
-                @if (r.status === 'pending') {
-                  <button class="ar-btn ar-btn--ghost ar-btn--sm" [disabled]="busyId() === r.id" (click)="cancel(r.id)">Cancel</button>
-                }
+              @if (r.requestedClockIn) {
+                <div class="ar-appr-times">
+                  <ui-icon name="clock" [size]="12" class="ar-hist-icon"></ui-icon>
+                  {{ r.requestedClockIn }}
+                  @if (r.requestedClockOut) { – {{ r.requestedClockOut }} }
+                </div>
+              }
+              @if (r.reason) {
+                <p class="ar-appr-reason">"{{ r.reason }}"</p>
+              }
+              <div class="ar-appr-actions">
+                <button class="ar-act-btn ar-act-btn--approve"
+                        [disabled]="approvalsBusyId() === r.id"
+                        (click)="approve(r.id)">
+                  <ui-icon name="check" [size]="13"></ui-icon> Approve
+                </button>
+                <button class="ar-act-btn ar-act-btn--reject"
+                        [disabled]="approvalsBusyId() === r.id"
+                        (click)="openReject(r.id)">
+                  <ui-icon name="x" [size]="13"></ui-icon> Reject
+                </button>
               </div>
             </div>
           }
         </div>
       }
-    </section>
-
-  </div>
-
-  <!-- ── Approvals (managers / HR) ─────────────────────────────── -->
-  @if (hasApprovals()) {
-    <section class="ar-card ar-approvals">
-      <h2 class="ar-card-title">Pending Approvals</h2>
-      <div class="ar-list">
-        @for (r of pending(); track r.id) {
-          <div class="ar-item">
-            <div class="ar-item-main">
-              <span class="ar-emp">{{ r.userFullName }}</span>
-              <span class="ar-type">{{ typeLabel(r.type) }}</span>
-              <span class="ar-date">{{ r.date | date:'EEE, MMM d, y' }}</span>
-              <span class="ar-times">
-                {{ r.requestedClockIn || '—' }}@if (r.requestedClockOut) { – {{ r.requestedClockOut }} }
-              </span>
-              @if (r.reason) { <span class="ar-reason">{{ r.reason }}</span> }
-            </div>
-            <div class="ar-item-side">
-              <button class="ar-btn ar-btn--approve ar-btn--sm" [disabled]="busyId() === r.id" (click)="approve(r.id)">Approve</button>
-              <button class="ar-btn ar-btn--reject ar-btn--sm" [disabled]="busyId() === r.id" (click)="openReject(r.id)">Reject</button>
-            </div>
-          </div>
-        }
-      </div>
-    </section>
+    </div>
   }
 
 </div>
 
-<!-- Reject reason modal -->
+<!-- ── Reject reason modal ────────────────────────────────────────────── -->
 @if (rejectTarget()) {
   <div class="ar-overlay" (click)="cancelReject()">
     <div class="ar-modal" (click)="$event.stopPropagation()">
-      <h3>Reject Request</h3>
-      <p>Provide a reason (optional):</p>
-      <textarea rows="3" [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)" placeholder="Enter reason…"></textarea>
+      <div class="ar-modal-head">
+        <h3 class="ar-modal-title">Reject Request</h3>
+        <button class="ar-modal-close" (click)="cancelReject()">
+          <ui-icon name="x" [size]="15"></ui-icon>
+        </button>
+      </div>
+      <p class="ar-modal-sub">Provide a reason so the employee understands why it was rejected.</p>
+      <textarea class="ar-modal-textarea" rows="4"
+                [ngModel]="rejectReason()" (ngModelChange)="rejectReason.set($event)"
+                placeholder="Enter rejection reason (optional)…"></textarea>
       <div class="ar-modal-actions">
-        <button class="ar-btn ar-btn--ghost" (click)="cancelReject()">Cancel</button>
-        <button class="ar-btn ar-btn--reject" (click)="doReject()">Confirm Reject</button>
+        <button class="ar-modal-btn ar-modal-btn--ghost" (click)="cancelReject()">Cancel</button>
+        <button class="ar-modal-btn ar-modal-btn--reject" (click)="doReject()">Confirm Reject</button>
       </div>
     </div>
   </div>
