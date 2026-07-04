@@ -77,8 +77,12 @@ export interface EmployeeUser {
   accentColor: string | null;
   logoUrl: string | null;
   website: string | null;
-  /** Org-level setting: if false, skip geolocation capture on punch in (default true). */
-  readLocationOnPunchIn?: boolean;
+  /** Org-level flag: capture location on clock-in is turned on for this org. */
+  captureLocationOnClockIn: boolean;
+  /** True when a geofence (personal / department / office) is assigned to this employee. */
+  geofenceEnabled: boolean;
+  /** Single resolved flag — true when either a geofence applies or org capture is on. Gate all location logic on this. */
+  locationRequiredOnClockIn: boolean;
 }
 
 /** PUT /api/users/auth/me request — every field optional */

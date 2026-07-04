@@ -12,9 +12,10 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { UiIconComponent } from '../../../../shared/components';
 import { UiInputComponent } from '../../../../shared/components/ui-input/ui-input.component';
 import { UiTextareaComponent } from '../../../../shared/components/ui-textarea/ui-textarea.component';
-import { UiSelectComponent } from '../../../../shared/components/ui-select/ui-select.component';
+import { UiSelectComponent, SelectOption } from '../../../../shared/components/ui-select/ui-select.component';
 import { UiToggleComponent } from '../../../../shared/components/ui-toggle/ui-toggle.component';
 import { UiModalComponent } from '../../../../shared/components/ui-modal/ui-modal.component';
+import { UiTimePickerComponent } from '../../../../shared/components/ui-timepicker/ui-timepicker.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError, finalize, switchMap } from 'rxjs/operators';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
@@ -124,7 +125,7 @@ const HOLIDAY_TYPE_LABELS: Record<Holiday['type'], string> = {
 @Component({
   selector: 'org-profile',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, UiIconComponent, UiInputComponent, UiTextareaComponent, UiSelectComponent, UiToggleComponent, UiModalComponent],
+  imports: [FormsModule, ReactiveFormsModule, UiIconComponent, UiInputComponent, UiTextareaComponent, UiSelectComponent, UiToggleComponent, UiModalComponent, UiTimePickerComponent],
   templateUrl: './org-profile.component.html',
   styleUrl: './org-profile.component.scss',
 })
@@ -297,15 +298,21 @@ export class OrgProfileComponent implements OnInit {
     this.autoCheckoutEnabled  = s.autoCheckoutEnabled;
     this.autoCheckoutTime     = s.autoCheckoutTime ? s.autoCheckoutTime.slice(0, 5) : this.autoCheckoutTime;
 
-    this.leaveYearStart      = this._capitalize(s.leaveYearStart ?? 'january');
-    this.annualLeaveDays     = s.annualLeaveDays ?? this.annualLeaveDays;
-    this.sickLeaveDays       = s.sickLeaveDays ?? this.sickLeaveDays;
-    this.casualLeaveDays     = s.casualLeaveDays ?? this.casualLeaveDays;
-    this.carryForwardEnabled = s.carryForwardEnabled;
-    this.carryForwardMaxDays = s.carryForwardMaxDays ?? this.carryForwardMaxDays;
-    this.compOffEnabled      = s.compOffEnabled;
-    this.lopEnabled           = s.lopEnabled;
-    this.encashmentEnabled    = s.encashmentEnabled;
+    this.captureLocationOnClockIn = s.captureLocationOnClockIn ?? false;
+    this.monthStartDay            = s.monthStartDay ?? 1;
+
+    this.leaveYearStart           = this._capitalize(s.leaveYearStart ?? 'january');
+    this.carryForwardEnabled      = s.carryForwardEnabled;
+    this.carryForwardMaxDays      = s.carryForwardMaxDays ?? this.carryForwardMaxDays;
+    this.compOffEnabled           = s.compOffEnabled;
+    this.compOffExpiryMonths      = s.compOffExpiryMonths ?? null;
+    this.lopEnabled               = s.lopEnabled;
+    this.encashmentEnabled        = s.encashmentEnabled;
+    this.earnedLeaveEnabled       = s.earnedLeaveEnabled ?? false;
+    this.earnedLeaveDaysPerPeriod = s.earnedLeaveDaysPerPeriod ?? null;
+    this.earnedLeaveAllocation    = s.earnedLeaveAllocation ?? 'month';
+    this.earnedLeaveCarryForward  = s.earnedLeaveCarryForward ?? false;
+    this.earnedLeaveMaxCarryForward = s.earnedLeaveMaxCarryForward ?? null;
 
     this.customLeaveTypes = (s.leaveTypes ?? []).map(lt => ({
       id: lt.id ?? String(Date.now() + Math.random()),
@@ -436,16 +443,23 @@ export class OrgProfileComponent implements OnInit {
   autoCheckoutEnabled  = false;
   autoCheckoutTime     = '20:00';
 
+  // Attendance — location capture
+  captureLocationOnClockIn = false;
+  monthStartDay            = 1;
+
   // Leave & Holidays
-  leaveYearStart       = 'January';
-  annualLeaveDays      = 18;
-  sickLeaveDays        = 12;
-  casualLeaveDays      = 6;
-  carryForwardEnabled  = true;
-  carryForwardMaxDays  = 5;
-  compOffEnabled       = true;
-  lopEnabled           = true;
-  encashmentEnabled    = false;
+  leaveYearStart            = 'January';
+  carryForwardEnabled       = true;
+  carryForwardMaxDays       = 5;
+  compOffEnabled            = true;
+  compOffExpiryMonths: number | null = null;
+  lopEnabled                = true;
+  encashmentEnabled         = false;
+  earnedLeaveEnabled        = false;
+  earnedLeaveDaysPerPeriod: number | null = null;
+  earnedLeaveAllocation: 'week' | 'month' | null = 'month';
+  earnedLeaveCarryForward   = false;
+  earnedLeaveMaxCarryForward: number | null = null;
 
   customLeaveTypes: CustomLeaveType[] = [
     { id: '1', name: 'Maternity Leave',  daysPerYear: 182, isPaid: true,  carryForward: false, applicableTo: 'female' },
@@ -473,6 +487,16 @@ export class OrgProfileComponent implements OnInit {
 
   markDirty(): void {
     this.isDirty.set(true);
+  }
+
+  validateMonthStartDay(): void {
+    // Clamp monthStartDay between 1 and 31
+    if (this.monthStartDay < 1) {
+      this.monthStartDay = 1;
+    } else if (this.monthStartDay > 31) {
+      this.monthStartDay = 31;
+    }
+    this.markDirty();
   }
 
   // ── Logo ───────────────────────────────────────────────────────
@@ -799,6 +823,10 @@ export class OrgProfileComponent implements OnInit {
     return Array.from({ length: days }, (_, i) => i + 1);
   }
 
+  dayOptions(month: number): SelectOption[] {
+    return this.daysInMonth(month).map(d => ({ label: String(d), value: d }));
+  }
+
   // ── Theme Testing ─────────────────────────────────────────────────
   /**
    * Test the theme by applying it to the app temporarily (before saving)
@@ -954,19 +982,35 @@ export class OrgProfileComponent implements OnInit {
       geoFencingEnabled: this.geoFencingEnabled ?? false,
       geofencePingIntervalMinutes: 5,
       geofenceMissedPingGraceMinutes: 15,
+      captureLocationOnClockIn: this.captureLocationOnClockIn,
+      monthStartDay: (this.monthStartDay >= 1 && this.monthStartDay <= 31) ? this.monthStartDay : 1,
       leaveYearStart: (this.leaveYearStart ?? 'january').toLowerCase(),
-      annualLeaveDays: this.annualLeaveDays,
-      sickLeaveDays: this.sickLeaveDays,
-      casualLeaveDays: this.casualLeaveDays,
       carryForwardEnabled: this.carryForwardEnabled,
       carryForwardMaxDays: this.carryForwardMaxDays,
       compOffEnabled: this.compOffEnabled,
+      compOffExpiryMonths: this.compOffExpiryMonths,
       lopEnabled: this.lopEnabled,
       encashmentEnabled: this.encashmentEnabled,
+      earnedLeaveEnabled: this.earnedLeaveEnabled,
+      earnedLeaveDaysPerPeriod: this.earnedLeaveEnabled ? (this.earnedLeaveDaysPerPeriod ?? null) : null,
+      earnedLeaveAllocation: this.earnedLeaveEnabled ? (this.earnedLeaveAllocation ?? 'month') : null,
+      earnedLeaveCarryForward: this.earnedLeaveEnabled ? this.earnedLeaveCarryForward : false,
+      earnedLeaveMaxCarryForward: (this.earnedLeaveEnabled && this.earnedLeaveCarryForward) ? (this.earnedLeaveMaxCarryForward ?? null) : null,
       leaveTypes: this._toLeaveTypeDtos(),
       holidays: this._toHolidayDtos(),
       offices: this._toOfficeDtos(),
     };
+  }
+
+  /** Strip emoji from any raw <input type="text"> on the page. Called via (input) binding. */
+  stripEmojiInPlace(event: Event): void {
+    const el = event.target as HTMLInputElement;
+    const cleaned = el.value.replace(/\p{Extended_Pictographic}/gu, '');
+    if (cleaned !== el.value) {
+      const start = el.selectionStart ?? 0;
+      el.value = cleaned;
+      try { el.setSelectionRange(start, start); } catch {}
+    }
   }
 
   discard(): void {

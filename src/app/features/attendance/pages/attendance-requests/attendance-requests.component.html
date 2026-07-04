@@ -126,16 +126,21 @@
                 <label class="ar-label">Leave Type <span class="ar-req">*</span></label>
                 <ui-select placeholder="Select leave type" [options]="leaveTypeOptions()"
                   [ngModel]="leaveTypeId()" (ngModelChange)="leaveTypeId.set($event)"></ui-select>
+                @if (selectedBalanceIsZero()) {
+                  <p class="ar-warn">You have no remaining balance for this leave type. Your request may be rejected.</p>
+                }
+                @if (selectedBalanceIsHalfOnly()) {
+                  <p class="ar-info">Only 0.5 days remaining — half-day leave has been selected.</p>
+                }
               </div>
 
               @if (isCompOff()) {
                 <div class="ar-field">
                   <label class="ar-label">Worked Date <span class="ar-req">*</span></label>
-                  <div class="ar-input-wrap">
-                    <ui-icon name="calendar" [size]="15" class="ar-input-icon"></ui-icon>
-                    <input class="ar-input ar-input--icon" type="date" [max]="todayIso"
-                           [ngModel]="workedDate()" (ngModelChange)="workedDate.set($event)" />
-                  </div>
+                  <ui-datepicker
+                    [maxDate]="todayIso"
+                    [ngModel]="workedDate()" (ngModelChange)="workedDate.set($event)">
+                  </ui-datepicker>
                   <span class="ar-hint">Day you worked and are claiming off for.</span>
                 </div>
               }
@@ -143,25 +148,22 @@
               <div class="ar-date-row">
                 <div class="ar-field">
                   <label class="ar-label">From</label>
-                  <div class="ar-input-wrap">
-                    <ui-icon name="calendar" [size]="15" class="ar-input-icon"></ui-icon>
-                    <input class="ar-input ar-input--icon" type="date"
-                           [ngModel]="fromDate()" (ngModelChange)="onFromChange($event)" />
-                  </div>
+                  <ui-datepicker
+                    [ngModel]="fromDate()" (ngModelChange)="onFromChange($event)">
+                  </ui-datepicker>
                 </div>
                 <div class="ar-field">
                   <label class="ar-label">To</label>
-                  <div class="ar-input-wrap">
-                    <ui-icon name="calendar" [size]="15" class="ar-input-icon"></ui-icon>
-                    <input class="ar-input ar-input--icon" type="date"
-                           [min]="fromDate()" [disabled]="halfDay()"
-                           [ngModel]="toDate()" (ngModelChange)="toDate.set($event)" />
-                  </div>
+                  <ui-datepicker
+                    [minDate]="fromDate()" [disabled]="halfDay()"
+                    [ngModel]="toDate()" (ngModelChange)="toDate.set($event)">
+                  </ui-datepicker>
                 </div>
               </div>
 
-              <label class="ar-check">
-                <input type="checkbox" [ngModel]="halfDay()" (ngModelChange)="onHalfDayToggle($event)" />
+              <label class="ar-check" [class.ar-check--disabled]="selectedBalanceIsHalfOnly()">
+                <input type="checkbox" [ngModel]="halfDay()" (ngModelChange)="onHalfDayToggle($event)"
+                  [disabled]="selectedBalanceIsHalfOnly()" />
                 <span class="ar-check-box"></span>
                 <span>Half day</span>
               </label>
@@ -181,30 +183,34 @@
 
               <div class="ar-field">
                 <label class="ar-label">Date <span class="ar-req">*</span></label>
-                <div class="ar-input-wrap">
-                  <ui-icon name="calendar" [size]="15" class="ar-input-icon"></ui-icon>
-                  <input class="ar-input ar-input--icon" type="date" [max]="todayIso"
-                         [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
-                </div>
+                @if (hubType() === 'wfh' || hubType() === 'on_duty') {
+                  <!-- WFH / On-duty: today or future only -->
+                  <ui-datepicker
+                    [minDate]="todayIso"
+                    [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)">
+                  </ui-datepicker>
+                } @else {
+                  <!-- Missed punch / Correction: today or past only -->
+                  <ui-datepicker
+                    [maxDate]="todayIso"
+                    [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)">
+                  </ui-datepicker>
+                }
               </div>
 
               @if (hubType() !== 'wfh') {
                 <div class="ar-time-row">
                   <div class="ar-field">
                     <label class="ar-label">Clock In <span class="ar-req">*</span></label>
-                    <div class="ar-input-wrap">
-                      <ui-icon name="clock" [size]="15" class="ar-input-icon"></ui-icon>
-                      <input class="ar-input ar-input--icon" type="time"
-                             [ngModel]="clockIn()" (ngModelChange)="clockIn.set($event)" />
-                    </div>
+                    <ui-timepicker
+                      [ngModel]="clockIn()" (ngModelChange)="clockIn.set($event)">
+                    </ui-timepicker>
                   </div>
                   <div class="ar-field">
                     <label class="ar-label">Clock Out <span class="ar-opt">(optional)</span></label>
-                    <div class="ar-input-wrap">
-                      <ui-icon name="clock" [size]="15" class="ar-input-icon"></ui-icon>
-                      <input class="ar-input ar-input--icon" type="time"
-                             [ngModel]="clockOut()" (ngModelChange)="clockOut.set($event)" />
-                    </div>
+                    <ui-timepicker
+                      [ngModel]="clockOut()" (ngModelChange)="clockOut.set($event)">
+                    </ui-timepicker>
                   </div>
                 </div>
               }

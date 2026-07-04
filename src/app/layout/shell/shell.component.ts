@@ -59,6 +59,12 @@ export class ShellComponent implements OnInit, OnDestroy {
       || this.logoSvc.publicLogoUrl(this.appState.orgSlug() ?? '');
   }
 
+  // Always the public anonymous endpoint — used as a secondary attempt if orgLogoUrl
+  // fails to load (e.g. in the React Native WebView where CDN/signed URLs may be blocked).
+  get orgLogoFallbackUrl(): string {
+    return this.logoSvc.publicLogoUrl(this.appState.orgSlug() ?? '');
+  }
+
   get orgAccentColor(): string {
     return this.orgTheme.current.accent;
   }

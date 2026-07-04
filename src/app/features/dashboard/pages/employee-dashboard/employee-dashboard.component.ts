@@ -111,19 +111,20 @@ export class EmployeeDashboardComponent implements OnDestroy {
   /** Pending geo confirmation — same flow as the header widget */
   geoConfirmPending = signal(false);
   geoHasLocation    = signal(false);
+  clockOutConfirmPending = signal(false);
   private _pendingPosition: GeolocationPosition | null = null;
 
   /** Toggle clock — shows confirm modal first (never clocks in immediately) */
   toggleClock(): void {
     if (this.attendanceSvc.isClockedIn()) {
-      this.attendanceSvc.manualClockOut();
+      this.clockOutConfirmPending.set(true);
     } else {
       this._startGeoClockIn();
     }
   }
 
   private _startGeoClockIn(): void {
-    const readLocation = this.appState.user()?.readLocationOnPunchIn !== false;
+    const readLocation = !!this.appState.user()?.locationRequiredOnClockIn;
     if (!readLocation || !navigator.geolocation) {
       this._pendingPosition = null;
       this.geoHasLocation.set(false);
@@ -163,6 +164,15 @@ export class EmployeeDashboardComponent implements OnDestroy {
     this.geoConfirmPending.set(false);
     this._pendingPosition = null;
     this.attendanceSvc.geoStatus.set('idle');
+  }
+
+  confirmClockOut(): void {
+    this.clockOutConfirmPending.set(false);
+    this.attendanceSvc.manualClockOut();
+  }
+
+  cancelClockOut(): void {
+    this.clockOutConfirmPending.set(false);
   }
 
   now = new Date();

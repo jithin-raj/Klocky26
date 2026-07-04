@@ -242,21 +242,16 @@
 
 .ck-text { font-size: 12px; font-weight: 700; line-height: 1; }
 
-/* "· Clock Out" hint — slides in on hover of the clocked-in button */
+/* "· Clock Out" hint — fades in on hover without changing button width */
 .ck-out-hint {
   font-weight: 500;
   font-size: 11px;
   opacity: 0;
-  max-width: 0;
-  overflow: hidden;
-  display: inline-block;
-  vertical-align: baseline;
-  transition: opacity .18s, max-width .22s;
   white-space: nowrap;
+  transition: opacity .18s;
 }
 .ck-btn.is-in:hover .ck-out-hint {
   opacity: .8;
-  max-width: 72px;
 }
 /* When hovered, hide "Clocked In" text and show "Clock Out" cleanly */
 .ck-text--in { transition: color .15s; }
@@ -297,8 +292,8 @@
 .geo-confirm-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,.45);
-  display: flex; align-items: flex-start; justify-content: center;
-  padding-top: 72px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
   z-index: 1200;
   backdrop-filter: blur(3px);
   animation: toast-in .18s ease;

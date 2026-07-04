@@ -6,7 +6,9 @@
       <h1 class="lv-title">My Leave</h1>
       <p class="lv-sub">{{ currentYear }} leave overview</p>
     </div>
-    <button class="lv-apply-btn" (click)="navigateToApply()">
+    <button class="lv-apply-btn" (click)="navigateToApply()"
+      [disabled]="noLeavesAvailable()"
+      [title]="noLeavesAvailable() ? 'No leave balance available' : ''">
       <ui-icon name="plus" [size]="16"></ui-icon>
       Apply / Regularise
     </button>
@@ -76,7 +78,9 @@
               <div class="lv-cat-header">
                 <span class="lv-cat-dot" [style.background]="typeColor(b.leaveTypeId)"></span>
                 <span class="lv-cat-name">{{ b.leaveTypeName ?? 'Leave' }}</span>
-                <button class="lv-cat-plus" (click)="openApplyFor(b.leaveTypeId)" title="Apply this leave">
+                <button class="lv-cat-plus" (click)="openApplyFor(b.leaveTypeId)"
+                  [disabled]="b.remainingDays === 0"
+                  [title]="b.remainingDays === 0 ? 'No balance remaining' : 'Apply this leave'">
                   <ui-icon name="plus" [size]="13"></ui-icon>
                 </button>
               </div>

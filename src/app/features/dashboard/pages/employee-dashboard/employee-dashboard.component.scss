@@ -432,23 +432,28 @@
 
 /* ── Clock-in confirm modal ──────────────────────────────── */
 .ed-confirm-backdrop {
-  position: fixed; inset: 0; z-index: 500;
+  position: fixed; inset: 0; z-index: 9999;
   background: rgba(0,0,0,.4);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   display: flex; align-items: flex-end; justify-content: center;
   animation: ed-fade-in .18s ease;
+  padding: 0 16px 16px;
+  overflow-y: auto;
 
-  @media (min-width: 600px) { align-items: center; }
+  @media (min-width: 600px) { 
+    align-items: center;
+    padding: 20px;
+  }
 }
 @keyframes ed-fade-in { from { opacity:0; } to { opacity:1; } }
 
 .ed-confirm-modal {
   background: #fff;
   border-radius: 24px 24px 0 0;
-  padding: 28px 24px 36px;
+  padding: 24px 20px 28px;
   width: 100%;
-  max-width: 440px;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -456,6 +461,7 @@
   gap: 12px;
   box-shadow: 0 -8px 40px rgba(0,0,0,.18);
   animation: ed-slide-up .22s cubic-bezier(.22,1,.36,1);
+  flex-shrink: 0;
 
   @media (min-width: 600px) {
     border-radius: 20px;
@@ -480,6 +486,10 @@
 
 .ed-confirm-sub {
   font-size: 14px; color: #64748b; margin: 0; line-height: 1.5; max-width: 320px;
+  
+  @media (max-width: 480px) {
+    font-size: 13px;
+  }
 }
 
 .ed-confirm-geo-badge {
@@ -491,20 +501,25 @@
 }
 
 .ed-confirm-actions {
-  display: flex; gap: 10px; width: 100%; margin-top: 6px;
+  display: flex; gap: 10px; width: 100%; margin-top: 8px;
 }
 
 .ed-confirm-cancel {
-  flex: 1; height: 46px; border-radius: 12px;
+  flex: 1; height: 44px; border-radius: 12px;
   border: 1.5px solid #e2e8f0; background: #fff;
   font-size: 14px; font-weight: 600; color: #475569;
   cursor: pointer; font-family: inherit;
   transition: background .15s;
   &:hover { background: #f8fafc; }
+  
+  @media (max-width: 480px) {
+    font-size: 13px;
+    height: 40px;
+  }
 }
 
 .ed-confirm-ok {
-  flex: 2; height: 46px; border-radius: 12px;
+  flex: 2; height: 44px; border-radius: 12px;
   border: none; background: #2563eb; color: #fff;
   font-size: 14px; font-weight: 700; cursor: pointer;
   font-family: inherit;
@@ -513,6 +528,11 @@
   transition: background .15s, transform .1s;
   &:hover  { background: #1d4ed8; }
   &:active { transform: scale(.97); }
+  
+  @media (max-width: 480px) {
+    font-size: 13px;
+    height: 40px;
+  }
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
