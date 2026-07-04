@@ -75,6 +75,12 @@ export class MyLeavesComponent implements OnInit {
     });
   });
 
+  /** True when every visible leave type has zero remaining balance. */
+  readonly noLeavesAvailable = computed(() => {
+    const bs = this.filteredBalances();
+    return bs.length > 0 && bs.every(b => b.remainingDays === 0);
+  });
+
   readonly monthlyChartData = computed(() => {
     const year   = this.currentYear;
     const LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

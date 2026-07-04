@@ -1,11 +1,13 @@
 import {
-  Component, ChangeDetectionStrategy, signal, computed, inject, OnInit,
+  Component, ChangeDetectionStrategy, signal, computed, inject, effect, OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
 import { UiSelectComponent, UiIconComponent } from '../../../../shared/components';
+import { UiDatePickerComponent } from '../../../../shared/components/ui-datepicker/ui-datepicker.component';
+import { UiTimePickerComponent } from '../../../../shared/components/ui-timepicker/ui-timepicker.component';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { AttendanceRequestService } from '../../../../core/services/attendance-request.service';
 import { OfficeService } from '../../../../core/services/office.service';
@@ -30,7 +32,7 @@ export type HubType   = 'leave' | 'missed_punch' | 'wfh' | 'on_duty' | 'correcti
   selector: 'app-attendance-requests',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent, UiDatePickerComponent, UiTimePickerComponent],
   templateUrl: './attendance-requests.component.html',
   styleUrl: './attendance-requests.component.scss',
 })
@@ -93,8 +95,15 @@ export class AttendanceRequestsComponent implements OnInit {
   ]);
 
   // ── Computed ──────────────────────────────────────────────────────────
-  readonly leaveTypeOptions = computed(() =>
-    this.leaveTypes().map(t => ({ label: t.name, value: t.leaveTypeId })));
+  readonly leaveTypeOptions = computed(() => {
+    const balances = this.leaveBalances();
+    return this.leaveTypes().map(t => {
+      const bal = balances.find(b => b.leaveTypeId === t.leaveTypeId);
+      const rem = bal?.remainingDays;
+      const suffix = rem === undefined ? '' : rem === 0 ? ' — No balance' : ` — ${rem} day${rem === 1 ? '' : 's'}`;
+      return { label: t.name + suffix, value: t.leaveTypeId };
+    });
+  });
 
   readonly encashTypeOptions = computed(() =>
     this.leaveTypes().filter(t => !t.isCompOff).map(t => ({ label: t.name, value: t.leaveTypeId })));
@@ -106,6 +115,16 @@ export class AttendanceRequestsComponent implements OnInit {
 
   readonly selectedBalance = computed(() =>
     this.leaveBalances().find(b => b.leaveTypeId === this.leaveTypeId()) ?? null);
+
+  readonly selectedBalanceIsZero = computed(() => {
+    const bal = this.selectedBalance();
+    return bal !== null && bal.remainingDays === 0;
+  });
+
+  readonly selectedBalanceIsHalfOnly = computed(() => {
+    const bal = this.selectedBalance();
+    return bal !== null && bal.remainingDays === 0.5;
+  });
 
   readonly encashBalance = computed(() =>
     this.leaveBalances().find(b => b.leaveTypeId === this.encashLeaveTypeId()) ?? null);
@@ -126,8 +145,12 @@ export class AttendanceRequestsComponent implements OnInit {
       if (this.isCompOff() && !this.workedDate()) return false;
       return true;
     }
-    const dateOk = !!this.fromDate() && this.fromDate() <= this.todayIso;
-    if (this.hubType() === 'wfh') return dateOk;
+    const d = this.fromDate();
+    // WFH and on-duty allow future dates; missed punch and correction are past-only
+    const dateOk = t === 'wfh' || t === 'on_duty'
+      ? !!d && d >= this.todayIso
+      : !!d && d <= this.todayIso;
+    if (t === 'wfh') return dateOk;
     return dateOk && !!this.clockIn();
   });
 
@@ -155,6 +178,16 @@ export class AttendanceRequestsComponent implements OnInit {
   readonly hasApprovals = computed(() => this.pending().length > 0);
 
   // ── Lifecycle ─────────────────────────────────────────────────────────
+  constructor() {
+    // Auto-enable half-day (and lock it) when exactly 0.5 days remain
+    effect(() => {
+      if (this.selectedBalanceIsHalfOnly()) {
+        this.halfDay.set(true);
+        this.toDate.set(this.fromDate());
+      }
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit() {
     this.loadLeaveData();
     this.loadOffices();
@@ -181,7 +214,14 @@ export class AttendanceRequestsComponent implements OnInit {
   }
 
   private loadLeaveData() {
-    this.leaveSvc.types().subscribe({ next: t => this.leaveTypes.set(t), error: () => {} });
+    this.leaveSvc.types().subscribe({
+      next: t => this.leaveTypes.set(t),
+      error: (e) => {
+        if (e?.status === 422 && e?.error?.code === 'gender_not_set') {
+          this.toast.warning('Profile incomplete', 'Your gender isn\'t set. Please contact your admin to update your profile.');
+        }
+      },
+    });
     this.leaveSvc.balances().subscribe({ next: b => this.leaveBalances.set(b), error: () => {} });
   }
 

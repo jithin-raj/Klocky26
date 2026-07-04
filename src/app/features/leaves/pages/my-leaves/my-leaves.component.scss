@@ -43,6 +43,7 @@
   transition: opacity .15s, background .2s;
 }
 .lv-apply-btn:hover { opacity: .88; }
+.lv-apply-btn:disabled { opacity: .4; cursor: not-allowed; }
 
 // ── Apply form panel ──────────────────────────────────────────────────────────
 .lv-apply-panel {
@@ -355,6 +356,13 @@
 .lv-cat-plus:hover {
   background: var(--lv-accent);
   color: #fff;
+}
+.lv-cat-plus:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+  color: #cbd5e1;
+  &:hover { background: none; color: #cbd5e1; }
 }
 
 .lv-cat-bar-row {

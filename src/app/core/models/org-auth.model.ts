@@ -276,15 +276,20 @@ export interface TenantSettings {
   geoFencingEnabled: boolean;
   geofencePingIntervalMinutes: number;
   geofenceMissedPingGraceMinutes: number;
+  captureLocationOnClockIn: boolean;
+  monthStartDay: number;
   leaveYearStart: string | null;
-  annualLeaveDays: number | null;
-  sickLeaveDays: number | null;
-  casualLeaveDays: number | null;
   carryForwardEnabled: boolean;
   carryForwardMaxDays: number | null;
   compOffEnabled: boolean;
+  compOffExpiryMonths: number | null;
   lopEnabled: boolean;
   encashmentEnabled: boolean;
+  earnedLeaveEnabled: boolean;
+  earnedLeaveDaysPerPeriod: number | null;
+  earnedLeaveAllocation: 'week' | 'month' | null;
+  earnedLeaveCarryForward: boolean;
+  earnedLeaveMaxCarryForward: number | null;
   leaveTypes: LeaveTypeDto[];
   holidays: HolidayDto[];
   /** Upsert-by-id on save; not delete-on-omit (delete via DELETE /api/offices/{id}). */

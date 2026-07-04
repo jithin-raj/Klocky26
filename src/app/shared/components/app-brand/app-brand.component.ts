@@ -22,10 +22,11 @@ export type BrandSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
       <!-- ── Org Side ── -->
       <div class="jv-org">
         <ng-container *ngIf="orgLogoUrl && !_logoFailed(); else orgFallback">
-          <img [src]="orgLogoUrl"
+          <img [src]="_activeSrc()"
                [alt]="orgName"
                class="jv-org-img"
-               (error)="_logoFailed.set(true)"/>
+               referrerpolicy="no-referrer"
+               (error)="onImgError()"/>
         </ng-container>
 
         <ng-template #orgFallback>
@@ -50,7 +51,7 @@ export type BrandSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
     <!-- ── Klocky-only mode ── -->
     <ng-template #klockyOnly>
-      <div class="brand" 
+      <div class="brand"
            [ngClass]="size"
            [class.clickable]="clickable"
            (click)="onBrandClick()"
@@ -228,9 +229,32 @@ export class AppBrandComponent {
 
   /** Org Logo — resets the broken-image flag whenever the URL changes. */
   readonly _logoFailed = signal(false);
+  readonly _activeSrc  = signal('');
+  private _retried = false;
   private _orgLogoUrl = '';
+  private _orgLogoFallbackUrl = '';
+
   get orgLogoUrl(): string { return this._orgLogoUrl; }
-  @Input() set orgLogoUrl(url: string) { this._orgLogoUrl = url; this._logoFailed.set(false); }
+  @Input() set orgLogoUrl(url: string) {
+    this._orgLogoUrl = url;
+    this._retried = false;
+    this._logoFailed.set(false);
+    this._activeSrc.set(url);
+  }
+
+  /** Fallback URL tried if orgLogoUrl fails to load (e.g. the public /org/logo/:slug endpoint). */
+  @Input() set orgLogoFallbackUrl(url: string) {
+    this._orgLogoFallbackUrl = url;
+  }
+
+  onImgError(): void {
+    if (!this._retried && this._orgLogoFallbackUrl && this._orgLogoFallbackUrl !== this._orgLogoUrl) {
+      this._retried = true;
+      this._activeSrc.set(this._orgLogoFallbackUrl);
+    } else {
+      this._logoFailed.set(true);
+    }
+  }
 
   /** Org Accent Color */
   @Input() orgAccentColor = '';

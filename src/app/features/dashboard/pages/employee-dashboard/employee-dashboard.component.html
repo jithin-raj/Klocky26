@@ -234,3 +234,25 @@
     </div>
   </div>
 }
+
+<!-- ── Clock-out Confirmation Modal ─────────────────────────────────────────── -->
+@if (clockOutConfirmPending()) {
+  <div class="ed-confirm-backdrop" (click)="cancelClockOut()">
+    <div class="ed-confirm-modal" (click)="$event.stopPropagation()">
+      <div class="ed-confirm-icon" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+        <icon-clock-out [size]="28" color="#fff"></icon-clock-out>
+      </div>
+      <h3 class="ed-confirm-title">Clock Out?</h3>
+      <p class="ed-confirm-sub">
+        Are you sure you want to clock out? You can clock in again later.
+      </p>
+      <div class="ed-confirm-actions">
+        <button class="ed-confirm-cancel" (click)="cancelClockOut()">Cancel</button>
+        <button class="ed-confirm-ok" style="background: #dc2626; box-shadow: 0 4px 14px rgba(220,38,38,.35);" (click)="confirmClockOut()">
+          <icon-clock-out [size]="16" color="currentColor"></icon-clock-out>
+          Confirm Clock Out
+        </button>
+      </div>
+    </div>
+  </div>
+}

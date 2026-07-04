@@ -178,6 +178,9 @@
 }
 
 .op-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   margin-bottom: 16px;
   animation: op-section-in 0.18s ease;
 }
@@ -188,7 +191,7 @@
 }
 
 .op-section-header {
-  margin-bottom: 18px;
+  margin-bottom: 0; // gap on .op-section handles spacing
 
   h2 {
     margin: 0 0 4px;
@@ -212,13 +215,14 @@
 // ── Card ──────────────────────────────────────────────────────────────────────
 .op-card {
   background: #ffffff;
-  border: 1px solid #dde3ed;
+  border: 1px solid #e4eaf3;
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 20px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05), 0 6px 24px rgba(15, 23, 42, 0.07);
   min-width: 0;
   box-sizing: border-box;
   width: 100%;
+  overflow: hidden; // clips card header to match border-radius
 }
 
 // ── Form row / field ─────────────────────────────────────────────────────────
@@ -300,6 +304,20 @@
   }
 }
 
+.op-month-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
 /* Spinner shown inside the logo avatar while upload is in progress */
 .op-logo-spinner {
   display: block;
@@ -314,12 +332,19 @@
   to { transform: rotate(360deg); }
 }
 
+// ── Remove browser number-input spin buttons globally on this page ────────────
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+
 // ── Text inputs ──────────────────────────────────────────────────────────────
 input[type='text'],
 input[type='email'],
 input[type='url'],
 input[type='tel'],
-input[type='time'],
 input[type='date'],
 input[type='number'],
 textarea {
@@ -545,17 +570,25 @@ textarea {
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  min-height: 280px;
+  min-height: 420px;
+  max-width: 600px;
+  margin: 0 auto;
+  
+  @media (max-width: 768px) {
+    max-width: 100%;
+    min-height: 380px;
+  }
   
   @media (max-width: 640px) {
     flex-direction: column;
     min-height: auto;
+    max-width: 100%;
   }
 }
 
 .op-bp-sidebar {
   width: 70px;
-  padding: 20px 0;
+  padding: 16px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -565,13 +598,16 @@ textarea {
   position: relative;
   overflow: hidden;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  justify-content: flex-start;
+  gap: 2px;
   
   @media (max-width: 640px) {
     width: 100%;
-    height: 60px;
+    height: 70px;
     flex-direction: row;
-    justify-content: center;
-    padding: 0;
+    justify-content: flex-start;
+    padding: 0 12px;
+    gap: 4px;
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -580,26 +616,72 @@ textarea {
 
 /* Apps-grid icon button at top of mini sidebar */
 .op-bp-apps-btn {
-  width: 34px; height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(255,255,255,.07);
-  border: 1px solid; /* color set via [style.borderColor] */
-  margin-bottom: 6px;
+  border: 1px solid;
+  margin-bottom: 8px;
   flex-shrink: 0;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: rgba(255,255,255,.12);
+  }
+  
+  @media (max-width: 640px) {
+    margin-bottom: 0;
+    margin-right: 8px;
+  }
 }
 
 /* Mini nav icon tiles */
 .op-bp-nav-item {
-  width: 34px; height: 7px;
-  border-radius: 5px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   background: rgba(255,255,255,.1);
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: rgba(255, 255, 255, 0.5);
+  
+  &:hover {
+    background: rgba(255,255,255,.15);
+  }
+  
+  svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+  }
+  
+  @media (max-width: 640px) {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 0;
+    margin-right: 8px;
+    
+    &:last-child {
+      margin-right: 0;
+    }
+  }
 }
 .op-bp-nav-active {
   /* color set via [style.background] */
-  background: transparent;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  
+  svg {
+    stroke: white;
+  }
 }
 
 .op-bp-content {
@@ -1155,19 +1237,27 @@ textarea {
 
 @keyframes op-spin { to { transform: rotate(360deg); } }
 
-// ── Group label (section divider inside card) ─────────────────────────────────
+// ── Group label ───────────────────────────────────────────────────────────────
 .op-field-group-label {
-  font-size: 10.5px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 750;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.9px;
   color: var(--accent, #6366f1);
   margin-bottom: 16px;
-  padding-left: 10px;
-  border-left: 3px solid color-mix(in srgb, var(--accent, #6366f1) 50%, transparent);
 
   & + .op-form-row,
   & + .op-field { margin-top: 0; }
+
+  // When the label is the first child in a card it becomes a full-width header
+  &:first-child {
+    background: color-mix(in srgb, var(--accent, #6366f1) 6%, #f9fafb);
+    border-bottom: 1.5px solid color-mix(in srgb, var(--accent, #6366f1) 14%, #e8eef5);
+    padding: 13px 24px;
+    margin: -24px -24px 20px; // negative margins fill card edges (card padding = 24px)
+  }
 }
 
 // ── Number stepper ────────────────────────────────────────────────────────────
@@ -1296,6 +1386,14 @@ ui-toggle + ui-toggle {
   border-radius: 10px;
   border: 1.5px solid #e2e8f0;
   margin-bottom: 0;
+}
+
+.op-el-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
 }
 
 // ── Info box ──────────────────────────────────────────────────────────────────
@@ -1562,6 +1660,18 @@ ui-toggle + ui-toggle {
   &.op-hol-action { justify-content: center; }
 }
 
+// Compact ui-select override for holiday day column
+.op-hol-day-sel {
+  width: 100%;
+  ::ng-deep .ui-trigger {
+    height: 36px;
+    padding: 0 8px 0 10px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  ::ng-deep .ui-trigger-text { font-size: 13px; }
+}
+
 // Holiday type segmented control with colored active states
 .op-hol-type-seg {
   display: flex;
@@ -1591,9 +1701,12 @@ ui-toggle + ui-toggle {
       font-weight: 650;
     }
 
-    &.active-national    { background: #4f46e5; }
-    &.active-optional    { background: #0891b2; }
-    &.active-restricted  { background: #d97706; }
+    &.active-national {
+      background: var(--accent, #4f46e5);
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--accent, #4f46e5) 40%, transparent);
+    }
+    &.active-optional   { background: #0ea5e9; }
+    &.active-restricted { background: #f59e0b; }
   }
 }
 
@@ -1664,28 +1777,110 @@ ui-toggle + ui-toggle {
 @media (max-width: 740px) {
   .op-lt-header { display: none; }
 
+  // List becomes a stack of cards with a gap between each
+  .op-lt-list { display: flex; flex-direction: column; gap: 10px; }
+
   .op-lt-row {
-    grid-template-columns: 72px 1fr 1fr 36px;
+    // 3-col grid: [days-label | applies-seg | delete]
+    // rows: name row / meta row / toggle row
+    display: grid;
+    grid-template-columns: 74px 1fr 34px;
     grid-template-rows: auto auto auto;
     grid-template-areas:
-      "name    name    name    action"
-      "days    applies applies applies"
-      "paid    paid    carry   carry";
-    gap: 10px 8px;
-    padding: 14px 4px;
-    border-bottom: 1.5px solid #f1f5f9;
-    &:last-child { border-bottom: none; }
+      "name    name    action"
+      "days    applies applies"
+      "paid    carry   carry";
+    gap: 10px 10px;
+
+    // Card shell
+    background: #ffffff;
+    border: 1.5px solid #e8eef5;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.15s;
+    &:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07); }
+
+    // Subtle top-border on both toggle cells creates a visual row separator
+    .op-lt-paid,
+    .op-lt-carry {
+      border-top: 1px solid #f1f5f9;
+      padding-top: 10px;
+    }
   }
 
+  // Grid-area assignments
   .op-lt-name    { grid-area: name; min-width: 0; }
-  .op-lt-days    { grid-area: days; }
-  .op-lt-applies { grid-area: applies; min-width: 0; }
-  .op-lt-paid    { grid-area: paid;  justify-content: flex-start; gap: 8px; }
-  .op-lt-carry   { grid-area: carry; justify-content: flex-start; gap: 8px; }
-  .op-lt-action  { grid-area: action; justify-content: center; }
+  .op-lt-action  { grid-area: action; justify-content: center; align-items: flex-start; }
 
-  .op-lt-paid::before  { content: 'Paid';      font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
-  .op-lt-carry::before { content: 'Carry Fwd'; font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+  // Days column: column layout so the label sits above the input
+  .op-lt-days {
+    grid-area: days;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+
+    &::before {
+      content: 'Days / yr';
+      font-size: 10px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #94a3b8;
+    }
+
+    .op-lt-input.op-lt-num {
+      width: 100%;
+      height: 34px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1e293b;
+      text-align: center;
+    }
+  }
+
+  // Applies-to segment stretches to fill its area
+  .op-lt-applies {
+    grid-area: applies;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+
+    &::before {
+      content: 'Applies to';
+      font-size: 10px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #94a3b8;
+    }
+
+    .op-lt-seg {
+      width: 100%;
+      button { font-size: 12.5px; height: 34px; }
+    }
+  }
+
+  // Toggle cells: label above + toggle below
+  .op-lt-paid,
+  .op-lt-carry {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .op-lt-paid {
+    grid-area: paid;
+    &::before { content: 'Paid'; font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; }
+  }
+
+  .op-lt-carry {
+    grid-area: carry;
+    align-items: flex-end; // right-align label + toggle
+    &::before { content: 'Carry Fwd'; font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; white-space: nowrap; }
+  }
 }
 
 // ── Mobile tab strip (hidden on desktop) ─────────────────────────────────────

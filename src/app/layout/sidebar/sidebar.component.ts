@@ -288,6 +288,7 @@ export class SidebarComponent {
   private _orgLogoUrl = '';
   get orgLogoUrl(): string { return this._orgLogoUrl; }
   @Input() set orgLogoUrl(url: string) { this._orgLogoUrl = url; this.logoFailed = false; }
+  @Input() orgLogoFallbackUrl = '';
   /** Brand accent hex color — changes sidebar accent in JV mode e.g. '#10b981' */
   @Input() orgAccentColor = '';
 

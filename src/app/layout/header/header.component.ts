@@ -24,6 +24,7 @@ export class HeaderComponent implements OnDestroy {
   @Output() toggleSidebar = new EventEmitter<void>();
   @Input() orgName = '';
   @Input() orgLogoUrl = '';
+  @Input() orgLogoFallbackUrl = '';
   @Input() orgAccentColor = '';
 
   readonly attendance = inject(AttendanceStateService);
@@ -193,8 +194,8 @@ export class HeaderComponent implements OnDestroy {
   }
 
   private _geoClockIn() {
-    // Skip geolocation if org has disabled it or geofencing is not in use
-    if (!this.appState.user()?.readLocationOnPunchIn) {
+    // Skip geolocation if neither org capture nor geofence applies to this employee
+    if (!this.appState.user()?.locationRequiredOnClockIn) {
       this.geoConfirmPending.set(true);
       return;
     }

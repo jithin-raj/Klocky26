@@ -131,6 +131,8 @@ function parseIso(s: string): Date | null {
                         [class.out-month]="!cell.inMonth"
                         [class.is-today]="cell.isToday"
                         [class.selected]="cell.iso === value"
+                        [class.out-range]="isDateDisabled(cell.iso)"
+                        [disabled]="isDateDisabled(cell.iso)"
                         (click)="select(cell.iso)">
                   {{ cell.day }}
                 </button>
@@ -281,6 +283,8 @@ function parseIso(s: string): Date | null {
     }
     .ui-cal-day:hover { background: #f1f5f9; }
     .ui-cal-day.out-month { color: #cbd5e1; }
+    .ui-cal-day.out-range { color: #e2e8f0; cursor: not-allowed; pointer-events: none; }
+    .ui-cal-day.out-range:hover { background: none; }
     .ui-cal-day.is-today { font-weight: 700; color: var(--accent, #4f46e5); }
     .ui-cal-day.selected {
       background: var(--accent, #4f46e5); color: #fff; font-weight: 700;
@@ -350,6 +354,10 @@ export class UiDatePickerComponent implements ControlValueAccessor, OnDestroy {
   @Input() required = false;
   @Input() disabled = false;
   @Input() dark = false;
+  /** ISO date string (yyyy-MM-dd) — dates before this are disabled */
+  @Input() minDate = '';
+  /** ISO date string (yyyy-MM-dd) — dates after this are disabled */
+  @Input() maxDate = '';
 
   @HostBinding('class.dark') get isDark() { return this.dark; }
 
@@ -463,9 +471,11 @@ export class UiDatePickerComponent implements ControlValueAccessor, OnDestroy {
     const goUp = spaceBelow < panelHeight && spaceAbove > spaceBelow;
 
     this.openUpward.set(goUp);
+    const panelWidth = 280;
+    const clampedLeft = Math.max(8, Math.min(rect.left, window.innerWidth - panelWidth - 8));
     const style: Record<string, string> = {
       position: 'fixed',
-      left: rect.left + 'px',
+      left: clampedLeft + 'px',
       'z-index': '9999',
     };
     if (goUp) {
@@ -517,7 +527,14 @@ export class UiDatePickerComponent implements ControlValueAccessor, OnDestroy {
     this.pickerMode.set('day');
   }
 
+  isDateDisabled(iso: string): boolean {
+    if (this.minDate && iso < this.minDate) return true;
+    if (this.maxDate && iso > this.maxDate) return true;
+    return false;
+  }
+
   select(iso: string) {
+    if (this.isDateDisabled(iso)) return;
     this.value = iso;
     this.onChange(iso);
     this.onTouched();

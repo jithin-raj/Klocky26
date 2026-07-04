@@ -33,6 +33,7 @@ import { NgIf } from '@angular/common';
           [attr.min]="min ?? null"
           [attr.max]="max ?? null"
           [(ngModel)]="value"
+          (input)="onRawInput($event)"
           (ngModelChange)="onChange($event)"
           (blur)="onTouched()"
         />
@@ -104,8 +105,19 @@ export class UiInputComponent implements ControlValueAccessor {
 
   value: any = '';
 
-  onChange = (_: any) => {};
+  onChange  = (_: any) => {};
   onTouched = () => {};
+
+  onRawInput(event: Event): void {
+    if (this.type === 'number' || this.type === 'password') return;
+    const el = event.target as HTMLInputElement;
+    const cleaned = el.value.replace(/\p{Extended_Pictographic}/gu, '');
+    if (cleaned !== el.value) {
+      const start = el.selectionStart ?? 0;
+      el.value = cleaned;
+      try { el.setSelectionRange(start, start); } catch {}
+    }
+  }
 
   // markForCheck so an externally-corrected value (e.g. a clamped number) re-renders under OnPush.
   writeValue(val: any) { this.value = val ?? ''; this.cdr.markForCheck(); }

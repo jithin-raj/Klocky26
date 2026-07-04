@@ -315,20 +315,33 @@
                        'color-mix(in srgb, ' + accentColor + ' 22%, #06080d) 0%, ' +
                        'color-mix(in srgb, ' + accentColor + ' 15%, #090c12) 55%, ' +
                        'color-mix(in srgb, ' + accentColor + ' 10%, #090c12) 100%)'">
-                  <!-- Apps icon button (matches real sb-top) -->
-                  <div class="op-bp-apps-btn" [style.borderColor]="'color-mix(in srgb, ' + accentColor + ' 18%, rgba(255,255,255,0.06))'">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2">
-                      <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
-                      <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                  <!-- Nav items with icons: Home, Tasks, +, Apps, Profile -->
+                  <div class="op-bp-nav-item" title="Home">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                     </svg>
                   </div>
-                  <!-- Nav items -->
-                  <div class="op-bp-nav-item op-bp-nav-active"
-                       [style.background]="'linear-gradient(140deg, ' + accentColor + ', color-mix(in srgb, ' + accentColor + ' 62%, #000))'">
+                  <div class="op-bp-nav-item op-bp-nav-active" [style.background]="'linear-gradient(140deg, ' + accentColor + ', color-mix(in srgb, ' + accentColor + ' 62%, #000))'" 
+                       title="Tasks">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M9 11l3 3L22 4"/><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                    </svg>
                   </div>
-                  <div class="op-bp-nav-item"></div>
-                  <div class="op-bp-nav-item"></div>
-                  <div class="op-bp-nav-item"></div>
+                  <div class="op-bp-nav-item" title="Add">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                  </div>
+                  <div class="op-bp-nav-item" title="Apps">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2">
+                      <rect x="5" y="2" width="4" height="4"/><rect x="15" y="2" width="4" height="4"/><rect x="5" y="12" width="4" height="4"/><rect x="15" y="12" width="4" height="4"/>
+                    </svg>
+                  </div>
+                  <div class="op-bp-nav-item" title="Profile">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
                 </div>
                 
                 <!-- Content Preview -->
@@ -416,7 +429,7 @@
             <div class="op-email-list">
               @for (email of secondaryEmails; track $index; let i = $index) {
                 <div class="op-email-row">
-                  <input type="email" [(ngModel)]="secondaryEmails[i]" (ngModelChange)="markDirty()"
+                  <input type="email" (input)="stripEmojiInPlace($event)" [(ngModel)]="secondaryEmails[i]" (ngModelChange)="markDirty()"
                          placeholder="notify@yourcompany.com" [name]="'sec-email-' + i" />
                   <button type="button" class="op-icon-remove" (click)="removeSecondaryEmail(i)" aria-label="Remove email">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
@@ -601,7 +614,6 @@
               </div>
             </div>
           </div>
-
         </div>
       </section>
       }
@@ -635,6 +647,32 @@
                 <span class="op-number-unit">hrs / day</span>
               </div>
             </div>
+            <div class="op-field">
+              <p class="op-field-label">Work Month Starts On</p>
+              <div class="op-number-wrap">
+                <div class="op-stepper">
+                  <button type="button" class="op-stepper-btn op-stepper-minus"
+                          (click)="monthStartDay = monthStartDay > 1 ? monthStartDay - 1 : 1; markDirty()"
+                          [disabled]="monthStartDay <= 1">&#8722;</button>
+                  <input type="number" class="op-stepper-val"
+                         [(ngModel)]="monthStartDay" (ngModelChange)="validateMonthStartDay()"
+                         name="monthStartDay" min="1" max="31" step="1" />
+                  <button type="button" class="op-stepper-btn op-stepper-plus"
+                          (click)="monthStartDay = monthStartDay < 31 ? monthStartDay + 1 : 31; markDirty()"
+                          [disabled]="monthStartDay >= 31">&#43;</button>
+                </div>
+                <span class="op-number-unit">of the month</span>
+              </div>
+              <span class="op-hint">Day 1 = calendar month. e.g. day 20 means the 20th → 19th cycle.</span>
+              @if (monthStartDay > 28) {
+                <p class="op-month-warn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;margin-top:1px">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  <strong>Note:</strong> Day {{ monthStartDay }} doesn't exist in shorter months. For example, February has only 28 days (29 in leap years). The cycle will automatically roll back to the last day of the month.
+                </p>
+              }
+            </div>
           </div>
 
           <!-- Office hours — auto clock-out & overtime are computed from these
@@ -642,13 +680,17 @@
           <div class="op-form-row">
             <div class="op-field">
               <p class="op-field-label">Office Start Time</p>
-              <input type="time" [(ngModel)]="workDayStart" (ngModelChange)="markDirty()"
-                     name="workDayStart" style="max-width:160px" />
+              <ui-timepicker
+                [(ngModel)]="workDayStart" (ngModelChange)="markDirty()"
+                name="workDayStart">
+              </ui-timepicker>
             </div>
             <div class="op-field">
               <p class="op-field-label">Office End Time</p>
-              <input type="time" [(ngModel)]="workDayEnd" (ngModelChange)="markDirty()"
-                     name="workDayEnd" style="max-width:160px" />
+              <ui-timepicker
+                [(ngModel)]="workDayEnd" (ngModelChange)="markDirty()"
+                name="workDayEnd">
+              </ui-timepicker>
             </div>
           </div>
 
@@ -757,9 +799,9 @@
           </ui-toggle>
 
           <ui-toggle [row]="true"
-            label="Read Location on Punch In"
-            hint="Capture the employee's GPS coordinates when they clock in"
-            [(ngModel)]="readLocationOnPunchIn" (ngModelChange)="markDirty()">
+            label="Capture Location on Clock-In"
+            hint="Require GPS coordinates when employees punch in (non-geofenced employees)"
+            [(ngModel)]="captureLocationOnClockIn" (ngModelChange)="markDirty()">
           </ui-toggle>
 
           <ui-toggle [row]="true"
@@ -776,8 +818,10 @@
           @if (autoCheckoutEnabled) {
             <div class="op-field op-toggle-sub">
               <p class="op-field-label">Auto Check-Out Time</p>
-              <input type="time" [(ngModel)]="autoCheckoutTime" (ngModelChange)="markDirty()"
-                     name="autoCheckoutTime" style="max-width:160px" />
+              <ui-timepicker
+                [(ngModel)]="autoCheckoutTime" (ngModelChange)="markDirty()"
+                name="autoCheckoutTime">
+              </ui-timepicker>
             </div>
           }
         </div>
@@ -808,71 +852,12 @@
             </div>
             <span class="op-hint">Leave balances reset at the start of this month each year</span>
           </div>
+
         </div>
 
-        <!-- Entitlements -->
+        <!-- Leave types -->
         <div class="op-card">
-          <div class="op-field-group-label">Annual Leave Entitlements</div>
-          <div class="op-form-row">
-            <div class="op-field">
-              <p class="op-field-label">Annual / Earned Leave</p>
-              <div class="op-number-wrap">
-                <div class="op-stepper">
-                  <button type="button" class="op-stepper-btn op-stepper-minus"
-                          (click)="annualLeaveDays = annualLeaveDays > 0 ? annualLeaveDays - 1 : 0; markDirty()"
-                          [disabled]="annualLeaveDays <= 0">&#8722;</button>
-                  <input type="number" class="op-stepper-val"
-                         [(ngModel)]="annualLeaveDays" (ngModelChange)="markDirty()"
-                         name="annualLeaveDays" min="0" max="365" />
-                  <button type="button" class="op-stepper-btn op-stepper-plus"
-                          (click)="annualLeaveDays = annualLeaveDays < 365 ? annualLeaveDays + 1 : 365; markDirty()"
-                          [disabled]="annualLeaveDays >= 365">&#43;</button>
-                </div>
-                <span class="op-number-unit">days / year</span>
-              </div>
-            </div>
-            <div class="op-field">
-              <p class="op-field-label">Sick Leave</p>
-              <div class="op-number-wrap">
-                <div class="op-stepper">
-                  <button type="button" class="op-stepper-btn op-stepper-minus"
-                          (click)="sickLeaveDays = sickLeaveDays > 0 ? sickLeaveDays - 1 : 0; markDirty()"
-                          [disabled]="sickLeaveDays <= 0">&#8722;</button>
-                  <input type="number" class="op-stepper-val"
-                         [(ngModel)]="sickLeaveDays" (ngModelChange)="markDirty()"
-                         name="sickLeaveDays" min="0" max="365" />
-                  <button type="button" class="op-stepper-btn op-stepper-plus"
-                          (click)="sickLeaveDays = sickLeaveDays < 365 ? sickLeaveDays + 1 : 365; markDirty()"
-                          [disabled]="sickLeaveDays >= 365">&#43;</button>
-                </div>
-                <span class="op-number-unit">days / year</span>
-              </div>
-            </div>
-          </div>
-          <div class="op-form-row">
-            <div class="op-field">
-              <p class="op-field-label">Casual Leave</p>
-              <div class="op-number-wrap">
-                <div class="op-stepper">
-                  <button type="button" class="op-stepper-btn op-stepper-minus"
-                          (click)="casualLeaveDays = casualLeaveDays > 0 ? casualLeaveDays - 1 : 0; markDirty()"
-                          [disabled]="casualLeaveDays <= 0">&#8722;</button>
-                  <input type="number" class="op-stepper-val"
-                         [(ngModel)]="casualLeaveDays" (ngModelChange)="markDirty()"
-                         name="casualLeaveDays" min="0" max="365" />
-                  <button type="button" class="op-stepper-btn op-stepper-plus"
-                          (click)="casualLeaveDays = casualLeaveDays < 365 ? casualLeaveDays + 1 : 365; markDirty()"
-                          [disabled]="casualLeaveDays >= 365">&#43;</button>
-                </div>
-                <span class="op-number-unit">days / year</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Custom leave types -->
-        <div class="op-card">
-          <div class="op-field-group-label">Custom Leave Types</div>
+          <div class="op-field-group-label">Organisation Leave</div>
           <p class="op-field-desc" style="margin-bottom:16px">Add organisation-specific leave types like Maternity, Paternity, Bereavement, etc.</p>
 
           <!-- Column headers -->
@@ -890,6 +875,7 @@
               <div class="op-lt-row">
                 <div class="op-lt-col op-lt-name">
                   <input type="text"
+                         (input)="stripEmojiInPlace($event)"
                          [(ngModel)]="customLeaveTypes[i].name"
                          (ngModelChange)="markDirty()"
                          placeholder="e.g. Maternity Leave"
@@ -951,7 +937,7 @@
             }
 
             @if (customLeaveTypes.length === 0) {
-              <div class="op-lt-empty">No custom leave types added yet</div>
+              <div class="op-lt-empty">No leave types added yet. Click "Add Leave Type" to create one.</div>
             }
           </div>
 
@@ -997,6 +983,23 @@
             hint="Grant compensatory leave for working on holidays or weekends"
             [(ngModel)]="compOffEnabled" (ngModelChange)="markDirty()">
           </ui-toggle>
+          @if (compOffEnabled) {
+            <div class="op-toggle-sub">
+              <div class="op-field">
+                <p class="op-field-label">Comp-Off Expiry</p>
+                <p class="op-field-desc">How long (in months) an employee has to use their comp-off before it lapses. Leave blank for no expiry.</p>
+                <div class="op-number-wrap">
+                  <input type="number"
+                         [(ngModel)]="compOffExpiryMonths" (ngModelChange)="markDirty()"
+                         name="compOffExpiryMonths"
+                         min="1" max="24" step="1"
+                         placeholder="e.g. 3"
+                         style="max-width:90px" />
+                  <span class="op-number-unit">months</span>
+                </div>
+              </div>
+            </div>
+          }
 
           <ui-toggle [row]="true"
             label="Loss of Pay (LOP) for Unauthorised Absence"
@@ -1009,6 +1012,54 @@
             hint="Allow employees to encash unused earned leave balance"
             [(ngModel)]="encashmentEnabled" (ngModelChange)="markDirty()">
           </ui-toggle>
+
+          <ui-toggle [row]="true"
+            label="Earned Leave"
+            hint="Automatically accrue leave credits each week or month (server-managed)"
+            [(ngModel)]="earnedLeaveEnabled" (ngModelChange)="markDirty()">
+          </ui-toggle>
+          @if (earnedLeaveEnabled) {
+            <div class="op-toggle-sub op-el-grid">
+              <div class="op-field">
+                <p class="op-field-label">Days Per Period</p>
+                <div class="op-number-wrap">
+                  <input type="number" style="max-width:90px"
+                         [(ngModel)]="earnedLeaveDaysPerPeriod" (ngModelChange)="markDirty()"
+                         name="earnedLeaveDaysPerPeriod" min="0.5" max="30" step="0.5" />
+                  <span class="op-number-unit">days</span>
+                </div>
+              </div>
+              <div class="op-field">
+                <p class="op-field-label">Accrual Period</p>
+                <div class="op-lt-seg">
+                  <button type="button"
+                          [class.active]="earnedLeaveAllocation === 'week'"
+                          (click)="earnedLeaveAllocation = 'week'; markDirty()">Weekly</button>
+                  <button type="button"
+                          [class.active]="earnedLeaveAllocation === 'month'"
+                          (click)="earnedLeaveAllocation = 'month'; markDirty()">Monthly</button>
+                </div>
+              </div>
+            </div>
+            <div class="op-toggle-sub">
+              <ui-toggle [row]="true"
+                label="Carry Forward Earned Leave"
+                hint="Allow unused earned leave to roll over"
+                [(ngModel)]="earnedLeaveCarryForward" (ngModelChange)="markDirty()">
+              </ui-toggle>
+              @if (earnedLeaveCarryForward) {
+                <div class="op-field op-toggle-sub">
+                  <p class="op-field-label">Max Carry-Forward (0 = unlimited)</p>
+                  <div class="op-number-wrap">
+                    <input type="number" style="max-width:90px"
+                           [(ngModel)]="earnedLeaveMaxCarryForward" (ngModelChange)="markDirty()"
+                           name="earnedLeaveMaxCarryForward" min="0" max="365" />
+                    <span class="op-number-unit">days</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </div>
 
         <!-- ── Holiday Calendar ─────────────────────────────────── -->
@@ -1052,18 +1103,19 @@
             @for (h of holidaysForMonth(holidayMonth()); track h.id) {
               <div class="op-hol-row">
                 <div class="op-hol-col op-hol-day">
-                  <div class="op-select-wrap" style="max-width:72px">
-                    <select [(ngModel)]="h.day" (ngModelChange)="markDirty()" [name]="'hol-day-' + h.id">
-                      @for (d of daysInMonth(holidayMonth()); track d) {
-                        <option [value]="d">{{ d }}</option>
-                      }
-                    </select>
-                    <svg class="op-sel-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                  </div>
+                  <ui-select
+                    [options]="dayOptions(holidayMonth())"
+                    [(ngModel)]="h.day"
+                    (ngModelChange)="markDirty()"
+                    [name]="'hol-day-' + h.id"
+                    placeholder="Day"
+                    class="op-hol-day-sel">
+                  </ui-select>
                 </div>
 
                 <div class="op-hol-col op-hol-name">
                   <input type="text"
+                         (input)="stripEmojiInPlace($event)"
                          [(ngModel)]="h.name" (ngModelChange)="markDirty()"
                          placeholder="e.g. Republic Day"
                          [name]="'hol-name-' + h.id"
@@ -1217,5 +1269,4 @@
       </form>
     </div>
   </ui-modal>
-
 </div>

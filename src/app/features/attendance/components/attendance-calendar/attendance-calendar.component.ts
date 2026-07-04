@@ -44,6 +44,8 @@ export interface AttendanceRecord {
   hours?: number;
   /** Holiday name e.g. 'Vishu', 'Christmas' */
   holidayName?: string;
+  /** Server-provided hex color (overrides STATUS_META when present) */
+  color?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,6 +63,8 @@ export interface DayCell {
   hours?: number;
   hoursMet: boolean;
   holidayName?: string;
+  /** Server-provided hex color, takes precedence over STATUS_META */
+  color?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,13 +77,13 @@ export const STATUS_META: Record<
   AttendanceStatus,
   { label: string; color: string; bg: string }
 > = {
-  present:  { label: 'Present',  color: '#16a34a', bg: '#dcfce7' },
-  half:     { label: 'Half Day', color: '#d97706', bg: '#fef3c7' },
-  absent:   { label: 'Absent',   color: '#dc2626', bg: '#fee2e2' },
-  leave:    { label: 'Leave',    color: '#ea580c', bg: '#ffedd5' },
-  comp_off: { label: 'Comp Off', color: '#0891b2', bg: '#cffafe' },
-  holiday:  { label: 'Holiday',  color: '#7c3aed', bg: '#ede9fe' },
-  off:      { label: 'Weekend',  color: '#f87171', bg: '#fff5f5' },
+  present:  { label: 'Present',  color: '#16A34A', bg: '#dcfce7' },
+  half:     { label: 'Half Day', color: '#F59E0B', bg: '#fef3c7' },
+  absent:   { label: 'Absent',   color: '#DC2626', bg: '#fee2e2' },
+  leave:    { label: 'Leave',    color: '#3B82F6', bg: '#dbeafe' },
+  comp_off: { label: 'Comp Off', color: '#8B5CF6', bg: '#ede9fe' },
+  holiday:  { label: 'Holiday',  color: '#EC4899', bg: '#fce7f3' },
+  off:      { label: 'Weekend',  color: '#94A3B8', bg: '#f1f5f9' },
 };
 
 const REQUIRED_HOURS: Partial<Record<AttendanceStatus, number>> = {
@@ -164,7 +168,9 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     if (!res) return;
     const records: Record<string, AttendanceRecord> = {};
     const holidays: Record<string, string> = {};
+    const dates: string[] = [];
     for (const day of res.days) {
+      dates.push(day.date);
       const status = this._mapStatus(day.status);
       // Weekends + future days carry no record — the grid derives those itself.
       if (status) {
@@ -174,22 +180,31 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
           status,
           ...(hours != null ? { hours } : {}),
           ...(day.holidayName ? { holidayName: day.holidayName } : {}),
+          ...(day.color ? { color: day.color } : {}),
         };
       }
       if (day.holidayName) holidays[day.date] = day.holidayName;
     }
+    this._cycleDates.set(dates);
     this._recordMap.set(records);
     this._holidayMap.set(holidays);
   }
 
-  /** Patch a single day in-place when SignalR reports it (current open month only). */
+  /** Patch a single day in-place when SignalR reports it (current open cycle only). */
   private _applyLiveRecord(rec: AttendanceRecordResponse | null): void {
     if (!rec?.date) return;
-    // Ignore pushes for a different user than the one being viewed.
     if (this._userId() && rec.userId !== this._userId()) return;
-    const { year, month } = this._ym();
-    const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-    if (!rec.date.startsWith(prefix)) return;
+
+    // Accept the update only if the date belongs to the currently loaded cycle.
+    // When _cycleDates is populated, use it; otherwise fall back to the month prefix.
+    const cycle = this._cycleDates();
+    if (cycle.length > 0) {
+      if (!cycle.includes(rec.date)) return;
+    } else {
+      const { year, month } = this._ym();
+      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+      if (!rec.date.startsWith(prefix)) return;
+    }
 
     const status = this._mapStatus(rec.status as CalendarDayStatus);
     if (!status) return;
@@ -219,7 +234,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       case 'comp_off': return 'comp_off';
       case 'holiday':  return 'holiday';
       case 'weekend':
-      case 'off':      return null;   // grid marks Sat/Sun as off itself
+      case 'off':      return 'off';
       case 'upcoming': return null;   // future day — no record
       default:         return null;
     }
@@ -237,8 +252,10 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   readonly today = new Date();
   readonly viewDate = signal(new Date(this.today.getFullYear(), this.today.getMonth(), 1));
-  readonly _recordMap = signal<Record<string, AttendanceRecord>>({});
+  readonly _recordMap  = signal<Record<string, AttendanceRecord>>({});
   readonly _holidayMap = signal<Record<string, string>>({});
+  /** Ordered ISO dates for the current cycle as returned by the API. Empty until first fetch. */
+  private readonly _cycleDates = signal<string[]>([]);
 
   /** Currently "active" cell on mobile (tap to magnify) and for the detail modal */
   activeCell: DayCell | null = null;
@@ -259,32 +276,38 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   );
 
   readonly weeks = computed((): (DayCell | null)[][] => {
-    const { year, month } = this._ym();
-    const firstDow = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const map = this._recordMap();
+    const isoDates = this._cycleDates();
+    const map  = this._recordMap();
     const hmap = this._holidayMap();
 
+    // Fall back to standard month when the API hasn't responded yet
+    const dates: Date[] = isoDates.length > 0
+      ? isoDates.map(s => new Date(s + 'T00:00:00'))
+      : (() => {
+          const { year, month } = this._ym();
+          const n = new Date(year, month + 1, 0).getDate();
+          return Array.from({ length: n }, (_, i) => new Date(year, month, i + 1));
+        })();
+
+    const firstDow = dates[0]?.getDay() ?? 0;
     const cells: (DayCell | null)[] = Array(firstDow).fill(null);
 
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
+    for (const date of dates) {
       const dow = date.getDay();
       const isOff = dow === 0 || dow === 6;
-      const key = this._key(year, month, d);
+      const key = this._dateKey(date);
       const isFuture = date > this.today;
-      const isToday = this._sameDay(date, this.today);
-      const isPast = !isFuture && !isToday;
+      const isToday  = this._sameDay(date, this.today);
+      const isPast   = !isFuture && !isToday;
       const rec = map[key];
       const holidayName = rec?.holidayName ?? hmap[key];
-      const rawStatus: AttendanceStatus | null = isOff ? 'off' : (rec?.status ?? null);
-      // Weekday with a holiday name but no clock-in record → show violet holiday bg
+      const rawStatus: AttendanceStatus | null = rec?.status ?? (isOff ? 'off' : null);
       const status: AttendanceStatus | null =
-        (rawStatus === null && !isOff && !isFuture && !!holidayName) ? 'holiday' : rawStatus;
+        (rawStatus === null && !isFuture && !!holidayName) ? 'holiday' : rawStatus;
       const hours = rec?.hours;
       const required = status ? (REQUIRED_HOURS[status] ?? undefined) : undefined;
       const hoursMet = hours !== undefined && required !== undefined ? hours >= required : true;
-      cells.push({ date, day: d, status, isOff, isToday, isFuture, isPast, hours, hoursMet, holidayName });
+      cells.push({ date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet, holidayName, color: rec?.color });
     }
 
     const weeks: (DayCell | null)[][] = [];
@@ -297,17 +320,19 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly summaryChips = computed(() => {
-    const { year, month } = this._ym();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const isoDates = this._cycleDates();
     const map = this._recordMap();
     const counts: Record<string, number> = { present: 0, half: 0, absent: 0, leave: 0, comp_off: 0, holiday: 0 };
 
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
+    const dates: Date[] = isoDates.length > 0
+      ? isoDates.map(s => new Date(s + 'T00:00:00'))
+      : (() => { const { year, month } = this._ym(); const n = new Date(year, month + 1, 0).getDate(); return Array.from({ length: n }, (_, i) => new Date(year, month, i + 1)); })();
+
+    for (const date of dates) {
       if (date > this.today) continue;
       const dow = date.getDay();
       if (dow === 0 || dow === 6) continue;
-      const s = map[this._key(year, month, d)]?.status;
+      const s = map[this._dateKey(date)]?.status;
       if (s && s !== 'off' && counts[s] !== undefined) counts[s]++;
     }
 
@@ -320,15 +345,20 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     }));
   });
 
-  readonly workStats = computed(() => {    const { year, month } = this._ym();
+  readonly workStats = computed(() => {
+    const isoDates = this._cycleDates();
     const map = this._recordMap();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const keys: string[] = isoDates.length > 0
+      ? isoDates
+      : (() => { const { year, month } = this._ym(); const n = new Date(year, month + 1, 0).getDate(); return Array.from({ length: n }, (_, i) => this._key(year, month, i + 1)); })();
+
     let totalHours = 0;
     let workingDays = 0;
     let overtime = 0;
 
-    for (let d = 1; d <= daysInMonth; d++) {
-      const rec = map[this._key(year, month, d)];
+    for (const key of keys) {
+      const rec = map[key];
       if (!rec || rec.hours === undefined) continue;
       const required = REQUIRED_HOURS[rec.status] ?? 0;
       if (required === 0) continue;
@@ -337,36 +367,37 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       if (rec.hours > required) overtime += rec.hours - required;
     }
 
+    const avg = workingDays > 0 ? totalHours / workingDays : 0;
     return {
-      avgHours: workingDays > 0 ? Math.round((totalHours / workingDays) * 10) / 10 : 0,
-      overtimeHours: Math.round(overtime * 10) / 10,
+      avgHours: avg > 0 ? this.formatHours(avg) : '0h',
+      overtimeHours: overtime > 0 ? this.formatHours(overtime) : '0h',
     };
   });
 
   readonly listRows = computed(() => {
-    const { year, month } = this._ym();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const map = this._recordMap();
+    const isoDates = this._cycleDates();
+    const map  = this._recordMap();
     const hmap = this._holidayMap();
-    const rows: DayCell[] = [];
 
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
+    const dates: Date[] = isoDates.length > 0
+      ? isoDates.map(s => new Date(s + 'T00:00:00'))
+      : (() => { const { year, month } = this._ym(); const n = new Date(year, month + 1, 0).getDate(); return Array.from({ length: n }, (_, i) => new Date(year, month, i + 1)); })();
+
+    return dates.map(date => {
       const dow = date.getDay();
       const isOff = dow === 0 || dow === 6;
-      const key = this._key(year, month, d);
+      const key = this._dateKey(date);
       const isFuture = date > this.today;
-      const isToday = this._sameDay(date, this.today);
-      const isPast = !isFuture && !isToday;
+      const isToday  = this._sameDay(date, this.today);
+      const isPast   = !isFuture && !isToday;
       const rec = map[key];
-      const status: AttendanceStatus | null = isOff ? 'off' : (rec?.status ?? null);
+      const status: AttendanceStatus | null = rec?.status ?? (isOff ? 'off' : null);
       const hours = rec?.hours;
       const holidayName = rec?.holidayName ?? hmap[key];
       const required = status ? (REQUIRED_HOURS[status] ?? undefined) : undefined;
       const hoursMet = hours !== undefined && required !== undefined ? hours >= required : true;
-      rows.push({ date, day: d, status, isOff, isToday, isFuture, isPast, hours, hoursMet, holidayName });
-    }
-    return rows;
+      return { date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet, holidayName, color: rec?.color };
+    });
   });
 
   // ── Month navigation ──────────────────────────────────────────────────────
@@ -425,6 +456,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   prevMonth(): void {
     const { year, month } = this._ym();
+    this._cycleDates.set([]);
     this.viewDate.set(new Date(year, month - 1, 1));
     this.activeCell = null;
     this.selectedCell.set(null);
@@ -432,6 +464,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   nextMonth(): void {
     const { year, month } = this._ym();
+    this._cycleDates.set([]);
     this.viewDate.set(new Date(year, month + 1, 1));
     this.activeCell = null;
     this.selectedCell.set(null);
@@ -463,10 +496,10 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   /** Text shown in the regularize hint area */
   regularizeHint(cell: DayCell): string {
     if (cell.status === 'present' && cell.hours !== undefined && cell.hours < 8) {
-      return `You logged ${cell.hours}h — below the 8h required. Submit a correction.`;
+      return `You logged ${this.formatHours(cell.hours)} — below the 8h required. Submit a correction.`;
     }
     if (cell.status === 'half' && cell.hours !== undefined && cell.hours < 4) {
-      return `You logged ${cell.hours}h — below the 4h half-day threshold.`;
+      return `You logged ${this.formatHours(cell.hours)} — below the 4h half-day threshold.`;
     }
     return 'This day needs attendance regularization.';
   }
@@ -514,10 +547,12 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   // ── Cell display helpers ──────────────────────────────────────────────────
 
   cellColor(cell: DayCell): string {
+    if (cell.color) return cell.color;
     return cell.status ? STATUS_META[cell.status].color : '';
   }
 
   cellBg(cell: DayCell): string {
+    if (cell.color) return cell.color + '22'; // 13% opacity tint from the API color
     return cell.status ? STATUS_META[cell.status].bg : '';
   }
 
@@ -525,8 +560,18 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     const ds = cell.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
     const label = cell.status ? STATUS_META[cell.status].label : 'No record';
     const holiday = cell.holidayName ? ` — ${cell.holidayName}` : '';
-    const hrs = cell.hours !== undefined ? ` | ${cell.hours}h worked` : '';
+    const hrs = cell.hours !== undefined ? ` | ${this.formatHours(cell.hours)} worked` : '';
     return `${ds}${holiday} — ${label}${hrs}`;
+  }
+
+  /** Convert decimal hours to a friendly string: 1.49 → "1h 29m", 0.13 → "8m" */
+  formatHours(h: number): string {
+    const totalMins = Math.round(h * 60);
+    const hrs = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    if (hrs === 0) return `${mins}m`;
+    if (mins === 0) return `${hrs}h`;
+    return `${hrs}h ${mins}m`;
   }
 
   requiredHours(cell: DayCell): number {
@@ -573,6 +618,10 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   private _key(y: number, m: number, d: number): string {
     return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+
+  private _dateKey(date: Date): string {
+    return this._key(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
   private _sameDay(a: Date, b: Date): boolean {

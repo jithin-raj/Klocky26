@@ -90,12 +90,12 @@
         <!-- Avg hours + Overtime -->
         <div class="stats-extra">
           <div class="stat-item">
-            <span class="stat-value">{{ workStats().avgHours }}<small>h</small></span>
+            <span class="stat-value">{{ workStats().avgHours }}</span>
             <span class="stat-label">Avg / day</span>
           </div>
           <div class="stat-sep"></div>
           <div class="stat-item">
-            <span class="stat-value stat-ot">{{ workStats().overtimeHours }}<small>h</small></span>
+            <span class="stat-value stat-ot">{{ workStats().overtimeHours }}</span>
             <span class="stat-label">Overtime</span>
           </div>
         </div>
@@ -116,11 +116,11 @@
             @if (cell) {
               <div
                 class="cal-cell"
-                [class.is-off]="cell.isOff"
+                [class.is-off]="cell.status === 'off'"
                 [class.is-today]="cell.isToday"
                 [class.is-future]="cell.isFuture && !cell.isOff"
                 [class.is-past]="cell.isPast && !cell.isOff && !cell.status"
-                [class.has-status]="!!cell.status && !cell.isOff"
+                [class.has-status]="!!cell.status && cell.status !== 'off'"
                 [class.active]="activeCell === cell"
                 [style.--s-color]="cellColor(cell)"
                 [style.--s-bg]="cellBg(cell)"
@@ -138,9 +138,9 @@
                   </span>
                 }
 
-                @if (!cell.isOff && !cell.isFuture && cell.hours !== undefined) {
+                @if (cell.status !== 'off' && !cell.isFuture && cell.hours !== undefined) {
                   <div class="dot-bar" [class.dot-short]="!cell.hoursMet"
-                       [title]="cell.hours + 'h / ' + requiredHours(cell) + 'h'">
+                       [title]="formatHours(cell.hours!) + ' / ' + requiredHours(cell) + 'h'">
                     @for (d of dotArray(cell); track $index) {
                       <span class="dot"
                         [class.dot-filled]="d === 'filled'"
@@ -149,8 +149,8 @@
                       ></span>
                     }
                   </div>
-                  <span class="hours-label" [class.hours-short]="!cell.hoursMet">{{ cell.hours }}h</span>
-                } @else if (!cell.isOff && !cell.isFuture && cell.status && !cell.holidayName) {
+                  <span class="hours-label" [class.hours-short]="!cell.hoursMet">{{ formatHours(cell.hours!) }}</span>
+                } @else if (cell.status !== 'off' && !cell.isFuture && cell.status && !cell.holidayName) {
                   <span class="status-pip"></span>
                 }
               </div>
@@ -212,7 +212,7 @@
                   <span class="status-badge"
                         [style.background]="cellBg(row)"
                         [style.color]="cellColor(row)">
-                    {{ row.holidayName ?? statusLabel(row.status) }}
+                    {{ row.holidayName || statusLabel(row.status) }}
                   </span>
                 } @else if (row.isOff) {
                   <span class="status-badge off-badge">Weekend</span>
@@ -225,7 +225,7 @@
 
               <!-- Hours -->
               <span class="lc-hours" [class.hours-short]="!row.hoursMet && row.hours !== undefined">
-                {{ row.hours !== undefined ? row.hours + 'h' : '—' }}
+                {{ row.hours !== undefined ? formatHours(row.hours) : '—' }}
               </span>
 
               <!-- Hours progress bar -->
@@ -288,7 +288,7 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
-        <span>{{ cell.hours }}h logged</span>
+        <span>{{ formatHours(cell.hours!) }} logged</span>
         <span class="cdm-hours-req">/ {{ requiredHours(cell) }}h required</span>
         @if (!cell.hoursMet) {
           <span class="cdm-hours-warn">Short</span>
