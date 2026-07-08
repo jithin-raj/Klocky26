@@ -4,7 +4,7 @@ export const taskRoutes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./pages/history/task-history.component').then(m => m.TaskHistoryComponent),
+      import('./pages/tasks/tasks.component').then(m => m.TasksComponent),
   },
   {
     path: 'history',

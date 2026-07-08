@@ -64,6 +64,8 @@ export interface CustomLeaveType {
   isPaid: boolean;
   carryForward: boolean;
   applicableTo: 'all' | 'male' | 'female';
+  /** Only one leave type across the org may hold this at a time. */
+  isDefault: boolean;
 }
 
 export interface Holiday {
@@ -294,7 +296,8 @@ export class OrgProfileComponent implements OnInit {
     this.overtimeAfterHrs     = s.overtimeAfterHrs ?? this.overtimeAfterHrs;
     this.geoFencingEnabled      = s.geoFencingEnabled;
     this.selectedClockInMethods = [...(s.clockInMethods ?? [])];
-    this.selfieCheckinEnabled    = s.selfieVerificationEnabled;
+    // Coming soon — no UI control yet, always false regardless of any stored value.
+    this.selfieCheckinEnabled    = false;
     this.autoCheckoutEnabled  = s.autoCheckoutEnabled;
     this.autoCheckoutTime     = s.autoCheckoutTime ? s.autoCheckoutTime.slice(0, 5) : this.autoCheckoutTime;
 
@@ -321,6 +324,7 @@ export class OrgProfileComponent implements OnInit {
       isPaid: lt.isPaid,
       carryForward: lt.carryForward,
       applicableTo: lt.applicableTo,
+      isDefault: lt.isDefault ?? false,
     }));
     this.holidays = (s.holidays ?? []).map(h => ({
       id: h.id ?? String(Date.now() + Math.random()),
@@ -462,10 +466,10 @@ export class OrgProfileComponent implements OnInit {
   earnedLeaveMaxCarryForward: number | null = null;
 
   customLeaveTypes: CustomLeaveType[] = [
-    { id: '1', name: 'Maternity Leave',  daysPerYear: 182, isPaid: true,  carryForward: false, applicableTo: 'female' },
-    { id: '2', name: 'Paternity Leave',  daysPerYear: 5,   isPaid: true,  carryForward: false, applicableTo: 'male'   },
-    { id: '3', name: 'Bereavement Leave',daysPerYear: 3,   isPaid: true,  carryForward: false, applicableTo: 'all'   },
-    { id: '4', name: 'Marriage Leave',   daysPerYear: 3,   isPaid: true,  carryForward: false, applicableTo: 'all'   },
+    { id: '1', name: 'Maternity Leave',  daysPerYear: 182, isPaid: true,  carryForward: false, applicableTo: 'female', isDefault: false },
+    { id: '2', name: 'Paternity Leave',  daysPerYear: 5,   isPaid: true,  carryForward: false, applicableTo: 'male',   isDefault: false },
+    { id: '3', name: 'Bereavement Leave',daysPerYear: 3,   isPaid: true,  carryForward: false, applicableTo: 'all',    isDefault: false },
+    { id: '4', name: 'Marriage Leave',   daysPerYear: 3,   isPaid: true,  carryForward: false, applicableTo: 'all',    isDefault: false },
   ];
 
   holidays: Holiday[] = DEFAULT_HOLIDAYS.map((h, i) => ({ ...h, id: String(i + 1) }));
@@ -783,13 +787,19 @@ export class OrgProfileComponent implements OnInit {
   addCustomLeave(): void {
     this.customLeaveTypes = [
       ...this.customLeaveTypes,
-      { id: Date.now().toString(), name: '', daysPerYear: 0, isPaid: true, carryForward: false, applicableTo: 'all' },
+      { id: Date.now().toString(), name: '', daysPerYear: 0, isPaid: true, carryForward: false, applicableTo: 'all', isDefault: false },
     ];
     this.markDirty();
   }
 
   removeCustomLeave(id: string): void {
     this.customLeaveTypes = this.customLeaveTypes.filter(l => l.id !== id);
+    this.markDirty();
+  }
+
+  /** Only one leave type may be default — selecting one clears the flag on all the others. */
+  setDefaultLeave(id: string): void {
+    this.customLeaveTypes = this.customLeaveTypes.map(l => ({ ...l, isDefault: l.id === id }));
     this.markDirty();
   }
 
@@ -876,6 +886,7 @@ export class OrgProfileComponent implements OnInit {
       isPaid: lt?.isPaid ?? true,
       carryForward: lt?.carryForward ?? false,
       applicableTo: lt?.applicableTo ?? 'all',
+      isDefault: lt?.isDefault ?? false,
     }));
   }
 

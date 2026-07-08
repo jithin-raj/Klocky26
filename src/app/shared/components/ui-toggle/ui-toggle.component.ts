@@ -17,7 +17,10 @@ import { NgIf } from '@angular/common';
   template: `
     <label class="ui-toggle-wrap" [class.is-row]="row" [class.disabled]="disabled">
       <div class="toggle-info" *ngIf="row && (label || hint)">
-        <span class="toggle-main-label" *ngIf="label">{{ label }}</span>
+        <span class="toggle-title-line" *ngIf="label">
+          <span class="toggle-main-label">{{ label }}</span>
+          <span class="toggle-badge" *ngIf="badge">{{ badge }}</span>
+        </span>
         <span class="toggle-hint" *ngIf="hint">{{ hint }}</span>
       </div>
       <button
@@ -50,9 +53,18 @@ import { NgIf } from '@angular/common';
     .ui-toggle-wrap.disabled { opacity: .45; pointer-events: none; }
 
     .toggle-info { display: flex; flex-direction: column; gap: 3px; }
+    .toggle-title-line { display: flex; align-items: center; gap: 8px; }
     .toggle-main-label {
       font-size: 14px; font-weight: 500;
       color: var(--ui-toggle-label, rgba(255,255,255,.88));
+    }
+    .toggle-badge {
+      display: inline-flex; align-items: center;
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 20px;
+      background: rgba(245, 158, 11, .16);
+      color: #b45309;
     }
     .toggle-hint {
       font-size: 12.5px; line-height: 1.4;
@@ -93,6 +105,7 @@ import { NgIf } from '@angular/common';
 export class UiToggleComponent implements ControlValueAccessor {
   @Input() label = '';
   @Input() hint = '';
+  @Input() badge = '';
   @Input() row = false;
   @Input() disabled = false;
   @Input() size: 'sm' | 'md' | 'lg' = 'md';

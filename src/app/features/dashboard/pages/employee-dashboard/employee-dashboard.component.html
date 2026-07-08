@@ -201,40 +201,6 @@
 
 </div>
 
-<!-- ── Clock-in Confirmation Modal ─────────────────────────────────────────── -->
-@if (geoConfirmPending()) {
-  <div class="ed-confirm-backdrop" (click)="cancelClockIn()">
-    <div class="ed-confirm-modal" (click)="$event.stopPropagation()">
-      <div class="ed-confirm-icon">
-        <icon-clock-in [size]="28" color="#fff"></icon-clock-in>
-      </div>
-      <h3 class="ed-confirm-title">Clock In?</h3>
-      <p class="ed-confirm-sub">
-        @if (geoHasLocation()) {
-          Your location has been captured. Clock in from this location?
-        } @else {
-          Clock in manually — location not available or not required.
-        }
-      </p>
-      @if (geoHasLocation()) {
-        <div class="ed-confirm-geo-badge">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 0 0-8-8z"/>
-          </svg>
-          Geo-verified
-        </div>
-      }
-      <div class="ed-confirm-actions">
-        <button class="ed-confirm-cancel" (click)="cancelClockIn()">Cancel</button>
-        <button class="ed-confirm-ok" (click)="confirmClockIn()">
-          <icon-clock-in [size]="16" color="currentColor"></icon-clock-in>
-          Confirm Clock In
-        </button>
-      </div>
-    </div>
-  </div>
-}
-
 <!-- ── Clock-out Confirmation Modal ─────────────────────────────────────────── -->
 @if (clockOutConfirmPending()) {
   <div class="ed-confirm-backdrop" (click)="cancelClockOut()">

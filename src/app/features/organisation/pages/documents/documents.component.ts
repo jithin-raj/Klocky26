@@ -5,9 +5,11 @@ import {
   computed,
   inject,
   OnInit,
+  OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DocumentService } from '../../../../core/services/document.service';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
@@ -17,6 +19,22 @@ import {
   DocumentVisibility,
 } from '../../../../core/models/document.model';
 
+type PreviewKind = 'loading' | 'pdf' | 'image' | 'text' | 'unsupported' | 'error';
+
+/** Best-effort MIME → file extension, used since the API doesn't expose one directly. */
+const EXT_BY_MIME: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'text/plain': 'txt',
+};
+
 @Component({
   selector: 'app-documents',
   standalone: true,
@@ -25,10 +43,11 @@ import {
   templateUrl: './documents.component.html',
   styleUrl: './documents.component.scss',
 })
-export class DocumentsComponent implements OnInit {
+export class DocumentsComponent implements OnInit, OnDestroy {
   private readonly docSvc = inject(DocumentService);
   private readonly permSvc = inject(PermissionService);
   private readonly toast = inject(ToastService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   documents = signal<Document[]>([]);
   loading = signal(true);
@@ -126,20 +145,89 @@ export class DocumentsComponent implements OnInit {
       });
   }
 
+  private saveBlob(doc: Document, blob: Blob): void {
+    const ext = EXT_BY_MIME[blob.type];
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = ext ? `${doc.title}.${ext}` : doc.title;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /** Direct download without opening the preview (used by the row action). */
   download(doc: Document): void {
     this.docSvc.download(doc.id).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = doc.title + '.pdf';
-        a.click();
-        URL.revokeObjectURL(url);
-      },
+      next: (blob) => this.saveBlob(doc, blob),
       error: () => {
         this.toast.error('Download failed', 'Could not download the document.');
       },
     });
+  }
+
+  // ── Preview modal ─────────────────────────────────────────────────────────
+
+  previewDoc  = signal<Document | null>(null);
+  previewKind = signal<PreviewKind>('loading');
+  previewUrl  = signal<SafeResourceUrl | null>(null);
+  previewText = signal('');
+  private _previewObjectUrl: string | null = null;
+
+  /**
+   * Preview hits the dedicated /preview endpoint (not /download) — per the API,
+   * only application/pdf, image/* and text/* are meant to be rendered inline;
+   * anything else falls back to a real download via downloadFromPreview().
+   */
+  openPreview(doc: Document): void {
+    this.previewDoc.set(doc);
+    this.previewKind.set('loading');
+    this.previewUrl.set(null);
+    this.previewText.set('');
+
+    this.docSvc.preview(doc.id).subscribe({
+      next: (blob) => {
+        if (blob.type === 'application/pdf') {
+          this._setObjectUrl(blob);
+          this.previewKind.set('pdf');
+        } else if (blob.type.startsWith('image/')) {
+          this._setObjectUrl(blob);
+          this.previewKind.set('image');
+        } else if (blob.type.startsWith('text/')) {
+          blob.text().then(text => {
+            this.previewText.set(text);
+            this.previewKind.set('text');
+          });
+        } else {
+          this.previewKind.set('unsupported');
+        }
+      },
+      error: () => {
+        this.previewKind.set('error');
+      },
+    });
+  }
+
+  private _setObjectUrl(blob: Blob): void {
+    this._previewObjectUrl = URL.createObjectURL(blob);
+    this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this._previewObjectUrl));
+  }
+
+  closePreview(): void {
+    if (this._previewObjectUrl) URL.revokeObjectURL(this._previewObjectUrl);
+    this._previewObjectUrl = null;
+    this.previewDoc.set(null);
+    this.previewUrl.set(null);
+    this.previewText.set('');
+  }
+
+  /** Always the real /download file (not the preview blob) — preview and download are separate endpoints. */
+  downloadFromPreview(): void {
+    const doc = this.previewDoc();
+    if (doc) this.download(doc);
+  }
+
+  ngOnDestroy(): void {
+    if (this._previewObjectUrl) URL.revokeObjectURL(this._previewObjectUrl);
   }
 
   deleteDoc(doc: Document): void {

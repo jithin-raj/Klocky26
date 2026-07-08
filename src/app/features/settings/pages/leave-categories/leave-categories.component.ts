@@ -143,6 +143,7 @@ export class LeaveCategoriesComponent implements OnInit {
       calendarYearResetMonth: 1,
       calendarYearResetDay: 1,
       isCompOff: this.form.isCompOff,
+      isDefaultLeave: false,
       isActive: true,
       sortOrder: 0,
     };
@@ -176,6 +177,23 @@ export class LeaveCategoriesComponent implements OnInit {
       error: (err) => {
         this.busyId.set(null);
         this.toast.error('Update failed', err?.error?.message ?? 'Could not update status.');
+      },
+    });
+  }
+
+  /** Only one category may be the default leave — the server flips the previous holder off. */
+  setDefault(cat: LeaveCategory): void {
+    if (cat.isDefaultLeave || this.busyId()) return;
+    this.busyId.set(cat.id);
+    this.catSvc.update(cat.id, { isDefaultLeave: true }).subscribe({
+      next: () => {
+        this.busyId.set(null);
+        this.toast.success('Default set', `${cat.name} is now the default leave category.`);
+        this.load();
+      },
+      error: (err) => {
+        this.busyId.set(null);
+        this.toast.error('Update failed', err?.error?.message ?? 'Could not set default leave.');
       },
     });
   }

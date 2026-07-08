@@ -40,8 +40,8 @@ export class HeaderComponent implements OnDestroy {
   get geoToast()     { return this.attendance.geoToast; }
 
   /** Pending geo confirmation — true after location is found, before user confirms */
+  /** @deprecated kept only so existing template bindings compile; modal removed */
   geoConfirmPending = signal(false);
-  private _pendingPosition: GeolocationPosition | null = null;
 
   /** Admins manage the org, they don't punch in/out — hide the clock widget for them. */
   readonly isAdmin = computed(() => !!this.appState.user()?.isAdmin);
@@ -194,52 +194,30 @@ export class HeaderComponent implements OnDestroy {
   }
 
   private _geoClockIn() {
-    // Skip geolocation if neither org capture nor geofence applies to this employee
-    if (!this.appState.user()?.locationRequiredOnClockIn) {
-      this.geoConfirmPending.set(true);
-      return;
-    }
-    if (!navigator.geolocation) {
-      this._pendingPosition = null;
-      this.geoConfirmPending.set(true);
-      this.attendance.showToast('📍 Geo not available — confirm manual clock-in.', 'info');
+    const method = (window as any).ReactNativeWebView ? 'mobile' : 'web';
+    if (!this.appState.user()?.locationRequiredOnClockIn || !navigator.geolocation) {
+      this.attendance.clockIn(method, {});
       return;
     }
     this.attendance.geoStatus.set('locating');
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        this._pendingPosition = pos;
-        this.attendance.geoStatus.set('idle'); // reset until confirmed
-        this.geoConfirmPending.set(true);
+        this.attendance.geoStatus.set('idle');
+        this.attendance.clockIn(method, {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
       },
       () => {
-        this._pendingPosition = null;
         this.attendance.geoStatus.set('idle');
-        this.geoConfirmPending.set(true);
-        this.attendance.showToast('📍 Location unavailable — confirm manual clock-in.', 'warn');
+        this.attendance.clockIn(method, {});
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 
-  confirmGeoClockIn() {
-    this.geoConfirmPending.set(false);
-    const pos = this._pendingPosition;
-    const method = (window as any).ReactNativeWebView ? 'mobile' : 'web';
-    this.attendance.clockIn(method, pos ? {
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-    } : {});
-    this._pendingPosition = null;
-  }
-
-  cancelGeoClockIn() {
-    this.geoConfirmPending.set(false);
-    this._pendingPosition = null;
-    this.attendance.geoStatus.set('idle');
-    this.attendance.showToast('Clock-in cancelled.', 'info');
-  }
+  confirmGeoClockIn() { this.geoConfirmPending.set(false); }
+  cancelGeoClockIn()  { this.geoConfirmPending.set(false); }
 
   navigateToDashboard() {
     const orgUrlName = this.appState.orgUrlName();

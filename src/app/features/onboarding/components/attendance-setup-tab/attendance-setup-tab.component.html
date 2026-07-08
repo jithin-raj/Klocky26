@@ -212,17 +212,20 @@
 
 <div class="ob-toggles">
 
-  <div class="ob-toggle-row">
+  <div class="ob-toggle-row ob-toggle-row--disabled">
     <div class="ob-toggle-info">
-      <p class="ob-toggle-title">Require Photo on Clock-in</p>
+      <p class="ob-toggle-title">
+        Require Photo on Clock-in
+        <span class="ob-badge-soon">Coming soon</span>
+      </p>
       <p class="ob-toggle-desc">Employees must take a selfie when clocking in.</p>
     </div>
     <button
       type="button"
       class="ob-toggle"
       [class.is-on]="requirePhoto"
-      (click)="toggle('requirePhoto')"
-      [attr.aria-label]="'Require photo: ' + (requirePhoto ? 'on' : 'off')"
+      disabled
+      [attr.aria-label]="'Require photo: coming soon'"
     ></button>
   </div>
 
@@ -237,20 +240,6 @@
       [class.is-on]="ipRestriction"
       (click)="toggle('ipRestriction')"
       [attr.aria-label]="'IP restriction: ' + (ipRestriction ? 'on' : 'off')"
-    ></button>
-  </div>
-
-  <div class="ob-toggle-row">
-    <div class="ob-toggle-info">
-      <p class="ob-toggle-title">Selfie Verification (AI)</p>
-      <p class="ob-toggle-desc">Verify employee identity using facial recognition on clock-in.</p>
-    </div>
-    <button
-      type="button"
-      class="ob-toggle"
-      [class.is-on]="selfieVerification"
-      (click)="toggle('selfieVerification')"
-      [attr.aria-label]="'Selfie verification: ' + (selfieVerification ? 'on' : 'off')"
     ></button>
   </div>
 

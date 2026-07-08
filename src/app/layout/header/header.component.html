@@ -35,11 +35,8 @@
             <span class="ck-spin"></span>
             <span class="ck-text">Locating…</span>
           } @else if (isClockedIn()) {
-            <span class="ck-live"></span>
-            <icon-clock-out class="ck-icon" [size]="17" color="currentColor"></icon-clock-out>
-            <span class="ck-text ck-text--in">
-              Clocked In<span class="ck-out-hint"> · Clock Out</span>
-            </span>
+            <icon-clock-out class="ck-icon" [size]="15" color="currentColor"></icon-clock-out>
+            <span class="ck-text">Clock Out</span>
           } @else {
             <icon-clock-in class="ck-icon" [size]="17" color="currentColor"></icon-clock-in>
             <span class="ck-text">Clock In</span>
@@ -151,21 +148,5 @@
     <div class="geo-toast">{{ geoToast() }}</div>
   }
 
-  <!-- Geo confirmation panel -->
-  @if (geoConfirmPending()) {
-    <div class="geo-confirm-overlay" (click)="cancelGeoClockIn()">
-      <div class="geo-confirm-panel" (click)="$event.stopPropagation()">
-        <div class="geo-confirm-icon">📍</div>
-        <div class="geo-confirm-body">
-          <p class="geo-confirm-title">Clock In from this location?</p>
-          <p class="geo-confirm-sub">Auto clock-out if you move more than 10m or after 5 minutes.</p>
-        </div>
-        <div class="geo-confirm-actions">
-          <button class="geo-cancel-btn" (click)="cancelGeoClockIn()">Cancel</button>
-          <button class="geo-confirm-btn" (click)="confirmGeoClockIn()">Confirm</button>
-        </div>
-      </div>
-    </div>
-  }
 
 </header>

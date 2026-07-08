@@ -125,9 +125,10 @@ export class FreeTrialComponent implements OnInit {
       lateThresholdMins: mapLateThresholdMins(attendance.lateThreshold),
       locationPolicy: mapLocationRule(attendance.locationRule),
       overtimeEnabled: attendance.overtimeEnabled,
+      // Coming soon — no UI control yet, always sent as false.
       requirePhotoOnClockIn: attendance.requirePhoto,
       ipRestrictionEnabled: attendance.ipRestriction,
-      selfieVerificationEnabled: attendance.selfieVerification,
+      selfieVerificationEnabled: false,
       autoCheckoutEnabled: attendance.autoCheckoutEnabled,
       currency: 'INR',
     }).subscribe({

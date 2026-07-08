@@ -1,180 +1,129 @@
 <div class="tk-page">
 
-  <!-- Approvals Inbox (managers / HR / admin only) -->
-  @if (canApprove()) {
-    <div class="tk-inbox">
-      <div class="tk-inbox__head">
-        <div class="tk-inbox__title">
-          <ui-icon name="inbox" [size]="18"></ui-icon>
-          Approvals Inbox
-          @if (pendingCount() > 0) {
-            <span class="tk-inbox__badge">{{ pendingCount() }}</span>
-          }
-        </div>
-        <button class="tk-btn tk-btn--ghost tk-btn--sm" (click)="loadPending()" [disabled]="loadingPending()">
-          <ui-icon name="repeat" [size]="13"></ui-icon>
-          Refresh
-        </button>
-      </div>
-
-      @if (loadingPending()) {
-        <div class="tk-inbox__empty">Loading pending approvals…</div>
-      } @else if (pendingTasks().length === 0) {
-        <div class="tk-inbox__empty">
-          <ui-icon name="check-circle" [size]="28" class="tk-inbox__empty-icon"></ui-icon>
-          All caught up — no pending approvals
-        </div>
-      } @else {
-        <div class="tk-inbox__list">
-          @for (item of pendingTasks(); track item.id) {
-            <div class="tk-inbox-card" [class.tk-inbox-card--busy]="inboxBusyId() === item.id">
-              <div class="tk-inbox-card__left">
-                <span class="tk-badge" [class]="taskTypeBadgeClass(item.taskType)">
-                  {{ taskTypeLabel(item.taskType) }}
-                </span>
-                <div class="tk-inbox-card__info">
-                  <span class="tk-inbox-card__title">{{ item.title }}</span>
-                  @if (item.from || item.to) {
-                    <span class="tk-inbox-card__dates">
-                      {{ item.from | date:'MMM d' }}
-                      @if (item.to && item.to !== item.from) { – {{ item.to | date:'MMM d, yyyy' }} }
-                      @else { , {{ item.from | date:'yyyy' }} }
-                    </span>
-                  }
-                  @if (item.detail) {
-                    <span class="tk-inbox-card__detail">{{ item.detail }}</span>
-                  }
-                </div>
-              </div>
-              <div class="tk-inbox-card__right">
-                <div class="tk-inbox-card__requester">
-                  <div class="tk-inbox-card__avatar">{{ item.requestedBy.name.charAt(0).toUpperCase() }}</div>
-                  <span>{{ item.requestedBy.name }}</span>
-                </div>
-                <div class="tk-inbox-card__actions">
-                  <button class="tk-action-btn tk-action-btn--approve"
-                          [disabled]="!!inboxBusyId()"
-                          (click)="approveTask(item)"
-                          title="Approve">
-                    <ui-icon name="check" [size]="14"></ui-icon>
-                    Approve
-                  </button>
-                  <button class="tk-action-btn tk-action-btn--reject"
-                          [disabled]="!!inboxBusyId()"
-                          (click)="openRejectTask(item)"
-                          title="Reject">
-                    <ui-icon name="x" [size]="14"></ui-icon>
-                    Reject
-                  </button>
-                </div>
-              </div>
-            </div>
-          }
-        </div>
-      }
-    </div>
-  }
-
   <!-- Header -->
   <div class="tk-header">
-    <div><h1>Tasks</h1><p>Create, assign, and track work across your team</p></div>
-    <div class="tk-header__right">
-      <ui-select [options]="filterPrioOptions" [ngModel]="filterPrio()" (ngModelChange)="filterPrio.set($event)"></ui-select>
-      <button class="tk-btn tk-btn--primary" (click)="showAdd.set(true)">+ Add Task</button>
-    </div>
+    <div><h1>Tasks</h1><p>Review and act on approvals awaiting your response</p></div>
   </div>
 
-  <!-- Kanban board -->
-  <div class="tk-board">
-    @for (col of columns; track col.status) {
-      <div class="tk-col">
-        <div class="tk-col__head" [style.border-top-color]="col.color">
-          <span class="tk-col__label">{{ col.label }}</span>
-          <span class="tk-col__count">{{ colTasks(col.status)().length }}</span>
-        </div>
-        <div class="tk-col__body">
-          @for (task of colTasks(col.status)(); track task.id) {
-            <div class="tk-card" [class.tk-card--overdue]="isOverdue(task.dueDate)">
-              <div class="tk-card__top">
-                <div class="tk-prio-dot" [style.background]="prioColor(task.priority)" [title]="task.priority"></div>
-                <div class="tk-card__tags">
-                  @for (tag of task.tags; track tag) {
-                    <span class="tk-tag">{{ tag }}</span>
-                  }
-                </div>
-                <button class="tk-del-btn" (click)="deleteTask(task.id)" title="Delete">✕</button>
-              </div>
-              <div class="tk-card__title">{{ task.title }}</div>
-              @if (task.description) {
-                <div class="tk-card__desc">{{ task.description }}</div>
-              }
-              <div class="tk-card__footer">
-                <div class="tk-assignee" [style.background]="task.assigneeColor" [title]="task.assigneeName">{{ task.assigneeInitials }}</div>
-                @if (task.dueDate) {
-                  <span class="tk-due" [class.overdue]="isOverdue(task.dueDate)">
-                    {{ task.dueDate | date:'MMM d' }}
-                  </span>
-                }
-              </div>
-              <div class="tk-move">
-                @for (c of columns; track c.status) {
-                  @if (c.status !== col.status) {
-                    <button (click)="moveTo(task.id, c.status)">→ {{ c.label }}</button>
-                  }
-                }
-              </div>
-            </div>
-          }
-          @if (colTasks(col.status)().length === 0) {
-            <div class="tk-empty-col">No tasks</div>
-          }
-        </div>
-      </div>
+  <!-- Tabs -->
+  <div class="tk-tabs">
+    @for (tab of tabs; track tab.id) {
+      <button class="tk-tab" [class.tk-tab--active]="activeTab() === tab.id" (click)="activeTab.set(tab.id)">
+        {{ tab.label }}
+      </button>
     }
   </div>
 
-</div>
+  @switch (activeTab()) {
 
-<!-- Add task modal -->
-@if (showAdd()) {
-  <div class="tk-overlay" (click)="showAdd.set(false)">
-    <div class="tk-modal" (click)="$event.stopPropagation()">
-      <div class="tk-modal__head">
-        <h3>New Task</h3>
-        <button (click)="showAdd.set(false)">✕</button>
-      </div>
-      <div class="tk-modal__body">
-        <div class="tk-field">
-          <label for="tk-title">Title *</label>
-          <input id="tk-title" class="tk-input" type="text" placeholder="Task title" [ngModel]="newTitle()" (ngModelChange)="newTitle.set($event)" />
-        </div>
-        <div class="tk-field">
-          <label for="tk-desc">Description</label>
-          <textarea id="tk-desc" class="tk-textarea" rows="2" placeholder="Optional details" [ngModel]="newDesc()" (ngModelChange)="newDesc.set($event)"></textarea>
-        </div>
-        <div class="tk-form-row">
-          <div class="tk-field">
-            <ui-select label="Priority" [options]="priorityOptions" [ngModel]="newPriority()" (ngModelChange)="newPriority.set($event)"></ui-select>
+    @case ('all') {
+      <app-work-tasks></app-work-tasks>
+    }
+
+    @case ('pending') {
+      @if (canView()) {
+        <div class="tk-inbox">
+          <div class="tk-inbox__head">
+            <div class="tk-inbox__title">
+              <ui-icon name="inbox" [size]="18"></ui-icon>
+              Approvals Inbox
+              @if (pendingCount() > 0) {
+                <span class="tk-inbox__badge">{{ pendingCount() }}</span>
+              }
+            </div>
+            <button class="tk-btn tk-btn--ghost tk-btn--sm" (click)="loadPending()" [disabled]="loadingPending()">
+              <ui-icon name="repeat" [size]="13"></ui-icon>
+              Refresh
+            </button>
           </div>
-          <div class="tk-field">
-            <ui-datepicker label="Due Date" [ngModel]="newDue()" (ngModelChange)="newDue.set($event)"></ui-datepicker>
-          </div>
+
+          @if (loadingPending()) {
+            <div class="tk-inbox__empty">Loading pending approvals…</div>
+          } @else if (pendingError()) {
+            <div class="tk-inbox__empty tk-inbox__empty--error">
+              <ui-icon name="x" [size]="28" class="tk-inbox__empty-icon"></ui-icon>
+              Couldn't load pending approvals
+              <span class="tk-inbox__error-detail">{{ pendingError() }}</span>
+              <button class="tk-btn tk-btn--ghost tk-btn--sm" (click)="loadPending()">Retry</button>
+            </div>
+          } @else if (pendingTasks().length === 0) {
+            <div class="tk-inbox__empty">
+              <ui-icon name="check-circle" [size]="28" class="tk-inbox__empty-icon"></ui-icon>
+              All caught up — no pending approvals
+            </div>
+          } @else {
+            <div class="tk-table-wrap">
+              <table class="tk-table">
+                <thead>
+                  <tr>
+                    <th class="tk-col-sl">#</th>
+                    <th>Type</th>
+                    <th>By</th>
+                    <th>Status</th>
+                    <th>Closing Date</th>
+                    <th class="tk-col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of pendingTasks(); track item.id; let i = $index) {
+                    <tr [class.tk-row--busy]="inboxBusyId() === item.id">
+                      <td class="tk-col-sl" data-label="#">{{ i + 1 }}</td>
+                      <td data-label="Type">
+                        <span class="tk-badge" [class]="taskTypeBadgeClass(item.taskType)">
+                          {{ taskTypeLabel(item.taskType) }}
+                        </span>
+                      </td>
+                      <td data-label="By">{{ item.requestedBy.name }}</td>
+                      <td data-label="Status"><span class="tk-status-badge">{{ item.status }}</span></td>
+                      <td data-label="Closing Date">{{ closingDate(item) ? (closingDate(item) | date:'MMM d, yyyy') : '—' }}</td>
+                      <td class="tk-col-actions" data-label="Actions">
+                        <div class="tk-row-actions">
+                          <button class="tk-action-btn tk-action-btn--view" (click)="openView(item)" title="View details">
+                            <ui-icon name="eye" [size]="14"></ui-icon>
+                            View
+                          </button>
+                          @if (canAct() && item.actions.includes('approve')) {
+                            <button class="tk-action-btn tk-action-btn--approve"
+                                    [disabled]="!!inboxBusyId()"
+                                    (click)="approveTask(item)"
+                                    title="Approve">
+                              <ui-icon name="check" [size]="14"></ui-icon>
+                              Approve
+                            </button>
+                          }
+                          @if (canAct() && item.actions.includes('reject')) {
+                            <button class="tk-action-btn tk-action-btn--reject"
+                                    [disabled]="!!inboxBusyId()"
+                                    (click)="openRejectTask(item)"
+                                    title="Reject">
+                              <ui-icon name="x" [size]="14"></ui-icon>
+                              Reject
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
-        <div class="tk-field">
-          <ui-select label="Assign To" [options]="assigneeOptions" [ngModel]="newAssignee()" (ngModelChange)="newAssignee.set($event)"></ui-select>
+      } @else {
+        <div class="tk-noaccess">
+          <ui-icon name="inbox" [size]="32" class="tk-noaccess__icon"></ui-icon>
+          <p class="tk-noaccess__title">You don't have access to task approvals</p>
+          <p class="tk-noaccess__sub">Ask an admin to grant view access. Looking for your own task activity? Check History.</p>
         </div>
-        <div class="tk-field">
-          <label for="tk-tags">Tags (comma separated)</label>
-          <input id="tk-tags" class="tk-input" type="text" placeholder="HR, Planning, …" [ngModel]="newTags()" (ngModelChange)="newTags.set($event)" />
-        </div>
-      </div>
-      <div class="tk-modal__foot">
-        <button class="tk-btn tk-btn--ghost" (click)="showAdd.set(false)">Cancel</button>
-        <button class="tk-btn tk-btn--primary" (click)="addTask()" [disabled]="!newTitle().trim()">Create Task</button>
-      </div>
-    </div>
-  </div>
-}
+      }
+    }
+
+    @case ('history') {
+      <app-task-history></app-task-history>
+    }
+  }
+
+</div>
 
 <!-- Reject reason modal -->
 @if (rejectTarget()) {
@@ -191,7 +140,7 @@
         </p>
         <div class="tk-field">
           <label for="tk-reject-msg">Reason <span class="tk-required">*</span></label>
-          <textarea id="tk-reject-msg" class="tk-textarea" rows="3"
+          <textarea id="tk-reject-msg" class="tk-textarea" rows="3" maxlength="500"
                     placeholder="Provide a reason for rejection…"
                     [ngModel]="rejectMsg()" (ngModelChange)="rejectMsg.set($event)"></textarea>
         </div>
@@ -204,6 +153,66 @@
           Confirm Reject
         </button>
       </div>
+    </div>
+  </div>
+}
+
+<!-- View details modal -->
+@if (viewTarget(); as item) {
+  <div class="tk-overlay" (click)="closeView()">
+    <div class="tk-modal tk-modal--sm" (click)="$event.stopPropagation()">
+      <div class="tk-modal__head">
+        <h3>Request Details</h3>
+        <button (click)="closeView()"><ui-icon name="x" [size]="16"></ui-icon></button>
+      </div>
+      <div class="tk-modal__body">
+        <div class="tk-detail-row">
+          <span class="tk-detail-label">Title</span>
+          <span class="tk-detail-value">{{ item.title }}</span>
+        </div>
+        <div class="tk-detail-row">
+          <span class="tk-detail-label">Type</span>
+          <span class="tk-badge" [class]="taskTypeBadgeClass(item.taskType)">{{ taskTypeLabel(item.taskType) }}</span>
+        </div>
+        <div class="tk-detail-row">
+          <span class="tk-detail-label">Requested By</span>
+          <span class="tk-detail-value">{{ item.requestedBy.name }}</span>
+        </div>
+        <div class="tk-detail-row">
+          <span class="tk-detail-label">Requested Date</span>
+          <span class="tk-detail-value">{{ item.createdAt | date:'MMM d, yyyy, h:mm a' }}</span>
+        </div>
+        @if (item.from) {
+          <div class="tk-detail-row">
+            <span class="tk-detail-label">From</span>
+            <span class="tk-detail-value">{{ item.from | date:'MMM d, yyyy' }}</span>
+          </div>
+        }
+        <div class="tk-detail-row">
+          <span class="tk-detail-label">Closing Date</span>
+          <span class="tk-detail-value">{{ closingDate(item) ? (closingDate(item) | date:'MMM d, yyyy') : '—' }}</span>
+        </div>
+        @if (item.detail) {
+          <div class="tk-detail-row">
+            <span class="tk-detail-label">Message</span>
+            <span class="tk-detail-value">{{ item.detail }}</span>
+          </div>
+        }
+        <div class="tk-detail-row">
+          <span class="tk-detail-label">Status</span>
+          <span class="tk-status-badge">{{ item.status }}</span>
+        </div>
+      </div>
+      @if (canAct() && item.actions.length > 0) {
+        <div class="tk-modal__foot">
+          @if (item.actions.includes('reject')) {
+            <button class="tk-btn tk-btn--ghost" [disabled]="!!inboxBusyId()" (click)="closeView(); openRejectTask(item)">Reject</button>
+          }
+          @if (item.actions.includes('approve')) {
+            <button class="tk-btn tk-btn--primary" [disabled]="!!inboxBusyId()" (click)="approveTask(item); closeView()">Approve</button>
+          }
+        </div>
+      }
     </div>
   </div>
 }

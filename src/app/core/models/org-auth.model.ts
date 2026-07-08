@@ -195,6 +195,8 @@ export interface LeaveTypeDto {
   carryForward: boolean;
   applicableTo: LeaveApplicability;
   isSystemType?: boolean;
+  /** Only one leave type across the org may hold this at a time. */
+  isDefault: boolean;
 }
 
 export interface HolidayDto {

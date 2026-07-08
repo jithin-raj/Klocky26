@@ -1,10 +1,9 @@
 import {
-  Component, ChangeDetectionStrategy, signal, computed, inject,
-  OnInit, AfterViewInit, OnDestroy, ViewChild, ElementRef,
+  Component, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, inject,
+  OnInit, AfterViewChecked, OnDestroy, ViewChild, ElementRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { UiSelectComponent } from '../../../../shared/components';
 import { HasPermissionDirective } from '../../../../shared/directives/has-permission.directive';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { PermissionService } from '../../../../core/services/permission.service';
@@ -16,6 +15,7 @@ import { GeofenceScope, ScopeGeofence } from '../../../../core/models/geofencing
 import { loadLeaflet } from '../../../../core/utils/leaflet-loader';
 
 interface TargetOption { label: string; value: string; }
+export type ModalType = 'map' | 'manual' | 'location' | 'view' | 'confirm' | null;
 
 const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 const DEFAULT_RADIUS = 200;
@@ -24,11 +24,11 @@ const DEFAULT_RADIUS = 200;
   selector: 'app-geofencing',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, HasPermissionDirective],
+  imports: [CommonModule, FormsModule, HasPermissionDirective],
   templateUrl: './geofencing.component.html',
   styleUrl: './geofencing.component.scss',
 })
-export class GeofencingComponent implements OnInit, AfterViewInit, OnDestroy {
+export class GeofencingComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   private readonly geo = inject(GeofencingService);
   private readonly officeSvc = inject(OfficeService);
@@ -36,12 +36,15 @@ export class GeofencingComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly empSvc = inject(EmployeeService);
   private readonly toast = inject(ToastService);
   private readonly permissions = inject(PermissionService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  @ViewChild('mapEl') private mapEl?: ElementRef<HTMLElement>;
+  @ViewChild('mapModalEl') private mapModalEl?: ElementRef<HTMLElement>;
+  @ViewChild('viewMapEl') private viewMapEl?: ElementRef<HTMLElement>;
+  @ViewChild('manualMapEl') private manualMapEl?: ElementRef<HTMLElement>;
 
   readonly canEdit = computed(() => this.permissions.can('geofencing', 2));
 
-  // ── Scope + target ───────────────────────────────────────────────
+  // ── Scope / target ───────────────────────────────────────────────
   readonly scopes: { value: GeofenceScope; label: string }[] = [
     { value: 'office', label: 'Office' },
     { value: 'department', label: 'Department' },
@@ -53,234 +56,538 @@ export class GeofencingComponent implements OnInit, AfterViewInit, OnDestroy {
   private officeOpts = signal<TargetOption[]>([]);
   private deptOpts = signal<TargetOption[]>([]);
   private empOpts = signal<TargetOption[]>([]);
+
   readonly targetOptions = computed<TargetOption[]>(() => {
     const s = this.scope();
     return s === 'office' ? this.officeOpts() : s === 'department' ? this.deptOpts() : this.empOpts();
   });
 
-  // ── Fence form (single source of truth for all three input modes) ─
-  latitude = signal<number | null>(null);
-  longitude = signal<number | null>(null);
-  radiusMeters = signal<number | null>(DEFAULT_RADIUS);
-  saving = signal(false);
-  locating = signal(false);
+  readonly selectedLabel = computed(() =>
+    this.targetOptions().find(o => o.value === this.selectedId())?.label ?? ''
+  );
 
-  readonly hasValidCoords = computed(() => {
-    const la = this.latitude(), lo = this.longitude(), r = this.radiusMeters();
-    return la != null && lo != null && r != null
-      && la >= -90 && la <= 90 && lo >= -180 && lo <= 180 && r >= 1 && r <= 100000;
+  readonly currentFence = computed<ScopeGeofence | null>(() => {
+    const id = this.selectedId();
+    if (!id) return null;
+    return this.fences().find(f => f.scope === this.scope() && f.scopeId === id) ?? null;
   });
+
+  readonly hasFence = computed(() => !!(this.currentFence()?.enabled && this.currentFence()?.latitude != null));
+
+  // ── Inline dropdown (replaces ui-select to avoid OnPush/fixed-pos issues) ─
+  targetDropOpen = signal(false);
+  selectSearch = signal('');
+  readonly filteredTargetOpts = computed(() => {
+    const q = this.selectSearch().toLowerCase().trim();
+    return q
+      ? this.targetOptions().filter(o => o.label.toLowerCase().includes(q))
+      : this.targetOptions();
+  });
+
+  pickTarget(id: string) {
+    this.onSelectTarget(id);
+    this.targetDropOpen.set(false);
+    this.selectSearch.set('');
+  }
 
   // ── List ─────────────────────────────────────────────────────────
   fences = signal<ScopeGeofence[]>([]);
   loadingFences = signal(true);
+  saving = signal(false);
+  locating = signal(false);
+
+  // ── Modal ────────────────────────────────────────────────────────
+  activeModal = signal<ModalType>(null);
+
+  // ── Map modal state ───────────────────────────────────────────────
+  mapSearchQuery = signal('');
+  mapSearchResults = signal<any[]>([]);
+  mapSearching = signal(false);
+  mapSearchDone = signal(false);
+  mapLat = signal<number | null>(null);
+  mapLng = signal<number | null>(null);
+  mapRadius = signal<number>(DEFAULT_RADIUS);
+  mapLocationName = signal('');
+  private mapModalMap: any = null;
+  private mapModalMarker: any = null;
+  private mapModalCircle: any = null;
+
+  // ── Manual modal state ────────────────────────────────────────────
+  manualLat = signal<number | null>(null);
+  manualLng = signal<number | null>(null);
+  manualRadius = signal<number>(DEFAULT_RADIUS);
+  manualLocationName = signal('');
+  manualPreviewReady = signal(false);
+  private manualPreviewMap: any = null;
+  private manualPreviewMarker: any = null;
+  private manualPreviewCircle: any = null;
+
+  readonly manualValid = computed(() => {
+    const la = this.manualLat(), lo = this.manualLng(), r = this.manualRadius();
+    return la != null && lo != null && r != null
+      && la >= -90 && la <= 90 && lo >= -180 && lo <= 180 && r >= 1 && r <= 100000;
+  });
+
+  // ── Current location modal state ──────────────────────────────────
+  currentLat = signal<number | null>(null);
+  currentLng = signal<number | null>(null);
+  currentRadius = signal<number>(DEFAULT_RADIUS);
+  currentLocationName = signal('');
+
+  // ── Pending fence (held between set-modals and confirm) ───────────
+  pendingLat = signal<number | null>(null);
+  pendingLng = signal<number | null>(null);
+  pendingRadius = signal<number>(DEFAULT_RADIUS);
+  pendingLocationName = signal('');
 
   // ── Leaflet ──────────────────────────────────────────────────────
   private L: any;
-  private map: any;
-  private marker: any;
-  private circle: any;
-  private mapReady = false;
+  private viewMap: any = null;
+  private viewMarker: any = null;
+  private viewCircle: any = null;
+
+  // Flags: set when a modal opens so ngAfterViewChecked can init the map
+  // once the @if block has rendered and ViewChild is populated.
+  private _pendingMapModal = false;
+  private _pendingViewMap = false;
+  private _pendingManualMap = false;
 
   ngOnInit() {
     this.loadFences();
     this.loadTargets(this.scope());
+    loadLeaflet().then(L => { this.L = L; }).catch(() => {});
   }
 
-  ngAfterViewInit() {
-    loadLeaflet()
-      .then(L => this.initMap(L))
-      .catch(() => this.toast.error('Map unavailable', 'Could not load the map — use manual entry or current location.'));
+  ngOnDestroy() {
+    this.mapModalMap?.remove();
+    this.viewMap?.remove();
+    this.manualPreviewMap?.remove();
   }
 
-  ngOnDestroy() { this.map?.remove(); }
+  ngAfterViewChecked() {
+    if (this._pendingMapModal && this.mapModalEl) {
+      this._pendingMapModal = false;
+      this.initMapModal();
+    }
+    if (this._pendingViewMap && this.viewMapEl) {
+      this._pendingViewMap = false;
+      this.initViewMap();
+    }
+    if (this._pendingManualMap && this.manualMapEl) {
+      this._pendingManualMap = false;
+      const la = this.manualLat(), lo = this.manualLng();
+      if (la != null && lo != null) this.initOrUpdateManualMap(la, lo);
+    }
+  }
 
   // ── Data loading ─────────────────────────────────────────────────
   loadFences() {
     this.loadingFences.set(true);
     this.geo.getAll().subscribe({
-      next: (rows) => { this.fences.set(rows); this.loadingFences.set(false); },
+      next: rows => { this.fences.set(rows); this.loadingFences.set(false); },
       error: () => { this.loadingFences.set(false); },
     });
   }
 
   private loadTargets(scope: GeofenceScope) {
     if (scope === 'office' && this.officeOpts().length === 0) {
-      this.officeSvc.getAll().subscribe({ next: r => this.officeOpts.set((r.data ?? []).map(o => ({ label: o.name, value: o.id }))) });
+      this.officeSvc.getAll().subscribe({
+        next: r => {
+          const opts = (r.data ?? []).map((o: any) => ({ label: o.name, value: o.officeId ?? o.id ?? '' }));
+          this.officeOpts.set(opts);
+          if (opts.length > 0) this.onSelectTarget(opts[0].value);
+        },
+      });
     } else if (scope === 'department' && this.deptOpts().length === 0) {
-      this.deptSvc.getAll().subscribe({ next: r => this.deptOpts.set((r.data ?? []).map(d => ({ label: d.name, value: d.departmentId }))) });
+      this.deptSvc.getAll().subscribe({
+        next: r => {
+          const opts = (r.data ?? []).map(d => ({ label: d.name, value: d.departmentId }));
+          this.deptOpts.set(opts);
+          if (opts.length > 0) this.onSelectTarget(opts[0].value);
+        },
+      });
     } else if (scope === 'employee' && this.empOpts().length === 0) {
-      this.empSvc.getAll().subscribe({ next: r => this.empOpts.set((r.data ?? []).map((e: any) => ({ label: e.fullName ?? `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim(), value: e.employeeId ?? e.id }))) });
+      this.empSvc.getAll().subscribe({
+        next: r => {
+          const opts = (r.data ?? []).map((e: any) => ({ label: e.fullName ?? `${e.firstName ?? ''} ${e.lastName ?? ''}`.trim(), value: e.employeeId ?? e.id }));
+          this.empOpts.set(opts);
+          if (opts.length > 0) this.onSelectTarget(opts[0].value);
+        },
+      });
+    } else {
+      // Options already loaded — auto-select first if nothing is selected
+      const opts = this.targetOptions();
+      if (opts.length > 0 && !this.selectedId()) this.onSelectTarget(opts[0].value);
     }
   }
 
-  // ── Scope / target selection ─────────────────────────────────────
+  // ── Scope / target ────────────────────────────────────────────────
   setScope(s: GeofenceScope) {
     if (s === this.scope()) return;
     this.scope.set(s);
     this.selectedId.set('');
-    this.resetForm();
+    this.targetDropOpen.set(false);
+    this.selectSearch.set('');
     this.loadTargets(s);
   }
 
   onSelectTarget(id: string) {
     this.selectedId.set(id);
-    const fence = this.fences().find(f => f.scope === this.scope() && f.scopeId === id);
-    if (fence?.enabled && fence.latitude != null && fence.longitude != null) {
-      this.latitude.set(fence.latitude);
-      this.longitude.set(fence.longitude);
-      this.radiusMeters.set(fence.radiusMeters ?? DEFAULT_RADIUS);
+  }
+
+  scopeLabel(s: GeofenceScope): string {
+    return s === 'office' ? 'Office' : s === 'department' ? 'Department' : 'Employee';
+  }
+
+  // ── Open modals ───────────────────────────────────────────────────
+  openMapModal() {
+    const fence = this.currentFence();
+    if (fence?.enabled && fence.latitude != null) {
+      this.mapLat.set(fence.latitude);
+      this.mapLng.set(fence.longitude);
+      this.mapRadius.set(fence.radiusMeters ?? DEFAULT_RADIUS);
+      this.reverseGeocode(fence.latitude, fence.longitude!).then(n => { this.mapLocationName.set(n); this.mapSearchQuery.set(n); this.cdr.markForCheck(); });
     } else {
-      this.latitude.set(null);
-      this.longitude.set(null);
-      this.radiusMeters.set(DEFAULT_RADIUS);
+      this.mapLat.set(null);
+      this.mapLng.set(null);
+      this.mapRadius.set(DEFAULT_RADIUS);
+      this.mapLocationName.set('');
+      this.mapSearchQuery.set('');
     }
-    this.syncMap(true);
+    this.mapSearchResults.set([]);
+    this.mapSearchDone.set(false);
+    this._pendingMapModal = true;
+    this.activeModal.set('map');
   }
 
-  private resetForm() {
-    this.latitude.set(null);
-    this.longitude.set(null);
-    this.radiusMeters.set(DEFAULT_RADIUS);
-    this.syncMap();
+  openManualModal() {
+    const fence = this.currentFence();
+    if (fence?.enabled && fence.latitude != null) {
+      this.manualLat.set(fence.latitude);
+      this.manualLng.set(fence.longitude);
+      this.manualRadius.set(fence.radiusMeters ?? DEFAULT_RADIUS);
+      this.reverseGeocode(fence.latitude, fence.longitude!).then(n => { this.manualLocationName.set(n); this.cdr.markForCheck(); });
+      this.manualPreviewReady.set(true);
+      this._pendingManualMap = true;
+    } else {
+      this.manualLat.set(null);
+      this.manualLng.set(null);
+      this.manualRadius.set(DEFAULT_RADIUS);
+      this.manualLocationName.set('');
+      this.manualPreviewReady.set(false);
+    }
+    this.activeModal.set('manual');
   }
 
-  // ── Manual inputs ────────────────────────────────────────────────
-  onLatInput(v: string) { this.latitude.set(v === '' ? null : +v); this.syncMap(); }
-  onLngInput(v: string) { this.longitude.set(v === '' ? null : +v); this.syncMap(); }
-  onRadiusInput(v: string) { this.radiusMeters.set(v === '' ? null : Math.max(1, +v)); this.updateCircle(); }
-
-  // ── Current location ─────────────────────────────────────────────
-  useMyLocation() {
+  openLocationModal() {
     if (!navigator.geolocation) {
-      this.toast.error('Location unavailable', 'Geolocation is not supported — use the map or manual entry.');
+      this.toast.error('Location unavailable', 'Geolocation is not supported by your browser.');
       return;
     }
+    this.currentLat.set(null);
+    this.currentLng.set(null);
+    this.currentRadius.set(DEFAULT_RADIUS);
+    this.currentLocationName.set('Detecting your location…');
     this.locating.set(true);
+    this.activeModal.set('location');
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        this.latitude.set(round6(pos.coords.latitude));
-        this.longitude.set(round6(pos.coords.longitude));
-        if (this.radiusMeters() == null) this.radiusMeters.set(DEFAULT_RADIUS);
+      pos => {
+        const la = round6(pos.coords.latitude);
+        const lo = round6(pos.coords.longitude);
+        this.currentLat.set(la);
+        this.currentLng.set(lo);
         this.locating.set(false);
-        this.syncMap(true);
+        this.reverseGeocode(la, lo).then(name => { this.currentLocationName.set(name); this.cdr.markForCheck(); });
+        this.cdr.markForCheck();
       },
-      (err) => {
+      err => {
         this.locating.set(false);
-        const msg = err.code === err.PERMISSION_DENIED
-          ? 'Location access denied — use the map or manual entry.'
-          : 'Could not get your location — use the map or manual entry.';
+        this.currentLocationName.set('Could not detect location');
+        const msg = err.code === err.PERMISSION_DENIED ? 'Location access denied.' : 'Could not get your location.';
         this.toast.error('Location unavailable', msg);
+        this.cdr.markForCheck();
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
   }
 
-  // ── Leaflet map ──────────────────────────────────────────────────
-  private initMap(L: any) {
-    this.L = L;
-    if (!this.mapEl) return;
-    this.map = L.map(this.mapEl.nativeElement, { center: [20.5937, 78.9629], zoom: 4 });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(this.map);
-    this.map.on('click', (e: any) => {
-      if (!this.canEdit() || !this.selectedId()) return;
-      this.latitude.set(round6(e.latlng.lat));
-      this.longitude.set(round6(e.latlng.lng));
-      if (this.radiusMeters() == null) this.radiusMeters.set(DEFAULT_RADIUS);
-      this.syncMap();
-    });
-    this.mapReady = true;
-    setTimeout(() => this.map.invalidateSize(), 0);
-    this.syncMap(true);
+  openViewModal() {
+    this._pendingViewMap = true;
+    this.activeModal.set('view');
   }
 
-  /** Reflect the form coords/radius onto the map. `recenter` pans/zooms to the point. */
-  private syncMap(recenter = false) {
-    if (!this.mapReady) return;
-    const la = this.latitude(), lo = this.longitude(), r = this.radiusMeters() ?? DEFAULT_RADIUS;
+  closeModal() {
+    this.activeModal.set(null);
+    this.destroyAllMaps();
+  }
 
+  private destroyAllMaps() {
+    this.mapModalMap?.remove(); this.mapModalMap = null; this.mapModalMarker = null; this.mapModalCircle = null;
+    this.viewMap?.remove(); this.viewMap = null; this.viewMarker = null; this.viewCircle = null;
+    this.manualPreviewMap?.remove(); this.manualPreviewMap = null; this.manualPreviewMarker = null; this.manualPreviewCircle = null;
+  }
+
+  editFromView(mode: 'map' | 'manual' | 'location') {
+    this.viewMap?.remove(); this.viewMap = null; this.viewMarker = null; this.viewCircle = null;
+    if (mode === 'map') this.openMapModal();
+    else if (mode === 'manual') this.openManualModal();
+    else this.openLocationModal();
+  }
+
+  // ── Map modal ─────────────────────────────────────────────────────
+  private async initMapModal() {
+    if (!this.mapModalEl) return;
+    if (!this.L) {
+      try { this.L = await loadLeaflet(); } catch { this.toast.error('Map unavailable', 'Could not load the map.'); return; }
+    }
+    if (this.mapModalMap) { this.mapModalMap.remove(); }
+    const la = this.mapLat() ?? 20.5937;
+    const lo = this.mapLng() ?? 78.9629;
+    const zoom = this.mapLat() != null ? 14 : 4;
+    this.mapModalMap = this.L.map(this.mapModalEl.nativeElement, { center: [la, lo], zoom });
+    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.mapModalMap);
+    this.mapModalMap.on('click', (e: any) => {
+      this.mapLat.set(round6(e.latlng.lat));
+      this.mapLng.set(round6(e.latlng.lng));
+      this.syncMapModal();
+      this.reverseGeocode(e.latlng.lat, e.latlng.lng).then(name => {
+        this.mapSearchQuery.set(name);
+        this.mapLocationName.set(name);
+        this.cdr.markForCheck();
+      });
+    });
+    setTimeout(() => this.mapModalMap?.invalidateSize(), 0);
+    this.syncMapModal(true);
+  }
+
+  private syncMapModal(recenter = false) {
+    if (!this.mapModalMap) return;
+    const la = this.mapLat(), lo = this.mapLng(), r = this.mapRadius();
     if (la == null || lo == null) {
-      if (this.marker) { this.map.removeLayer(this.marker); this.marker = null; }
-      if (this.circle) { this.map.removeLayer(this.circle); this.circle = null; }
+      if (this.mapModalMarker) { this.mapModalMap.removeLayer(this.mapModalMarker); this.mapModalMarker = null; }
+      if (this.mapModalCircle) { this.mapModalMap.removeLayer(this.mapModalCircle); this.mapModalCircle = null; }
       return;
     }
-    const pos = [la, lo];
-    if (!this.marker) {
-      this.marker = this.L.marker(pos, { draggable: this.canEdit() }).addTo(this.map);
-      this.marker.on('dragend', () => {
-        const p = this.marker.getLatLng();
-        this.latitude.set(round6(p.lat));
-        this.longitude.set(round6(p.lng));
-        this.updateCircle();
+    const pos: [number, number] = [la, lo];
+    if (!this.mapModalMarker) {
+      this.mapModalMarker = this.L.marker(pos, { draggable: true }).addTo(this.mapModalMap);
+      this.mapModalMarker.on('dragend', () => {
+        const p = this.mapModalMarker.getLatLng();
+        this.mapLat.set(round6(p.lat));
+        this.mapLng.set(round6(p.lng));
+        this.reverseGeocode(p.lat, p.lng).then(name => { this.mapSearchQuery.set(name); this.mapLocationName.set(name); this.cdr.markForCheck(); });
+        if (this.mapModalCircle) this.mapModalCircle.setLatLng([p.lat, p.lng]);
+        this.cdr.markForCheck();
       });
     } else {
-      this.marker.setLatLng(pos);
+      this.mapModalMarker.setLatLng(pos);
     }
-    if (!this.circle) {
-      this.circle = this.L.circle(pos, { radius: r, color: '#6366f1', weight: 2, fillColor: '#6366f1', fillOpacity: 0.12 }).addTo(this.map);
+    if (!this.mapModalCircle) {
+      this.mapModalCircle = this.L.circle(pos, { radius: r, color: '#6366f1', weight: 2, fillColor: '#6366f1', fillOpacity: 0.13 }).addTo(this.mapModalMap);
     } else {
-      this.circle.setLatLng(pos);
-      this.circle.setRadius(r);
+      this.mapModalCircle.setLatLng(pos);
+      this.mapModalCircle.setRadius(r);
     }
-    if (recenter) this.map.setView(pos, Math.max(this.map.getZoom() ?? 14, 14));
+    if (recenter) this.mapModalMap.setView(pos, Math.max(this.mapModalMap.getZoom() ?? 14, 14));
   }
 
-  private updateCircle() {
-    if (this.circle && this.latitude() != null && this.longitude() != null) {
-      this.circle.setLatLng([this.latitude(), this.longitude()]);
-      this.circle.setRadius(this.radiusMeters() ?? DEFAULT_RADIUS);
+  onMapRadiusChange(v: any) {
+    const r = (v == null || v === '') ? DEFAULT_RADIUS : Math.max(1, +v);
+    this.mapRadius.set(r);
+    if (this.mapModalCircle && this.mapLat() != null) this.mapModalCircle.setRadius(r);
+  }
+
+  async searchMap() {
+    const q = this.mapSearchQuery().trim();
+    if (!q) return;
+    this.mapSearching.set(true);
+    this.mapSearchDone.set(false);
+    try {
+      // addressdetails + extratags includes businesses, shops, offices, showrooms, POIs
+      const url = `https://nominatim.openstreetmap.org/search`
+        + `?q=${encodeURIComponent(q)}`
+        + `&format=json&limit=8&addressdetails=1&extratags=1&namedetails=1`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      const results: any[] = await res.json();
+      this.mapSearchResults.set(results);
+    } catch {
+      this.mapSearchResults.set([]);
+    } finally {
+      this.mapSearchDone.set(true);
+      this.mapSearching.set(false);
+      this.cdr.markForCheck();
     }
   }
 
-  // ── Save / clear ─────────────────────────────────────────────────
-  save() {
-    if (!this.selectedId() || !this.hasValidCoords() || this.saving()) return;
+  selectSearchResult(r: any) {
+    const la = round6(+r.lat);
+    const lo = round6(+r.lon);
+    const name = r.display_name?.split(',').slice(0, 3).join(', ') ?? '';
+    this.mapLat.set(la);
+    this.mapLng.set(lo);
+    this.mapSearchQuery.set(name);
+    this.mapLocationName.set(name);
+    this.mapSearchResults.set([]);
+    this.syncMapModal(true);
+    this.cdr.markForCheck();
+  }
+
+  saveFromMap() {
+    if (this.mapLat() == null || this.mapLng() == null) return;
+    this.pendingLat.set(this.mapLat());
+    this.pendingLng.set(this.mapLng());
+    this.pendingRadius.set(this.mapRadius());
+    this.pendingLocationName.set(this.mapLocationName());
+    this.mapModalMap?.remove(); this.mapModalMap = null; this.mapModalMarker = null; this.mapModalCircle = null;
+    this.activeModal.set('confirm');
+  }
+
+  // ── Manual modal ──────────────────────────────────────────────────
+  onManualLatChange(v: any) {
+    this.manualLat.set((v == null || v === '') ? null : +v);
+    this.scheduleManualPreview();
+  }
+
+  onManualLngChange(v: any) {
+    this.manualLng.set((v == null || v === '') ? null : +v);
+    this.scheduleManualPreview();
+  }
+
+  onManualRadiusChange(v: any) {
+    const r = (v == null || v === '') ? DEFAULT_RADIUS : Math.max(1, +v);
+    this.manualRadius.set(r);
+    if (this.manualPreviewCircle && this.manualLat() != null) this.manualPreviewCircle.setRadius(r);
+  }
+
+  private scheduleManualPreview() {
+    const la = this.manualLat(), lo = this.manualLng();
+    if (la == null || lo == null || la < -90 || la > 90 || lo < -180 || lo > 180) {
+      this.manualPreviewReady.set(false);
+      return;
+    }
+    this.manualPreviewReady.set(true);
+    this.reverseGeocode(la, lo).then(name => { this.manualLocationName.set(name); this.cdr.markForCheck(); });
+    // Flag tells ngAfterViewChecked to init/update the map once #manualMapEl is in the DOM
+    this._pendingManualMap = true;
+  }
+
+  private async initOrUpdateManualMap(la: number, lo: number) {
+    if (!this.manualMapEl) return;
+    if (!this.L) {
+      try { this.L = await loadLeaflet(); } catch { return; }
+    }
+    const r = this.manualRadius();
+    if (!this.manualPreviewMap) {
+      this.manualPreviewMap = this.L.map(this.manualMapEl.nativeElement, {
+        center: [la, lo], zoom: 14, zoomControl: true, attributionControl: false,
+      });
+      this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(this.manualPreviewMap);
+      this.manualPreviewMarker = this.L.marker([la, lo]).addTo(this.manualPreviewMap);
+      this.manualPreviewCircle = this.L.circle([la, lo], { radius: r, color: '#6366f1', weight: 2, fillColor: '#6366f1', fillOpacity: 0.13 }).addTo(this.manualPreviewMap);
+      setTimeout(() => this.manualPreviewMap?.invalidateSize(), 0);
+    } else {
+      this.manualPreviewMap.setView([la, lo], 14);
+      this.manualPreviewMarker.setLatLng([la, lo]);
+      this.manualPreviewCircle.setLatLng([la, lo]);
+      this.manualPreviewCircle.setRadius(r);
+    }
+  }
+
+  saveFromManual() {
+    if (!this.manualValid()) return;
+    this.pendingLat.set(this.manualLat());
+    this.pendingLng.set(this.manualLng());
+    this.pendingRadius.set(this.manualRadius());
+    this.pendingLocationName.set(this.manualLocationName());
+    this.manualPreviewMap?.remove(); this.manualPreviewMap = null; this.manualPreviewMarker = null; this.manualPreviewCircle = null;
+    this.activeModal.set('confirm');
+  }
+
+  // ── Location modal ────────────────────────────────────────────────
+  saveFromLocation() {
+    if (this.currentLat() == null) return;
+    this.pendingLat.set(this.currentLat());
+    this.pendingLng.set(this.currentLng());
+    this.pendingRadius.set(this.currentRadius());
+    this.pendingLocationName.set(this.currentLocationName());
+    this.activeModal.set('confirm');
+  }
+
+  // ── View modal ────────────────────────────────────────────────────
+  private async initViewMap() {
+    if (!this.viewMapEl) return;
+    if (!this.L) {
+      try { this.L = await loadLeaflet(); } catch { return; }
+    }
+    const fence = this.currentFence();
+    if (!fence?.enabled || fence.latitude == null) return;
+    if (this.viewMap) { this.viewMap.remove(); }
+    this.viewMap = this.L.map(this.viewMapEl.nativeElement, { center: [fence.latitude, fence.longitude], zoom: 14 });
+    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.viewMap);
+    this.viewMarker = this.L.marker([fence.latitude, fence.longitude]).addTo(this.viewMap);
+    this.viewCircle = this.L.circle([fence.latitude, fence.longitude], {
+      radius: fence.radiusMeters ?? DEFAULT_RADIUS,
+      color: '#6366f1', weight: 2, fillColor: '#6366f1', fillOpacity: 0.13,
+    }).addTo(this.viewMap);
+    setTimeout(() => this.viewMap?.invalidateSize(), 0);
+  }
+
+  deleteFromView() {
+    if (!this.selectedId() || this.saving()) return;
+    this.saving.set(true);
+    this.geo.set(this.scope(), this.selectedId(), { latitude: null, longitude: null, radiusMeters: null }).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.toast.success('Geofence removed', 'The geofence has been cleared.');
+        this.viewMap?.remove(); this.viewMap = null;
+        this.activeModal.set(null);
+        this.loadFences();
+      },
+      error: err => {
+        this.saving.set(false);
+        this.toast.error('Could not remove', err?.error?.message ?? 'The geofence could not be removed.');
+      },
+    });
+  }
+
+  // ── Confirm modal ─────────────────────────────────────────────────
+  confirmSave() {
+    if (!this.selectedId() || this.saving()) return;
     this.saving.set(true);
     this.geo.set(this.scope(), this.selectedId(), {
-      latitude: this.latitude(),
-      longitude: this.longitude(),
-      radiusMeters: this.radiusMeters(),
+      latitude: this.pendingLat(),
+      longitude: this.pendingLng(),
+      radiusMeters: this.pendingRadius(),
     }).subscribe({
       next: () => {
         this.saving.set(false);
         this.toast.success('Geofence saved', 'The geofence has been updated.');
+        this.activeModal.set(null);
         this.loadFences();
       },
-      error: (err) => {
+      error: err => {
         this.saving.set(false);
         this.toast.error('Could not save', err?.error?.message ?? 'The geofence could not be saved.');
       },
     });
   }
 
-  clearFence() {
-    if (!this.selectedId() || this.saving()) return;
-    this.saving.set(true);
-    this.geo.set(this.scope(), this.selectedId(), { latitude: null, longitude: null, radiusMeters: null }).subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.toast.success('Geofence cleared', 'The geofence has been removed.');
-        this.latitude.set(null); this.longitude.set(null); this.radiusMeters.set(DEFAULT_RADIUS);
-        this.syncMap();
-        this.loadFences();
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.toast.error('Could not clear', err?.error?.message ?? 'The geofence could not be cleared.');
-      },
-    });
+  cancelConfirm() {
+    this.activeModal.set(null);
   }
 
-  /** Jump the editor to an existing fence row. */
-  editFence(f: ScopeGeofence) {
-    this.scope.set(f.scope);
-    this.loadTargets(f.scope);
-    this.onSelectTarget(f.scopeId);
-  }
-
-  scopeLabel(s: GeofenceScope): string {
-    return s === 'office' ? 'Office' : s === 'department' ? 'Department' : 'Employee';
+  // ── Utilities ─────────────────────────────────────────────────────
+  private async reverseGeocode(lat: number, lng: number): Promise<string> {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+      const data = await res.json();
+      return data.display_name?.split(',').slice(0, 3).join(', ') ?? `${lat}, ${lng}`;
+    } catch {
+      return `${lat}, ${lng}`;
+    }
   }
 }

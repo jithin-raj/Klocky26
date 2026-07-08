@@ -47,7 +47,7 @@ export class CompanySetupComponent {
     gracePeriod: '10 mins', halfDayThresholdHrs: 4,
     lateThreshold: '', locationRule: '',
     overtimeEnabled: false, overtimeAfterHrs: 9,
-    requirePhoto: false, ipRestriction: false, selfieVerification: false,
+    requirePhoto: false, ipRestriction: false,
     autoCheckoutEnabled: false, autoCheckoutTime: '20:00',
   };
 
