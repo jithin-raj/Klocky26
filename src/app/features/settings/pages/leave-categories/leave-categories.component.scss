@@ -241,6 +241,38 @@
   color: #64748b;
 }
 
+// ── Default (star) toggle ────────────────────────────────────────────────────
+// Exactly one category is ever "default" — a star toggle reads as a single
+// mutually-exclusive choice more clearly than a badge/button pair, and it's a
+// single compact tap target on mobile instead of a full-width text button.
+.star-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #cbd5e1;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover:not(:disabled) {
+    color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &--active {
+    color: #f59e0b;
+  }
+}
+
 // ── Action buttons ────────────────────────────────────────────────────────────
 .action-btn {
   padding: 4px 12px;
@@ -285,6 +317,7 @@
       background: #ffe4e6;
     }
   }
+
 }
 
 // ── Buttons ───────────────────────────────────────────────────────────────────

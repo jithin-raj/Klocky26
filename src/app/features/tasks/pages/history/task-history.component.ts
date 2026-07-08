@@ -76,19 +76,17 @@ export class TaskHistoryComponent implements OnInit {
 
   statusClass(status: string): string {
     return {
-      completed:   'badge badge--green',
-      pending:     'badge badge--amber',
-      in_progress: 'badge badge--blue',
-      cancelled:   'badge badge--red',
+      completed: 'badge badge--green',
+      cancelled: 'badge badge--red',
+      expired:   'badge badge--amber',
     }[status] ?? 'badge';
   }
 
   statusLabel(status: string): string {
     return {
-      completed:   'Completed',
-      pending:     'Pending',
-      in_progress: 'In Progress',
-      cancelled:   'Cancelled',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+      expired:   'Expired',
     }[status] ?? status;
   }
 }

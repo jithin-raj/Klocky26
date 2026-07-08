@@ -140,6 +140,19 @@
             @for (cat of categories(); track cat.id) {
               <tr [class.row--inactive]="!cat.isActive">
                 <td class="cat-name">
+                  <button
+                    type="button"
+                    class="star-toggle"
+                    [class.star-toggle--active]="cat.isDefaultLeave"
+                    [disabled]="cat.isDefaultLeave || busyId() === cat.id"
+                    (click)="setDefault(cat)"
+                    [attr.title]="cat.isDefaultLeave ? 'Default leave category' : 'Set as default leave category'"
+                    [attr.aria-label]="cat.isDefaultLeave ? 'Default leave category' : 'Set as default leave category'"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" [attr.fill]="cat.isDefaultLeave ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                    </svg>
+                  </button>
                   @if (cat.color) {
                     <span class="color-dot" [style.background]="cat.color"></span>
                   }
@@ -196,6 +209,18 @@
           <div class="mob-cat" [class.mob-cat--inactive]="!cat.isActive">
             <div class="mob-cat-top">
               <div class="mob-cat-name">
+                <button
+                  type="button"
+                  class="star-toggle"
+                  [class.star-toggle--active]="cat.isDefaultLeave"
+                  [disabled]="cat.isDefaultLeave || busyId() === cat.id"
+                  (click)="setDefault(cat)"
+                  [attr.aria-label]="cat.isDefaultLeave ? 'Default leave category' : 'Set as default leave category'"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" [attr.fill]="cat.isDefaultLeave ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
+                  </svg>
+                </button>
                 @if (cat.color) { <span class="color-dot" [style.background]="cat.color"></span> }
                 <span class="mob-name-text">{{ cat.name }}</span>
                 @if (cat.code) { <span class="mob-code">{{ cat.code }}</span> }

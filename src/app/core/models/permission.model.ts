@@ -28,7 +28,7 @@ export interface PermissionFeature {
 export const ENFORCED_PERMISSION_KEYS = [
   'employees', 'payroll', 'departments', 'offices', 'geofencing', 'org_settings',
   'roles', 'permissions', 'attendance', 'shifts', 'leaves', 'performance',
-  'analytics', 'recruitment', 'notifications',
+  'analytics', 'recruitment', 'notifications', 'tasks',
 ] as const;
 
 // ── GET /api/permissions/me (§1) ──────────────────────────────────────────────

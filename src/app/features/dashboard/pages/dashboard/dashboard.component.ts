@@ -6,9 +6,13 @@ import { EmployeeService } from '../../../../core/services/employee.service';
 import { DepartmentService } from '../../../../core/services/department.service';
 import { OrgRoleService } from '../../../../core/services/org-role.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
+import { LeaveService } from '../../../../core/services/leave.service';
 import { EmployeeResponse } from '../../../employees/models/employee-api.model';
 import { Department } from '../../../../core/models/department.model';
 import { HolidayDto } from '../../../../core/models/org-auth.model';
+import { TeamAttendanceItem } from '../../../../core/models/attendance.model';
+import { LeaveRequestView } from '../../../../core/models/leave.model';
 import { UiIconComponent, UiIconName } from '../../../../shared/components';
 
 interface RecentActivity { name: string; initials: string; detail: string; time: string; color: string; }
@@ -26,12 +30,14 @@ interface CompositionRow { label: string; count: number; pct: number; color: str
 })
 export class DashboardComponent implements OnInit {
 
-  private readonly router      = inject(Router);
-  private readonly appState    = inject(AppStateService);
-  private readonly employeeSvc = inject(EmployeeService);
-  private readonly deptSvc     = inject(DepartmentService);
-  private readonly orgRoleSvc  = inject(OrgRoleService);
-  private readonly orgAuth     = inject(OrgAuthService);
+  private readonly router         = inject(Router);
+  private readonly appState       = inject(AppStateService);
+  private readonly employeeSvc    = inject(EmployeeService);
+  private readonly deptSvc        = inject(DepartmentService);
+  private readonly orgRoleSvc     = inject(OrgRoleService);
+  private readonly orgAuth        = inject(OrgAuthService);
+  private readonly attendanceSvc  = inject(AttendanceStateService);
+  private readonly leaveSvc       = inject(LeaveService);
 
   today = new Date();
 
@@ -65,6 +71,17 @@ export class DashboardComponent implements OnInit {
   readonly holidaysLoading = signal(false);
   readonly holidaysGated   = computed(() => !this.appState.isOrgAdminAuthenticated());
 
+  // ── Today's attendance overview ────────────────────────────────────────────
+  readonly teamItems         = signal<TeamAttendanceItem[]>([]);
+  readonly teamLoading       = signal(false);
+  readonly pendingLeaves     = signal<LeaveRequestView[]>([]);
+  readonly pendingLeavesLoading = signal(false);
+
+  readonly clockedInCount    = computed(() => this.teamItems().filter(e => !!e.today?.isClockedIn).length);
+  readonly notClockedInCount = computed(() => this.teamItems().filter(e => !e.today?.isClockedIn && e.today?.status !== 'leave').length);
+  readonly onLeaveCount      = computed(() => this.teamItems().filter(e => e.today?.status === 'leave').length);
+  readonly pendingLeaveCount = computed(() => this.pendingLeaves().length);
+
   ngOnInit(): void {
     this.employeeSvc.getAll().subscribe({
       next: (res) => { this.employees.set(res.data ?? []); this.employeesLoading.set(false); },
@@ -85,6 +102,18 @@ export class DashboardComponent implements OnInit {
         error: () => { this.holidaysLoading.set(false); },
       });
     }
+
+    this.teamLoading.set(true);
+    this.attendanceSvc.getTeamStatus().subscribe({
+      next: (res) => { this.teamItems.set(res.data ?? []); this.teamLoading.set(false); },
+      error: () => this.teamLoading.set(false),
+    });
+
+    this.pendingLeavesLoading.set(true);
+    this.leaveSvc.pendingApproval().subscribe({
+      next: (items) => { this.pendingLeaves.set(items); this.pendingLeavesLoading.set(false); },
+      error: () => this.pendingLeavesLoading.set(false),
+    });
   }
 
   // ── Derived counts ─────────────────────────────────────────────────────

@@ -9,6 +9,15 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+input[type='number'] {
+  -moz-appearance: textfield;
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;

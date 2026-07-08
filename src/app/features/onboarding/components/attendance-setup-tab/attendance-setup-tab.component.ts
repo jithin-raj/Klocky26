@@ -15,9 +15,9 @@ export interface AttendanceSetupData {
   locationRule: string;
   overtimeEnabled: boolean;
   overtimeAfterHrs: number;
+  /** Feature not yet available server-side — UI is disabled, always sent as false. */
   requirePhoto: boolean;
   ipRestriction: boolean;
-  selfieVerification: boolean;
   autoCheckoutEnabled: boolean;
   autoCheckoutTime: string;
   /** Minutes after workDayEnd before auto clock-out fires (optional override). */
@@ -81,9 +81,9 @@ export class AttendanceSetupTabComponent {
   locationRule        = '';
   overtimeEnabled     = false;
   overtimeAfterHrs    = 9;
+  /** Coming soon — no UI control; always sent to the server as false. */
   requirePhoto        = false;
   ipRestriction       = false;
-  selfieVerification  = false;
   autoCheckoutEnabled = false;
   autoCheckoutTime    = '20:00';
 
@@ -163,7 +163,6 @@ export class AttendanceSetupTabComponent {
       overtimeAfterHrs:    this.overtimeAfterHrs,
       requirePhoto:        this.requirePhoto,
       ipRestriction:       this.ipRestriction,
-      selfieVerification:  this.selfieVerification,
       autoCheckoutEnabled: this.autoCheckoutEnabled,
       autoCheckoutTime:    this.autoCheckoutTime,
     };
@@ -173,7 +172,7 @@ export class AttendanceSetupTabComponent {
     this.dataChange.emit(this.getData());
   }
 
-  toggle(field: 'requirePhoto' | 'ipRestriction' | 'selfieVerification' | 'overtimeEnabled' | 'autoCheckoutEnabled'): void {
+  toggle(field: 'ipRestriction' | 'overtimeEnabled' | 'autoCheckoutEnabled'): void {
     this[field] = !this[field];
     this.emit();
   }

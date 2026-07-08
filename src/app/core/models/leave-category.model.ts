@@ -36,6 +36,8 @@ export interface LeaveCategory {
   calendarYearResetMonth: number;
   calendarYearResetDay: number;
   isCompOff: boolean;
+  /** The single leave category auto-applied where none is specified — server enforces only one category may hold this at a time. */
+  isDefaultLeave: boolean;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;

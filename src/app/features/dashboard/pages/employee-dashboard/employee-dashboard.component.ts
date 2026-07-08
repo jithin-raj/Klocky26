@@ -108,13 +108,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
   get isClockedIn()  { return this.attendanceSvc.isClockedIn; }
   get geoStatus()    { return this.attendanceSvc.geoStatus; }
 
-  /** Pending geo confirmation — same flow as the header widget */
-  geoConfirmPending = signal(false);
-  geoHasLocation    = signal(false);
   clockOutConfirmPending = signal(false);
-  private _pendingPosition: GeolocationPosition | null = null;
 
-  /** Toggle clock — shows confirm modal first (never clocks in immediately) */
+  /** Toggle clock — location captured silently; no pre-confirmation modal for clock-in */
   toggleClock(): void {
     if (this.attendanceSvc.isClockedIn()) {
       this.clockOutConfirmPending.set(true);
@@ -124,46 +120,27 @@ export class EmployeeDashboardComponent implements OnDestroy {
   }
 
   private _startGeoClockIn(): void {
+    const method = (window as any).ReactNativeWebView ? 'mobile' : 'web';
     const readLocation = !!this.appState.user()?.locationRequiredOnClockIn;
     if (!readLocation || !navigator.geolocation) {
-      this._pendingPosition = null;
-      this.geoHasLocation.set(false);
-      this.geoConfirmPending.set(true);
+      this.attendanceSvc.clockIn(method, {});
       return;
     }
     this.attendanceSvc.geoStatus.set('locating');
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        this._pendingPosition = pos;
-        this.geoHasLocation.set(true);
         this.attendanceSvc.geoStatus.set('idle');
-        this.geoConfirmPending.set(true);
+        this.attendanceSvc.clockIn(method, {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
       },
       () => {
-        this._pendingPosition = null;
-        this.geoHasLocation.set(false);
         this.attendanceSvc.geoStatus.set('idle');
-        this.geoConfirmPending.set(true);
+        this.attendanceSvc.clockIn(method, {});
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
-  }
-
-  confirmClockIn(): void {
-    this.geoConfirmPending.set(false);
-    const pos = this._pendingPosition;
-    const method = (window as any).ReactNativeWebView ? 'mobile' : 'web';
-    this.attendanceSvc.clockIn(method, pos ? {
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-    } : {});
-    this._pendingPosition = null;
-  }
-
-  cancelClockIn(): void {
-    this.geoConfirmPending.set(false);
-    this._pendingPosition = null;
-    this.attendanceSvc.geoStatus.set('idle');
   }
 
   confirmClockOut(): void {

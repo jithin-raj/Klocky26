@@ -123,6 +123,8 @@ export interface CalendarDay {
   isUpcoming: boolean;
   presentHours: number | null;
   hoursWorked: number | null;
+  /** Server-computed hours required for this day (shift-aware) — overrides the client's static present/half-day defaults when present. */
+  requiredHours: number | null;
   clockInTime: string | null;
   clockOutTime: string | null;
   holidayName: string | null;

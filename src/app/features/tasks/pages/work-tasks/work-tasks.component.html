@@ -1,0 +1,139 @@
+<div class="wt-page">
+
+  <!-- Filters + create -->
+  <div class="wt-toolbar">
+    <div class="wt-filters">
+      <ui-select [options]="scopeOptions" [ngModel]="scope()" (ngModelChange)="scope.set($event)"></ui-select>
+      <ui-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"></ui-select>
+      <button class="wt-btn wt-btn--ghost wt-btn--sm" (click)="refresh()" [disabled]="loading()">
+        <ui-icon name="repeat" [size]="13"></ui-icon>
+        Refresh
+      </button>
+    </div>
+    @if (canCreate()) {
+      <button class="wt-btn wt-btn--primary" (click)="openCreate()">
+        <ui-icon name="plus" [size]="14"></ui-icon>
+        New Task
+      </button>
+    }
+  </div>
+
+  <!-- List -->
+  @if (loading()) {
+    <div class="wt-empty">Loading tasks…</div>
+  } @else if (error()) {
+    <div class="wt-empty wt-empty--error">
+      <ui-icon name="x" [size]="28" class="wt-empty-icon"></ui-icon>
+      Couldn't load tasks
+      <span class="wt-error-detail">{{ error() }}</span>
+      <button class="wt-btn wt-btn--ghost wt-btn--sm" (click)="refresh()">Retry</button>
+    </div>
+  } @else if (tasks().length === 0) {
+    <div class="wt-empty">
+      <ui-icon name="check-circle" [size]="28" class="wt-empty-icon"></ui-icon>
+      No tasks match these filters
+    </div>
+  } @else {
+    <div class="wt-table-wrap">
+      <table class="wt-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Assigned To</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Due Date</th>
+            <th class="wt-col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of tasks(); track item.id) {
+            <tr [class.wt-row--busy]="busyId() === item.id">
+              <td data-label="Title">
+                <div class="wt-title-cell">
+                  <span class="wt-title">{{ item.title }}</span>
+                  @if (item.isLocal) { <span class="wt-local-tag">Personal</span> }
+                </div>
+                @if (item.description) {
+                  <div class="wt-desc">{{ item.description }}</div>
+                }
+              </td>
+              <td data-label="Assigned To">{{ item.isLocal ? item.createdBy.name : item.assignedTo.name }}</td>
+              <td data-label="Priority">
+                <span class="wt-badge" [class]="priorityClass(item.priority)">{{ item.priority }}</span>
+              </td>
+              <td data-label="Status">
+                <span class="wt-badge" [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
+              </td>
+              <td data-label="Due Date">{{ item.dueDate ? (item.dueDate | date:'MMM d, yyyy') : '—' }}</td>
+              <td class="wt-col-actions" data-label="Actions">
+                <div class="wt-row-actions">
+                  @if (item.actions.includes('complete')) {
+                    <button class="wt-action-btn wt-action-btn--complete" [disabled]="!!busyId()" (click)="completeTask(item)" title="Mark complete">
+                      <ui-icon name="check" [size]="14"></ui-icon>
+                    </button>
+                  }
+                  @if (item.actions.includes('cancel')) {
+                    <button class="wt-action-btn wt-action-btn--cancel" [disabled]="!!busyId()" (click)="cancelTask(item)" title="Cancel task">
+                      <ui-icon name="x" [size]="14"></ui-icon>
+                    </button>
+                  }
+                  @if (item.actions.includes('edit')) {
+                    <button class="wt-action-btn wt-action-btn--edit" [disabled]="!!busyId()" (click)="openEdit(item)" title="Edit">
+                      <ui-icon name="settings" [size]="14"></ui-icon>
+                    </button>
+                  }
+                  @if (item.actions.includes('delete')) {
+                    <button class="wt-action-btn wt-action-btn--delete" [disabled]="!!busyId()" (click)="deleteTask(item)" title="Delete">
+                      <ui-icon name="x" [size]="14"></ui-icon>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>
+
+<!-- Create / Edit modal -->
+@if (showForm()) {
+  <div class="wt-overlay" (click)="closeForm()">
+    <div class="wt-modal" (click)="$event.stopPropagation()">
+      <div class="wt-modal__head">
+        <h3>{{ editTarget() ? 'Edit Task' : 'New Task' }}</h3>
+        <button (click)="closeForm()"><ui-icon name="x" [size]="16"></ui-icon></button>
+      </div>
+      <div class="wt-modal__body">
+        <div class="wt-field">
+          <label for="wt-title">Title <span class="wt-required">*</span></label>
+          <input id="wt-title" class="wt-input" type="text" maxlength="200"
+                 placeholder="Task title" [ngModel]="formTitle()" (ngModelChange)="formTitle.set($event)" />
+        </div>
+        <div class="wt-field">
+          <label for="wt-desc">Description</label>
+          <textarea id="wt-desc" class="wt-textarea" rows="3" maxlength="4000"
+                    placeholder="Optional details" [ngModel]="formDescription()" (ngModelChange)="formDescription.set($event)"></textarea>
+        </div>
+        <div class="wt-form-row">
+          <ui-select label="Priority" [options]="priorityOptions" [ngModel]="formPriority()" (ngModelChange)="formPriority.set($event)"></ui-select>
+          <ui-datepicker label="Due Date" [ngModel]="formDueDate()" (ngModelChange)="formDueDate.set($event)"></ui-datepicker>
+        </div>
+        @if (canAssign()) {
+          <div class="wt-field">
+            <ui-select label="Assign To" [options]="assigneeSelectOptions()" [ngModel]="formAssignee()" (ngModelChange)="formAssignee.set($event)"></ui-select>
+          </div>
+        }
+      </div>
+      <div class="wt-modal__foot">
+        <button class="wt-btn wt-btn--ghost" (click)="closeForm()">Cancel</button>
+        <button class="wt-btn wt-btn--primary" [disabled]="!formTitle().trim() || saving()" (click)="submitForm()">
+          {{ editTarget() ? 'Save Changes' : 'Create Task' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

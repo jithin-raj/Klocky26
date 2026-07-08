@@ -119,7 +119,11 @@
 
 /* ─── Search ─────────────────────────────────────────────────────── */
 .search-wrap {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
   max-width: 300px;
   display: flex;
   align-items: center;
@@ -182,39 +186,36 @@
 .ck-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 11px;
-  border-radius: 20px;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 16px;
   border: 1.5px solid rgba(22,163,74,.35);
   background: rgba(22,163,74,.07);
   color: #15803d;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   font-family: inherit;
   white-space: nowrap;
   letter-spacing: .1px;
-  transition: background .15s, border-color .15s, color .15s, box-shadow .15s, transform .1s;
+  transition: background .15s, border-color .15s, color .15s;
 
   &:hover {
     background: rgba(22,163,74,.13);
     border-color: rgba(22,163,74,.55);
-    box-shadow: 0 2px 8px rgba(22,163,74,.14);
-    transform: translateY(-1px);
   }
   &:active { transform: scale(.97); }
 
   /* Clocked-in state */
   &.is-in {
-    border-color: rgba(22,163,74,.3);
-    background: rgba(22,163,74,.06);
-    color: #16a34a;
+    border-color: rgba(220,38,38,.3);
+    background: rgba(220,38,38,.06);
+    color: #dc2626;
 
     &:hover {
-      background: rgba(220,38,38,.07);
-      border-color: rgba(220,38,38,.3);
-      color: #dc2626;
+      background: rgba(220,38,38,.12);
+      border-color: rgba(220,38,38,.5);
     }
   }
 
@@ -227,35 +228,9 @@
   }
 }
 
-/* Live green pulse dot */
-.ck-live {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 5px rgba(34,197,94,.8);
-  flex-shrink: 0;
-  animation: ck-dot 2.2s ease-in-out infinite;
-}
-@keyframes ck-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.6)} }
-
 .ck-icon { flex-shrink: 0; display: block; }
 
-.ck-text { font-size: 12px; font-weight: 700; line-height: 1; }
-
-/* "· Clock Out" hint — fades in on hover without changing button width */
-.ck-out-hint {
-  font-weight: 500;
-  font-size: 11px;
-  opacity: 0;
-  white-space: nowrap;
-  transition: opacity .18s;
-}
-.ck-btn.is-in:hover .ck-out-hint {
-  opacity: .8;
-}
-/* When hovered, hide "Clocked In" text and show "Clock Out" cleanly */
-.ck-text--in { transition: color .15s; }
-.ck-btn.is-in:hover .ck-text--in { color: #dc2626; }
+.ck-text { font-size: 11.5px; font-weight: 700; line-height: 1; }
 
 /* Locating spinner */
 .ck-spin {

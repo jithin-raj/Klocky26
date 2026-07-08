@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { ApiResponse } from '../models/api-response.model';
+import { asArray } from '../utils/api-list.util';
 import { Document, UploadDocumentRequest } from '../models/document.model';
 
 @Injectable({ providedIn: 'root' })
@@ -11,8 +12,8 @@ export class DocumentService {
   private readonly api = inject(ApiService);
 
   getAll(): Observable<Document[]> {
-    return this.api.get<ApiResponse<Document[]>>('/documents')
-      .pipe(map(res => res.data ?? []));
+    return this.api.get<ApiResponse<Document[] | { data: Document[] }>>('/documents')
+      .pipe(map(res => asArray<Document>(res.data)));
   }
 
   upload(req: UploadDocumentRequest): Observable<Document> {
@@ -25,6 +26,11 @@ export class DocumentService {
 
   download(id: string): Observable<Blob> {
     return this.api.getBlob(`/documents/${id}/download`);
+  }
+
+  /** Same auth-gated blob fetch as download(), against the dedicated preview endpoint. */
+  preview(id: string): Observable<Blob> {
+    return this.api.getBlob(`/documents/${id}/preview`);
   }
 
   delete(id: string): Observable<void> {

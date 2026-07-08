@@ -112,7 +112,6 @@ export class SidebarComponent {
       expanded: false,
       items: [
         { label: 'Task List', route: 'app/tasks', icon: 'clipboard-check', exact: true },
-        { label: 'Task History', route: 'app/tasks/history', icon: 'layers' },
         { label: 'Manage Delegation', route: 'app/tasks/delegation', icon: 'repeat', roles: MANAGEMENT_ROLES },
       ]
     },

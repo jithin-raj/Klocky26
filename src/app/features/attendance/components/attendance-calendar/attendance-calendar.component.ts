@@ -42,6 +42,8 @@ export interface AttendanceRecord {
   status: AttendanceStatus;
   /** Actual working hours for the day */
   hours?: number;
+  /** Server-computed hours required for this day (shift-aware) — overrides the static present/half-day defaults when present */
+  requiredHours?: number;
   /** Holiday name e.g. 'Vishu', 'Christmas' */
   holidayName?: string;
   /** Server-provided hex color (overrides STATUS_META when present) */
@@ -62,6 +64,8 @@ export interface DayCell {
   isPast: boolean;
   hours?: number;
   hoursMet: boolean;
+  /** Resolved required hours for this cell — server value when present, else the static default. */
+  requiredHours: number;
   holidayName?: string;
   /** Server-provided hex color, takes precedence over STATUS_META */
   color?: string;
@@ -179,6 +183,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
           date: day.date,
           status,
           ...(hours != null ? { hours } : {}),
+          ...(day.requiredHours != null ? { requiredHours: day.requiredHours } : {}),
           ...(day.holidayName ? { holidayName: day.holidayName } : {}),
           ...(day.color ? { color: day.color } : {}),
         };
@@ -305,9 +310,9 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       const status: AttendanceStatus | null =
         (rawStatus === null && !isFuture && !!holidayName) ? 'holiday' : rawStatus;
       const hours = rec?.hours;
-      const required = status ? (REQUIRED_HOURS[status] ?? undefined) : undefined;
-      const hoursMet = hours !== undefined && required !== undefined ? hours >= required : true;
-      cells.push({ date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet, holidayName, color: rec?.color });
+      const required = this._requiredFor(status, rec);
+      const hoursMet = hours !== undefined ? hours >= required : true;
+      cells.push({ date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet, requiredHours: required, holidayName, color: rec?.color });
     }
 
     const weeks: (DayCell | null)[][] = [];
@@ -394,9 +399,9 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       const status: AttendanceStatus | null = rec?.status ?? (isOff ? 'off' : null);
       const hours = rec?.hours;
       const holidayName = rec?.holidayName ?? hmap[key];
-      const required = status ? (REQUIRED_HOURS[status] ?? undefined) : undefined;
-      const hoursMet = hours !== undefined && required !== undefined ? hours >= required : true;
-      return { date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet, holidayName, color: rec?.color };
+      const required = this._requiredFor(status, rec);
+      const hoursMet = hours !== undefined ? hours >= required : true;
+      return { date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet, requiredHours: required, holidayName, color: rec?.color };
     });
   });
 
@@ -484,22 +489,18 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     this.selectedCell.set(null);
   }
 
-  /** Whether this cell can be regularized — absent/leave/no-record or hours below required */
+  /** Whether this cell can be regularized — absent/leave/no-record or requiredHours not met */
   canRegularize(cell: DayCell): boolean {
-    if (!cell.isPast || cell.isOff || cell.status === 'holiday') return false;
+    if (cell.isFuture || cell.isOff || cell.status === 'holiday') return false;
     if (cell.status === 'absent' || cell.status === 'leave' || cell.status === null) return true;
-    if (cell.status === 'present' && cell.hours !== undefined && cell.hours < 8) return true;
-    if (cell.status === 'half' && cell.hours !== undefined && cell.hours < 4) return true;
+    if ((cell.status === 'present' || cell.status === 'half') && cell.hours !== undefined && !cell.hoursMet) return true;
     return false;
   }
 
   /** Text shown in the regularize hint area */
   regularizeHint(cell: DayCell): string {
-    if (cell.status === 'present' && cell.hours !== undefined && cell.hours < 8) {
-      return `You logged ${this.formatHours(cell.hours)} — below the 8h required. Submit a correction.`;
-    }
-    if (cell.status === 'half' && cell.hours !== undefined && cell.hours < 4) {
-      return `You logged ${this.formatHours(cell.hours)} — below the 4h half-day threshold.`;
+    if ((cell.status === 'present' || cell.status === 'half') && cell.hours !== undefined && !cell.hoursMet) {
+      return `You logged ${this.formatHours(cell.hours)} — below the ${this.requiredHours(cell)}h required. Submit a correction.`;
     }
     return 'This day needs attendance regularization.';
   }
@@ -575,7 +576,13 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   }
 
   requiredHours(cell: DayCell): number {
-    return cell.status ? (REQUIRED_HOURS[cell.status] ?? 8) : 8;
+    return cell.requiredHours;
+  }
+
+  /** Resolve required hours for a day: server-provided value wins, else the static present/half-day default. */
+  private _requiredFor(status: AttendanceStatus | null, rec?: AttendanceRecord): number {
+    if (rec?.requiredHours != null) return rec.requiredHours;
+    return status ? (REQUIRED_HOURS[status] ?? 8) : 8;
   }
 
   /** Human label for a status (handles multi-word statuses like comp_off). */
@@ -607,6 +614,20 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     if (cell.hours === undefined) return 0;
     const required = this.requiredHours(cell);
     return Math.min(100, Math.round((cell.hours / required) * 100));
+  }
+
+  /** Circumference of the modal's hours-logged progress ring (r=24). */
+  readonly ringCircumference = 2 * Math.PI * 24;
+
+  /** stroke-dashoffset for the ring, given the cell's fill %. */
+  ringOffset(cell: DayCell): number {
+    return this.ringCircumference * (1 - this.fillPercent(cell) / 100);
+  }
+
+  /** How far short of the requirement the cell is, formatted (e.g. "1h 30m"). */
+  shortfallLabel(cell: DayCell): string {
+    if (cell.hours === undefined) return '';
+    return this.formatHours(Math.max(0, this.requiredHours(cell) - cell.hours));
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────

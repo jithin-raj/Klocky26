@@ -1,7 +1,7 @@
 ﻿import {
-  Component, Input, forwardRef, ChangeDetectionStrategy,
+  Component, Input, Output, EventEmitter, forwardRef, ChangeDetectionStrategy,
   ChangeDetectorRef, HostListener, HostBinding, ElementRef, signal, computed,
-  OnDestroy, NgZone
+  OnDestroy, NgZone, OnChanges, SimpleChanges,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -30,12 +30,12 @@ export type SelectOption = string | { label: string; value: any };
         type="button"
         class="ui-trigger"
         [class.open]="isOpen()"
-        [class.placeholder]="!hasValue()"
+        [class.placeholder]="!hasValueSig()"
         [class.disabled]="disabled"
         (click)="toggle()"
         [disabled]="disabled"
       >
-        <span class="ui-trigger-text">{{ displayLabel() }}</span>
+        <span class="ui-trigger-text">{{ displayLabelSig() }}</span>
         <svg class="ui-chevron" [class.rotated]="isOpen()"
              width="13" height="13" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2.5"
@@ -78,7 +78,7 @@ export type SelectOption = string | { label: string; value: any };
 
           @if (placeholder && !searchQuery()) {
             <button type="button" class="ui-option ui-option-placeholder"
-                    [class.selected]="!hasValue()"
+                    [class.selected]="!hasValueSig()"
                     (click)="select('')">
               {{ placeholder }}
             </button>
@@ -87,10 +87,10 @@ export type SelectOption = string | { label: string; value: any };
           <div class="ui-options-list">
           @for (o of filteredOptions(); track optionValue(o)) {
             <button type="button" class="ui-option"
-                    [class.selected]="hasValue() && value === optionValue(o)"
+                    [class.selected]="hasValueSig() && value === optionValue(o)"
                     (click)="select(optionValue(o))">
               <span class="ui-option-label">{{ optionLabel(o) }}</span>
-              @if (hasValue() && value === optionValue(o)) {
+              @if (hasValueSig() && value === optionValue(o)) {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2.8"
                      stroke-linecap="round" stroke-linejoin="round">
@@ -265,7 +265,7 @@ export type SelectOption = string | { label: string; value: any };
     :host(.dark) .has-error .ui-trigger { border-color: rgba(239,68,68,.6); box-shadow: 0 0 0 4px rgba(239,68,68,.1); }
   `],
 })
-export class UiSelectComponent implements ControlValueAccessor, OnDestroy {
+export class UiSelectComponent implements ControlValueAccessor, OnChanges, OnDestroy {
   @Input() label = '';
   @Input() options: SelectOption[] = [];
   @Input() placeholder = '';
@@ -277,12 +277,25 @@ export class UiSelectComponent implements ControlValueAccessor, OnDestroy {
   @Input() searchable = false;
   @Input() dark = false;
 
+  /** Direct value binding — use instead of [(ngModel)] when in OnPush contexts. */
+  @Input() set selectValue(v: any) {
+    if (v !== undefined) {
+      this._valueSig.set(v ?? '');
+      this.cdr.markForCheck();
+    }
+  }
+  @Output() selectChange = new EventEmitter<any>();
+
   @HostBinding('class.dark') get isDark() { return this.dark; }
 
-  value: any = '';
+  private _valueSig = signal<any>('');
+  get value(): any { return this._valueSig(); }
+  set value(v: any) { this._valueSig.set(v); }
+
   isOpen = signal(false);
   openUpward = signal(false);
   searchQuery = signal('');
+  private _options = signal<SelectOption[]>([]);
 
   // Panel fixed position state
   private _panelTop    = 0;
@@ -297,11 +310,28 @@ export class UiSelectComponent implements ControlValueAccessor, OnDestroy {
 
   filteredOptions = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
-    if (!q) return this.options;
-    return this.options.filter(o =>
-      this.optionLabel(o).toLowerCase().includes(q)
-    );
+    const opts = this._options();
+    if (!q) return opts;
+    return opts.filter(o => this.optionLabel(o).toLowerCase().includes(q));
   });
+
+  readonly hasValueSig = computed(() => {
+    const v = this._valueSig();
+    return v !== '' && v !== null && v !== undefined;
+  });
+
+  readonly displayLabelSig = computed(() => {
+    const v = this._valueSig();
+    if (!this.hasValueSig()) return this.placeholder || 'Select...';
+    const match = this._options().find(o => this.optionValue(o) === v);
+    return match ? this.optionLabel(match) : String(v);
+  });
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['options']) {
+      this._options.set(this.options ?? []);
+    }
+  }
 
   constructor(private cdr: ChangeDetectorRef, private el: ElementRef, private zone: NgZone) {
     // Close on scroll only when the scroll happens OUTSIDE the panel itself.
@@ -396,6 +426,7 @@ export class UiSelectComponent implements ControlValueAccessor, OnDestroy {
   select(val: any) {
     this.value = val;
     this.onChange(val);
+    this.selectChange.emit(val);
     this.onTouched();
     this.close();
   }
@@ -406,11 +437,11 @@ export class UiSelectComponent implements ControlValueAccessor, OnDestroy {
 
   displayLabel(): string {
     if (!this.hasValue()) return this.placeholder || 'Select...';
-    const match = this.options.find(o => this.optionValue(o) === this.value);
+    const match = this._options().find(o => this.optionValue(o) === this.value);
     return match ? this.optionLabel(match) : String(this.value);
   }
 
-  writeValue(val: any) { this.value = val ?? ''; this.cdr.markForCheck(); }
+  writeValue(val: any) { this.value = val ?? ''; }
   registerOnChange(fn: any) { this.onChange = fn; }
   registerOnTouched(fn: any) { this.onTouched = fn; }
   setDisabledState(d: boolean) { this.disabled = d; this.cdr.markForCheck(); }

@@ -1420,7 +1420,7 @@ ui-toggle + ui-toggle {
 .op-lt-header,
 .op-lt-row {
   display: grid;
-  grid-template-columns: 1fr 90px 170px 52px 72px 36px;
+  grid-template-columns: 1fr 90px 170px 52px 72px 68px;
   gap: 8px;
   align-items: center;
 }
@@ -1452,7 +1452,39 @@ ui-toggle + ui-toggle {
   align-items: center;
   &.op-lt-paid,
   &.op-lt-carry { justify-content: center; }
-  &.op-lt-action { justify-content: center; }
+  &.op-lt-action { justify-content: center; gap: 4px; }
+}
+
+// Exactly one leave type is ever "default" — a star toggle reads as a single
+// mutually-exclusive choice more clearly than a badge/button pair, and it's a
+// compact tap target that fits inline with the delete icon instead of a
+// dedicated full-width row on mobile.
+.star-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #cbd5e1;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover:not(:disabled) {
+    color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &--active {
+    color: #f59e0b;
+  }
 }
 
 .op-lt-input {
@@ -1781,10 +1813,10 @@ ui-toggle + ui-toggle {
   .op-lt-list { display: flex; flex-direction: column; gap: 10px; }
 
   .op-lt-row {
-    // 3-col grid: [days-label | applies-seg | delete]
+    // 3-col grid: [days-label | applies-seg | actions]
     // rows: name row / meta row / toggle row
     display: grid;
-    grid-template-columns: 74px 1fr 34px;
+    grid-template-columns: 74px 1fr 60px;
     grid-template-rows: auto auto auto;
     grid-template-areas:
       "name    name    action"
@@ -1811,7 +1843,7 @@ ui-toggle + ui-toggle {
 
   // Grid-area assignments
   .op-lt-name    { grid-area: name; min-width: 0; }
-  .op-lt-action  { grid-area: action; justify-content: center; align-items: flex-start; }
+  .op-lt-action  { grid-area: action; justify-content: flex-end; align-items: flex-start; gap: 2px; }
 
   // Days column: column layout so the label sits above the input
   .op-lt-days {
@@ -1881,6 +1913,7 @@ ui-toggle + ui-toggle {
     align-items: flex-end; // right-align label + toggle
     &::before { content: 'Carry Fwd'; font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8; white-space: nowrap; }
   }
+
 }
 
 // ── Mobile tab strip (hidden on desktop) ─────────────────────────────────────

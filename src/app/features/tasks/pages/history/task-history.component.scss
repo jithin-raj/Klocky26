@@ -150,3 +150,29 @@
   &:hover:not(:disabled) { background: #f1f5f9; }
   &:disabled { opacity: .45; cursor: not-allowed; }
 }
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 900px) {
+  .page { padding: 16px; }
+  .card { padding: 16px; }
+
+  // Collapse the history table into stacked cards, same technique as the
+  // pending-tasks table — each <td> carries [data-label] as its row label.
+  .table-wrap { overflow-x: visible; }
+  .task-table {
+    display: block; width: 100%;
+    thead { display: none; }
+    tbody { display: flex; flex-direction: column; gap: 10px; }
+    tr {
+      display: flex; flex-direction: column; gap: 8px;
+      border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: none; }
+    td {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 0; border-bottom: none; text-align: right;
+      &::before { content: attr(data-label); font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .02em; text-align: left; }
+    }
+  }
+}
