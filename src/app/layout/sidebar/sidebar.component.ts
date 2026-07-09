@@ -183,6 +183,7 @@ export class SidebarComponent {
       expanded: false,
       items: [
         { label: 'Org Settings', route: 'app/settings', icon: 'settings', roles: ADMIN_HR_ROLES },
+        { label: 'Billing & Plans', route: 'app/billing', icon: 'briefcase', roles: ADMIN_HR_ROLES },
         { label: 'Leave Categories', route: 'app/settings/leave-categories', icon: 'calendar', roles: ADMIN_HR_ROLES },
         { label: 'Documents', route: 'app/organisation/documents', icon: 'layers' },
         { label: 'Shifts & Roster', route: 'app/shifts', icon: 'repeat', roles: MANAGEMENT_ROLES },

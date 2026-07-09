@@ -8,6 +8,8 @@ import { OrgNavigationService } from '../../../../core/services/org-navigation.s
 import { EmployeeService } from '../../../../core/services/employee.service';
 import { DepartmentService } from '../../../../core/services/department.service';
 import { PermissionService } from '../../../../core/services/permission.service';
+import { SubscriptionService } from '../../../../core/services/subscription.service';
+import { UpgradePromptService } from '../../../../shared/components/upgrade-prompt/upgrade-prompt.service';
 import { EmployeeResponse, BulkImportResponse } from '../../models/employee-api.model';
 import {
   UiDataGridComponent, GridColumnTemplateDirective, GridColumn, GridAction, SortDirection,
@@ -95,6 +97,12 @@ export class EmployeeListComponent implements OnInit {
   private employeeService = inject(EmployeeService);
   private departmentService = inject(DepartmentService);
   private permissions = inject(PermissionService);
+  private subscription = inject(SubscriptionService);
+  private upgradePrompt = inject(UpgradePromptService);
+
+  /** Subscription state (usage bar + add-employee gate). */
+  readonly sub = this.subscription.state;
+  readonly canAddEmployee = computed(() => this.subscription.canAddEmployee());
 
   /** Payroll columns/actions only for admin/HR (spec §3, §8). */
   readonly canSeePayroll = computed(() => this.permissions.isAdmin() || this.permissions.isHr());
@@ -261,6 +269,9 @@ export class EmployeeListComponent implements OnInit {
 
   ngOnInit() {
     this.loadEmployees();
+    // Usage changes when employees are added/removed — refresh the cap/usage bar
+    // each time the list is (re)visited, e.g. after returning from Add Employee.
+    this.subscription.load();
     this.departmentService.getAll().subscribe({
       next: (res) => this.departments.set((res.data ?? []).map(d => d.name)),
       error: () => { /* filter dropdown just stays empty on failure */ },
@@ -314,7 +325,12 @@ export class EmployeeListComponent implements OnInit {
 
   viewEmployee(id: string)   { this.orgNav.navigate(['app', 'employees', id]); }
   editEmployee(id: string)   { this.orgNav.navigate(['app', 'employees', id, 'edit']); }
-  addEmployee()              { this.orgNav.navigate(['app', 'employees', 'add']); }
+  addEmployee() {
+    // Seat cap is server-enforced; the gate here just routes to Upgrade instead
+    // of opening a form the server would reject on submit.
+    if (!this.canAddEmployee()) { this.upgradePrompt.openSeatLimit(); return; }
+    this.orgNav.navigate(['app', 'employees', 'add']);
+  }
   viewOrgTree()              { this.orgNav.navigate(['app', 'employees', 'tree']); }
 
   statusLabel(s: string) { return s === 'on_leave' ? 'On Leave' : (s.charAt(0).toUpperCase() + s.slice(1)); }
@@ -329,6 +345,7 @@ export class EmployeeListComponent implements OnInit {
   // ── Bulk import ────────────────────────────────────────────────────────
 
   openBulkImport() {
+    if (!this.canAddEmployee()) { this.upgradePrompt.openSeatLimit(); return; }
     this.bulkImportResult.set(null);
     this.bulkImportError.set(null);
     this.bulkImportOpen.set(true);

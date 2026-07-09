@@ -1,0 +1,94 @@
+$surface: rgba(255,255,255,.03);
+$border: rgba(255,255,255,.08);
+$text: rgba(255,255,255,.88);
+$muted: rgba(255,255,255,.42);
+$accent: #0d9488;
+
+:host { display: block; }
+.ac-page { padding: 32px 36px; min-height: 100%; display: flex; flex-direction: column; gap: 24px; }
+
+.ac-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ac-title { margin: 0 0 4px; font-size: 22px; font-weight: 750; color: $text; }
+.ac-sub { margin: 0; font-size: 13px; color: $muted; }
+.ac-header__meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.ac-meta-chip { font-size: 12px; font-weight: 600; color: $muted; background: $surface; border: 1px solid $border; padding: 5px 11px; border-radius: 20px; }
+
+.ac-empty { padding: 48px 20px; text-align: center; color: $muted; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  background: $surface; border: 1px solid $border; border-radius: 16px; }
+.ac-empty--error { color: #fca5a5; }
+
+// ── Section ──────────────────────────────────────────────────────────────────
+.ac-section { background: $surface; border: 1px solid $border; border-radius: 16px; overflow: hidden; }
+.ac-section__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid $border;
+  h2 { margin: 0; font-size: 15px; font-weight: 700; color: $text; } }
+
+.ac-table-wrap { overflow-x: auto; }
+.ac-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: $muted; border-bottom: 1px solid $border; white-space: nowrap; }
+  td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.04); color: $text; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(255,255,255,.02); }
+}
+.ac-row--inactive td { opacity: .5; }
+.ac-name { font-weight: 600; }
+.ac-code { font-family: monospace; font-size: 12px; background: rgba(255,255,255,.06); color: #7dd3fc; padding: 2px 7px; border-radius: 6px; }
+.ac-muted { color: $muted; }
+.ac-center { text-align: center; }
+
+.ac-feat-cell { display: flex; flex-wrap: wrap; gap: 4px; max-width: 320px; }
+.ac-feat-chip { font-size: 10.5px; font-weight: 600; background: rgba(13,148,136,.18); color: #5eead4; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+
+.ac-badge { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px;
+  &--on { background: rgba(34,197,94,.18); color: #86efac; }
+  &--off { background: rgba(255,255,255,.08); color: $muted; } }
+
+.ac-col-actions { text-align: right; white-space: nowrap; }
+.ac-row-actions { display: inline-flex; gap: 6px; }
+.ac-icon-btn {
+  padding: 5px 10px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer;
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.75); border: 1px solid $border; transition: background .15s;
+  &:hover:not(:disabled) { background: rgba(255,255,255,.1); }
+  &:disabled { opacity: .4; cursor: not-allowed; }
+  &--danger { color: #fca5a5; &:hover:not(:disabled) { background: rgba(239,68,68,.16); } }
+}
+
+// ── Buttons ──────────────────────────────────────────────────────────────────
+.ac-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 650; cursor: pointer; border: 1px solid transparent; transition: all .15s;
+  &--primary { background: $accent; color: #fff; &:hover:not(:disabled) { filter: brightness(1.08); } &:disabled { opacity: .5; cursor: not-allowed; } }
+  &--ghost { background: transparent; color: rgba(255,255,255,.75); border-color: $border; &:hover { background: rgba(255,255,255,.05); } }
+  &--sm { padding: 7px 13px; font-size: 12.5px; }
+}
+
+// ── Modal (light surface, like the org edit form) ─────────────────────────────
+.ac-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.ac-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  &--sm { max-width: 460px; } }
+.ac-modal__head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #f1f5f9;
+  h3 { margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; } }
+.ac-x { border: none; background: none; font-size: 15px; color: #94a3b8; cursor: pointer; &:hover { color: #374151; } }
+.ac-modal__body { padding: 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.ac-modal__foot { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid #f1f5f9; justify-content: flex-end; }
+
+.ac-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; @media (max-width: 480px) { grid-template-columns: 1fr; } }
+.ac-field { display: flex; flex-direction: column; gap: 5px;
+  label { font-size: 12.5px; font-weight: 600; color: #374151; } }
+.ac-req { color: #ef4444; }
+.ac-hint { font-size: 11.5px; color: #94a3b8; }
+.ac-hint-inline { font-weight: 400; color: #94a3b8; font-size: 11px; }
+.ac-input {
+  height: 40px; padding: 0 12px; border: 1.5px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #0f172a; background: #fff; outline: none; font-family: inherit;
+  &:focus { border-color: $accent; box-shadow: 0 0 0 3px rgba(13,148,136,.12); }
+  &:disabled { background: #f8fafc; color: #64748b; }
+}
+.ac-textarea { padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #0f172a; resize: none; outline: none; font-family: inherit; &:focus { border-color: $accent; } }
+
+.ac-feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; @media (max-width: 480px) { grid-template-columns: 1fr; } }
+.ac-check {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; color: #374151; cursor: pointer;
+  padding: 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 9px; transition: border-color .15s, background .15s;
+  input { width: 16px; height: 16px; accent-color: $accent; cursor: pointer; }
+  &.checked { border-color: $accent; background: rgba(13,148,136,.06); }
+  &--wide { width: 100%; }
+}

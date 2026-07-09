@@ -1,1 +1,31 @@
 @use '../../components/_onboarding' as *;
+
+.ob-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+
+  input {
+    width: 17px;
+    height: 17px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    accent-color: var(--th-accent, #0d9488);
+    cursor: pointer;
+  }
+}
+
+.ob-consent-link {
+  color: var(--th-accent, #5eead4);
+  font-weight: 600;
+  text-decoration: underline;
+}

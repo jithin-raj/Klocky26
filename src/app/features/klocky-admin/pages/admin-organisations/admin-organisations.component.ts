@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } 
 import { FormsModule } from '@angular/forms';
 import { PlatformAdminService } from '../../../../core/services/platform-admin.service';
 import { PlatformOrgListItem, SubscriptionStatus, OrgEmailType } from '../../../../core/models/platform-auth.model';
+import { FEATURE_CODES, FEATURE_LABELS } from '../../../../core/models/subscription.model';
 import {
   UiSelectComponent, UiDatePickerComponent, SelectOption,
   UiDataGridComponent, GridColumn, GridAction,
@@ -116,6 +117,8 @@ export class AdminOrganisationsComponent implements OnInit {
   editMaxEmployees: number | null = null;
   editMaxAdminAccounts: number | null = null;
   editInactivityRetentionDays: number | null = null;
+  /** Per-org custom feature overrides (checkbox set). */
+  editFeatures = new Set<string>();
 
   // ── Reset org-admin password — REQUESTED endpoint, not live yet (SERVER_CHANGES_REQUEST.md §0) ──
   readonly resetPwSubmitting = signal(false);
@@ -282,6 +285,7 @@ export class AdminOrganisationsComponent implements OnInit {
     this.editMaxEmployees = org.maxEmployees;
     this.editMaxAdminAccounts = org.maxAdminAccounts;
     this.editInactivityRetentionDays = org.inactivityRetentionDays;
+    this.editFeatures = new Set(org.features ?? []);
 
     // Placeholder sections — never populated from any real source.
     this.dbHost = '';
@@ -295,6 +299,15 @@ export class AdminOrganisationsComponent implements OnInit {
 
   closeEdit(): void {
     this.editingOrg.set(null);
+  }
+
+  // Per-org custom feature overrides
+  readonly featureCodes = FEATURE_CODES;
+  readonly featureLabels = FEATURE_LABELS;
+  featureLabel(code: string): string { return this.featureLabels[code] ?? code; }
+  hasEditFeature(code: string): boolean { return this.editFeatures.has(code); }
+  toggleEditFeature(code: string): void {
+    this.editFeatures.has(code) ? this.editFeatures.delete(code) : this.editFeatures.add(code);
   }
 
   submitEdit(): void {
@@ -314,6 +327,7 @@ export class AdminOrganisationsComponent implements OnInit {
       maxEmployees: this.editMaxEmployees ?? undefined,
       maxAdminAccounts: this.editMaxAdminAccounts ?? undefined,
       inactivityRetentionDays: this.editInactivityRetentionDays ?? undefined,
+      features: [...this.editFeatures],
     }).subscribe({
       next: (res) => {
         this.editSubmitting.set(false);

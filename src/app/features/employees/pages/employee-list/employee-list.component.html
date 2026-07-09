@@ -5,6 +5,16 @@
     <div class="el-header__left">
       <h1 class="el-title">Employees</h1>
       <span class="el-count">{{ filtered().length }} total</span>
+      @if (sub(); as s) {
+        <div class="el-usage" [class.el-usage--full]="!s.canAddEmployee"
+             [title]="s.limits.maxEmployees == null ? 'Unlimited employees' : s.usage.employees + ' of ' + s.limits.maxEmployees + ' seats used'">
+          <div class="el-usage__bar">
+            <div class="el-usage__fill"
+                 [style.width.%]="s.limits.maxEmployees == null ? 0 : (s.usage.employees / s.limits.maxEmployees * 100)"></div>
+          </div>
+          <span class="el-usage__label">{{ s.usage.employees }} / {{ s.limits.maxEmployees == null ? '∞' : s.limits.maxEmployees }} seats</span>
+        </div>
+      }
     </div>
     <div class="el-header__right">
       <button *hasPermission="'employees'; minLevel: 2" class="el-btn el-btn--teal" title="Import employees from CSV" (click)="openBulkImport()">

@@ -55,18 +55,9 @@
           />
         }
 
-        @case ('attendance') {
-          <ob-attendance-setup-tab
-            [initialData]="attendanceData"
-            [methodOptions]="methodOptions"
-            (dataChange)="attendanceData = $event"
-          />
-        }
-
         @case ('preview') {
           <ob-setup-preview-tab
             [orgData]="orgData"
-            [attendanceData]="attendanceData"
             [adminEmail]="adminEmail"
           />
         }

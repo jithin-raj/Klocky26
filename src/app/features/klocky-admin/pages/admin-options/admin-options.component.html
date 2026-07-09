@@ -1,0 +1,137 @@
+<div class="ao2-page">
+
+  <div class="ao2-header">
+    <div>
+      <h1 class="ao2-title">Options</h1>
+      <p class="ao2-sub">Dropdown values for registration &amp; org settings. Changes are live immediately.</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="ao2-empty">Loading categories…</div>
+  } @else if (error()) {
+    <div class="ao2-empty ao2-empty--error">
+      {{ error() }}
+      <button class="ao2-btn ao2-btn--ghost ao2-btn--sm" (click)="loadCategories()">Retry</button>
+    </div>
+  } @else {
+    <div class="ao2-layout">
+
+      <!-- Category rail -->
+      <aside class="ao2-rail">
+        @for (cat of categories(); track cat) {
+          <button class="ao2-cat" [class.active]="activeCategory() === cat" (click)="selectCategory(cat)">
+            {{ prettyCategory(cat) }}
+          </button>
+        }
+      </aside>
+
+      <!-- Options for the selected category -->
+      <section class="ao2-panel">
+        <div class="ao2-panel__head">
+          <h2>{{ prettyCategory(activeCategory()) }}</h2>
+          <button class="ao2-btn ao2-btn--primary ao2-btn--sm" (click)="openNew()">+ Add Option</button>
+        </div>
+
+        @if (loadingOptions()) {
+          <div class="ao2-empty">Loading…</div>
+        } @else {
+          <div class="ao2-table-wrap">
+            <table class="ao2-table">
+              <thead>
+                <tr>
+                  <th class="ao2-col-order">Order</th>
+                  <th>Code</th>
+                  <th>Label</th>
+                  @if (showsExtra()) { <th>{{ extraHint() }}</th> }
+                  <th>Status</th>
+                  <th class="ao2-col-actions"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of options(); track o.id; let i = $index; let first = $first; let last = $last) {
+                  <tr [class.ao2-row--inactive]="!o.isActive">
+                    <td class="ao2-col-order">
+                      <div class="ao2-reorder">
+                        <button class="ao2-nudge" [disabled]="first || busy()" (click)="move(o, -1)" title="Move up">▲</button>
+                        <button class="ao2-nudge" [disabled]="last || busy()" (click)="move(o, 1)" title="Move down">▼</button>
+                      </div>
+                    </td>
+                    <td><code class="ao2-code">{{ o.code }}</code></td>
+                    <td class="ao2-label">{{ o.label }}</td>
+                    @if (showsExtra()) { <td>{{ o.extra || '—' }}</td> }
+                    <td>
+                      <span class="ao2-badge" [class.ao2-badge--on]="o.isActive" [class.ao2-badge--off]="!o.isActive">
+                        {{ o.isActive ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                    <td class="ao2-col-actions">
+                      <div class="ao2-row-actions">
+                        <button class="ao2-icon-btn" [disabled]="busy()" (click)="openEdit(o)">Edit</button>
+                        <button class="ao2-icon-btn" [disabled]="busy()" (click)="toggleActive(o)">{{ o.isActive ? 'Deactivate' : 'Activate' }}</button>
+                        <button class="ao2-icon-btn ao2-icon-btn--danger" [disabled]="busy()" (click)="remove(o)">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+                @if (!options().length) {
+                  <tr><td [attr.colspan]="showsExtra() ? 6 : 5" class="ao2-muted ao2-center">No options in this category yet.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    </div>
+  }
+</div>
+
+<!-- Editor modal -->
+@if (editorOpen()) {
+  <div class="ao2-overlay" (click)="closeEditor()">
+    <div class="ao2-modal" (click)="$event.stopPropagation()">
+      <div class="ao2-modal__head">
+        <h3>{{ form.id ? 'Edit Option' : 'New Option' }} · {{ prettyCategory(activeCategory()) }}</h3>
+        <button class="ao2-x" (click)="closeEditor()">✕</button>
+      </div>
+      <div class="ao2-modal__body">
+        <div class="ao2-form-row">
+          <div class="ao2-field">
+            <label>Code <span class="ao2-req">*</span></label>
+            <input class="ao2-input" type="text" [(ngModel)]="form.code" [disabled]="form.id !== null" placeholder="e.g. in" />
+            @if (form.id !== null) { <span class="ao2-hint">Code &amp; category are immutable.</span> }
+          </div>
+          <div class="ao2-field">
+            <label>Label <span class="ao2-req">*</span></label>
+            <input class="ao2-input" type="text" [(ngModel)]="form.label" placeholder="e.g. India" />
+          </div>
+        </div>
+
+        @if (showsExtra()) {
+          <div class="ao2-field">
+            <label>{{ extraHint() }}</label>
+            <input class="ao2-input" type="text" [(ngModel)]="form.extra" placeholder="e.g. Asia/Kolkata" />
+            <span class="ao2-hint">Auto-selected as the timezone when this country is picked.</span>
+          </div>
+        }
+
+        <div class="ao2-form-row">
+          <div class="ao2-field">
+            <label>Sort Order</label>
+            <input class="ao2-input" type="number" min="0" [(ngModel)]="form.sortOrder" />
+          </div>
+          <label class="ao2-check" [class.checked]="form.isActive">
+            <input type="checkbox" [(ngModel)]="form.isActive" />
+            Active
+          </label>
+        </div>
+      </div>
+      <div class="ao2-modal__foot">
+        <button class="ao2-btn ao2-btn--ghost" (click)="closeEditor()">Cancel</button>
+        <button class="ao2-btn ao2-btn--primary" [disabled]="!valid || busy()" (click)="save()">
+          {{ form.id ? 'Save Changes' : 'Create Option' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

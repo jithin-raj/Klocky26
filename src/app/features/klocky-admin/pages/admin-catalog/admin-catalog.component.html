@@ -1,0 +1,241 @@
+<div class="ac-page">
+
+  <div class="ac-header">
+    <div>
+      <h1 class="ac-title">Catalog</h1>
+      <p class="ac-sub">Plans and add-ons — edits are live (checkout &amp; feature resolution read the same DB).</p>
+    </div>
+    <div class="ac-header__meta">
+      <span class="ac-meta-chip">Trial: {{ trialDays() }} days</span>
+      <span class="ac-meta-chip">Extra seat: {{ fmt(extraSeatMonthlyPrice()) }}/mo</span>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="ac-empty">Loading catalog…</div>
+  } @else if (error()) {
+    <div class="ac-empty ac-empty--error">
+      {{ error() }}
+      <button class="ac-btn ac-btn--ghost ac-btn--sm" (click)="load()">Retry</button>
+    </div>
+  } @else {
+
+    <!-- ── Plans ────────────────────────────────────────────── -->
+    <section class="ac-section">
+      <div class="ac-section__head">
+        <h2>Plans</h2>
+        <button class="ac-btn ac-btn--primary ac-btn--sm" (click)="openNewPlan()">+ New Plan</button>
+      </div>
+
+      <div class="ac-table-wrap">
+        <table class="ac-table">
+          <thead>
+            <tr>
+              <th>Code</th><th>Name</th><th>Employees</th><th>Admins</th>
+              <th>Monthly</th><th>Features</th><th>Status</th><th class="ac-col-actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of plans(); track p.code) {
+              <tr [class.ac-row--inactive]="!p.isActive">
+                <td><code class="ac-code">{{ p.code }}</code></td>
+                <td class="ac-name">{{ p.name }}</td>
+                <td>{{ capLabel(p.maxEmployees) }}</td>
+                <td>{{ capLabel(p.maxAdmins) }}</td>
+                <td>{{ fmt(p.monthlyPrice) }}</td>
+                <td class="ac-feat-cell">
+                  @for (f of p.features; track f) { <span class="ac-feat-chip">{{ featureLabel(f) }}</span> }
+                  @if (!p.features.length) { <span class="ac-muted">—</span> }
+                </td>
+                <td>
+                  <span class="ac-badge" [class.ac-badge--on]="p.isActive" [class.ac-badge--off]="!p.isActive">
+                    {{ p.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="ac-col-actions">
+                  <div class="ac-row-actions">
+                    <button class="ac-icon-btn" [disabled]="busy()" (click)="openEditPlan(p)" title="Edit">Edit</button>
+                    <button class="ac-icon-btn" [disabled]="busy()" (click)="togglePlanActive(p)" [title]="p.isActive ? 'Deactivate' : 'Activate'">
+                      {{ p.isActive ? 'Deactivate' : 'Activate' }}
+                    </button>
+                    <button class="ac-icon-btn ac-icon-btn--danger" [disabled]="busy()" (click)="deletePlan(p)" title="Delete">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (!plans().length) { <tr><td colspan="8" class="ac-muted ac-center">No plans yet.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Add-ons ──────────────────────────────────────────── -->
+    <section class="ac-section">
+      <div class="ac-section__head">
+        <h2>Add-ons</h2>
+        <button class="ac-btn ac-btn--primary ac-btn--sm" (click)="openNewAddon()">+ New Add-on</button>
+      </div>
+
+      <div class="ac-table-wrap">
+        <table class="ac-table">
+          <thead>
+            <tr><th>Code</th><th>Name</th><th>Feature</th><th>Monthly</th><th>Status</th><th class="ac-col-actions"></th></tr>
+          </thead>
+          <tbody>
+            @for (a of addons(); track a.code) {
+              <tr [class.ac-row--inactive]="!a.isActive">
+                <td><code class="ac-code">{{ a.code }}</code></td>
+                <td class="ac-name">{{ a.name }}</td>
+                <td><span class="ac-feat-chip">{{ featureLabel(a.feature) }}</span></td>
+                <td>{{ fmt(a.monthlyPrice) }}</td>
+                <td>
+                  <span class="ac-badge" [class.ac-badge--on]="a.isActive" [class.ac-badge--off]="!a.isActive">
+                    {{ a.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="ac-col-actions">
+                  <div class="ac-row-actions">
+                    <button class="ac-icon-btn" [disabled]="busy()" (click)="openEditAddon(a)">Edit</button>
+                    <button class="ac-icon-btn" [disabled]="busy()" (click)="toggleAddonActive(a)">{{ a.isActive ? 'Deactivate' : 'Activate' }}</button>
+                    <button class="ac-icon-btn ac-icon-btn--danger" [disabled]="busy()" (click)="deleteAddon(a)">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (!addons().length) { <tr><td colspan="6" class="ac-muted ac-center">No add-ons yet.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>
+
+<!-- ── Plan editor modal ─────────────────────────────────────── -->
+@if (planOpen()) {
+  <div class="ac-overlay" (click)="closePlan()">
+    <div class="ac-modal" (click)="$event.stopPropagation()">
+      <div class="ac-modal__head">
+        <h3>{{ planEditCode() ? 'Edit Plan' : 'New Plan' }}</h3>
+        <button class="ac-x" (click)="closePlan()">✕</button>
+      </div>
+      <div class="ac-modal__body">
+        <div class="ac-form-row">
+          <div class="ac-field">
+            <label>Code <span class="ac-req">*</span></label>
+            <input class="ac-input" type="text" [(ngModel)]="planForm.code" [disabled]="planEditCode() !== null" placeholder="e.g. starter" />
+            @if (planEditCode() !== null) { <span class="ac-hint">Code is immutable after create.</span> }
+          </div>
+          <div class="ac-field">
+            <label>Name <span class="ac-req">*</span></label>
+            <input class="ac-input" type="text" [(ngModel)]="planForm.name" placeholder="e.g. Starter" />
+          </div>
+        </div>
+
+        <div class="ac-field">
+          <label>Description</label>
+          <textarea class="ac-textarea" rows="2" [(ngModel)]="planForm.description" placeholder="Short description shown on the pricing page"></textarea>
+        </div>
+
+        <div class="ac-form-row">
+          <div class="ac-field">
+            <label>Max Employees <span class="ac-hint-inline">(blank = unlimited)</span></label>
+            <input class="ac-input" type="number" min="0" [(ngModel)]="planForm.maxEmployees" placeholder="∞" />
+          </div>
+          <div class="ac-field">
+            <label>Max Admins <span class="ac-hint-inline">(blank = unlimited)</span></label>
+            <input class="ac-input" type="number" min="0" [(ngModel)]="planForm.maxAdmins" placeholder="∞" />
+          </div>
+        </div>
+
+        <div class="ac-form-row">
+          <div class="ac-field">
+            <label>Monthly Price ({{ currency() }})</label>
+            <input class="ac-input" type="number" min="0" [(ngModel)]="planForm.monthlyPrice" />
+            <span class="ac-hint">Annual is derived server-side.</span>
+          </div>
+          <div class="ac-field">
+            <label>Sort Order</label>
+            <input class="ac-input" type="number" min="0" [(ngModel)]="planForm.sortOrder" />
+          </div>
+        </div>
+
+        <div class="ac-field">
+          <label>Features</label>
+          <div class="ac-feat-grid">
+            @for (f of featureCodes; track f) {
+              <label class="ac-check" [class.checked]="hasPlanFeature(f)">
+                <input type="checkbox" [checked]="hasPlanFeature(f)" (change)="togglePlanFeature(f)" />
+                {{ featureLabel(f) }}
+              </label>
+            }
+          </div>
+        </div>
+
+        <label class="ac-check ac-check--wide" [class.checked]="planForm.isActive">
+          <input type="checkbox" [(ngModel)]="planForm.isActive" />
+          Active (visible on the pricing page)
+        </label>
+      </div>
+      <div class="ac-modal__foot">
+        <button class="ac-btn ac-btn--ghost" (click)="closePlan()">Cancel</button>
+        <button class="ac-btn ac-btn--primary" [disabled]="!planValid || busy()" (click)="savePlan()">
+          {{ planEditCode() ? 'Save Changes' : 'Create Plan' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Add-on editor modal ───────────────────────────────────── -->
+@if (addonOpen()) {
+  <div class="ac-overlay" (click)="closeAddon()">
+    <div class="ac-modal ac-modal--sm" (click)="$event.stopPropagation()">
+      <div class="ac-modal__head">
+        <h3>{{ addonEditCode() ? 'Edit Add-on' : 'New Add-on' }}</h3>
+        <button class="ac-x" (click)="closeAddon()">✕</button>
+      </div>
+      <div class="ac-modal__body">
+        <div class="ac-form-row">
+          <div class="ac-field">
+            <label>Code <span class="ac-req">*</span></label>
+            <input class="ac-input" type="text" [(ngModel)]="addonForm.code" [disabled]="addonEditCode() !== null" placeholder="e.g. biometric" />
+            @if (addonEditCode() !== null) { <span class="ac-hint">Code is immutable after create.</span> }
+          </div>
+          <div class="ac-field">
+            <label>Name <span class="ac-req">*</span></label>
+            <input class="ac-input" type="text" [(ngModel)]="addonForm.name" placeholder="e.g. Biometric Sync" />
+          </div>
+        </div>
+
+        <div class="ac-field">
+          <label>Feature <span class="ac-req">*</span></label>
+          <select class="ac-input" [(ngModel)]="addonForm.feature">
+            @for (f of featureCodes; track f) { <option [value]="f">{{ featureLabel(f) }}</option> }
+          </select>
+        </div>
+
+        <div class="ac-form-row">
+          <div class="ac-field">
+            <label>Monthly Price ({{ currency() }})</label>
+            <input class="ac-input" type="number" min="0" [(ngModel)]="addonForm.monthlyPrice" />
+          </div>
+          <div class="ac-field">
+            <label>Sort Order</label>
+            <input class="ac-input" type="number" min="0" [(ngModel)]="addonForm.sortOrder" />
+          </div>
+        </div>
+
+        <label class="ac-check ac-check--wide" [class.checked]="addonForm.isActive">
+          <input type="checkbox" [(ngModel)]="addonForm.isActive" />
+          Active
+        </label>
+      </div>
+      <div class="ac-modal__foot">
+        <button class="ac-btn ac-btn--ghost" (click)="closeAddon()">Cancel</button>
+        <button class="ac-btn ac-btn--primary" [disabled]="!addonValid || busy()" (click)="saveAddon()">
+          {{ addonEditCode() ? 'Save Changes' : 'Create Add-on' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

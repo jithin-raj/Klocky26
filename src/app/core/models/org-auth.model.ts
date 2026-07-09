@@ -28,42 +28,42 @@ export type CompanySize = '1-10' | '11-50' | '51-200' | '201-500' | '501-1000' |
 export type CheckInRuleType = 'none' | '5' | '10' | '15' | '30' | 'custom';
 export type LocationPolicy = 'no_restrictions' | 'office_only' | 'geo_fenced_area' | 'ip_restriction';
 
-/** POST /api/org/auth/register request */
-export interface RegisterOrgRequest {
-  verificationToken: string;
+/**
+ * POST /api/org/auth/register request — the slim, basic-only registration.
+ * All the advanced attendance config was removed from the sign-up form; the
+ * server applies sensible defaults and it's edited later in Org Settings.
+ * Codes come from GET /api/options (industry/company_size/country/timezone/…).
+ */
+export interface RegisterOrganizationRequest {
+  verificationToken: string;           // from the email-OTP step
   organisationName: string;
   displayName: string;
   primaryEmail: string;
-  industry: string;
-  companySize: CompanySize;
-  country: string;
-  defaultTimezone: string;
+  industry: string;                    // options.industry code
+  companySize: string;                 // options.company_size code
+  country: string;                     // options.country code
+  defaultTimezone: string;             // options.timezone code (auto from country.extra)
+  currency?: string;                   // options.currency code (default "INR")
+  dateFormat?: string;                 // options.date_format code
+  timeFormat?: string;                 // options.time_format code
   emailDomain?: string;
   website?: string;
 
-  clockInMethods: ClockInMethod[];
-  weekStartDay: string;
-  weekEndDay: string;
-  workHours: number;
-  /** Office hours — "HH:mm" in the org timezone. workDayEnd must be after workDayStart. */
-  workDayStart: string;
-  workDayEnd: string;
-  /** Minutes after workDayEnd before auto clock-out fires (default 0). */
-  autoCheckoutBufferMins: number;
-  /** Cooldown between punches, either direction (default 2). */
-  minPunchGapMins: number;
-  checkInRuleType: CheckInRuleType;
-  checkInCustomMinutes?: number | null;
-  halfDayThresholdHrs: number;
-  lateThresholdMins: number;
-  locationPolicy: LocationPolicy;
-  overtimeEnabled: boolean;
-  requirePhotoOnClockIn: boolean;
-  ipRestrictionEnabled: boolean;
-  selfieVerificationEnabled: boolean;
-  autoCheckoutEnabled: boolean;
-  currency: string;
+  // Optional — omitted from the basic form; server applies defaults, set later in Settings.
+  clockInMethods?: string[];
+  weekStartDay?: string;
+  weekEndDay?: string;
+  workHours?: number;
+  workDayStart?: string;
+  workDayEnd?: string;
+  halfDayThresholdHrs?: number;
+  minPunchGapMins?: number;
+  requirePhotoOnClockIn?: boolean;
+  overtimeEnabled?: boolean;
 }
+
+/** @deprecated Old wide registration payload — kept as an alias during migration. */
+export type RegisterOrgRequest = RegisterOrganizationRequest;
 
 /** POST /api/org/auth/register response (data) — also returned by org-admin login (2.1) */
 export interface OrgLoginResponse {
@@ -251,8 +251,12 @@ export interface TenantSettings {
   country: string;
   defaultTimezone: string;
   dateFormat: string;
+  /** options.time_format code (e.g. "12h" | "24h"). */
+  timeFormat: string;
   currency: string;
   clockInMethods: ClockInMethod[];
+  /** options.mobile_platform codes the org allows for the mobile app (multi-select). */
+  allowedMobilePlatforms: string[];
   weekStartDay: string;
   weekEndDay: string;
   workHours: number;

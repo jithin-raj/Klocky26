@@ -3,6 +3,7 @@ import { Observable, tap, firstValueFrom } from 'rxjs';
 import { ApiService }         from './api.service';
 import { AppStateService }    from './app-state.service';
 import { PermissionService }  from './permission.service';
+import { SubscriptionService } from './subscription.service';
 import { RealtimeService }    from './realtime.service';
 import { MobileBridgeService } from './mobile-bridge.service';
 import { ApiResponse }        from '../models/api-response.model';
@@ -34,6 +35,7 @@ export class UserAuthService {
   private readonly api      = inject(ApiService);
   private readonly appState = inject(AppStateService);
   private readonly permissions = inject(PermissionService);
+  private readonly subscription = inject(SubscriptionService);
   private readonly realtime = inject(RealtimeService);
   private readonly bridge   = inject(MobileBridgeService);
 
@@ -90,6 +92,7 @@ export class UserAuthService {
 
     this.realtime.disconnect();
     this.permissions.clear();
+    this.subscription.clear();
     await this.appState.clearState();
   }
 }

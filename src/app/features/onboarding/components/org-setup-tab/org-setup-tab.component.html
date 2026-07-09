@@ -83,7 +83,7 @@
       [searchable]="true"
       label="Industry *"
       placeholder="Select industry"
-      [options]="industries"
+      [options]="industryOptions()"
       [(ngModel)]="industry"
       name="industry"
       (ngModelChange)="emit()"
@@ -96,7 +96,7 @@
       [dark]="true"
       label="Company Size *"
       placeholder="Select size"
-      [options]="companySizes"
+      [options]="companySizeOptions()"
       [(ngModel)]="companySize"
       name="companySize"
       (ngModelChange)="emit()"
@@ -117,23 +117,63 @@
       [searchable]="true"
       label="Country *"
       placeholder="Select country"
-      [options]="countries"
+      [options]="countryOptions()"
       [(ngModel)]="country"
       name="country"
-      (ngModelChange)="emit()"
+      (ngModelChange)="onCountryChange()"
     />
   </div>
 
-  <!-- Timezone -->
+  <!-- Timezone (auto-selected from country, still editable) -->
   <div class="ob-field">
     <ui-select
       [dark]="true"
       [searchable]="true"
       label="Timezone *"
       placeholder="Select timezone"
-      [options]="timezones"
+      [options]="timezoneOptions()"
       [(ngModel)]="timezone"
       name="timezone"
+      (ngModelChange)="emit()"
+    />
+  </div>
+
+  <!-- Currency -->
+  <div class="ob-field">
+    <ui-select
+      [dark]="true"
+      [searchable]="true"
+      label="Currency *"
+      placeholder="Select currency"
+      [options]="currencyOptions()"
+      [(ngModel)]="currency"
+      name="currency"
+      (ngModelChange)="emit()"
+    />
+  </div>
+
+  <!-- Date format -->
+  <div class="ob-field">
+    <ui-select
+      [dark]="true"
+      label="Date Format *"
+      placeholder="Select date format"
+      [options]="dateFormatOptions()"
+      [(ngModel)]="dateFormat"
+      name="dateFormat"
+      (ngModelChange)="emit()"
+    />
+  </div>
+
+  <!-- Time format -->
+  <div class="ob-field">
+    <ui-select
+      [dark]="true"
+      label="Time Format *"
+      placeholder="Select time format"
+      [options]="timeFormatOptions()"
+      [(ngModel)]="timeFormat"
+      name="timeFormat"
       (ngModelChange)="emit()"
     />
   </div>
@@ -158,3 +198,13 @@
   </div>
 
 </div>
+
+<!-- ── Consent (DPDP) ──────────────────────────────────────────────── -->
+<label class="ob-consent">
+  <input type="checkbox" [(ngModel)]="agreed" name="agreed" (ngModelChange)="emit()" />
+  <span>
+    I agree to the
+    <a href="/privacy-policy" target="_blank" rel="noopener" class="ob-consent-link">Privacy Policy</a>
+    and consent to processing our organisation's data as described (DPDP).
+  </span>
+</label>

@@ -275,17 +275,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Anchored to the top (not centered) so the day number is always fully visible —
-     centering clips it from BOTH edges when a cell's stacked content (number + hours
-     dots + hours label) is taller than the row; only the less-critical content below
-     the number should ever be the thing that clips. */
-  justify-content: flex-start;
+  /* Content (day number + dots + time) sits vertically centered in the card, on
+     both large screens and mobile. The padding below keeps the today-ring off
+     the content so centring never clips the day number. */
+  justify-content: center;
   border-radius: 10px;
   cursor: pointer;
   background: transparent;
   min-height: 0;
   /* Clears the -2px inset today-ring (and the cell border) so it never overlaps content. */
-  padding: 6px 2px 4px;
+  padding: 6px 2px;
   box-sizing: border-box;
   /* overflow hidden keeps cells fixed-size; the tooltip uses position:absolute and
      breaks out of its parent via z-index so it still shows correctly */
@@ -321,16 +320,29 @@
   margin-bottom: 4px;
 }
 
-/* ── Off / Weekend — disabled, non-interactive ─────────────────────── */
+/* ── Off / Weekend — colour comes from the API (--s-bg/--s-color) ─────── */
 .cal-cell.is-off {
-  background: #f1f5f9;
-  border: 1px dashed #dde3ed;
-  opacity: 0.7;
+  /* --s-bg / --s-color are set per-cell from the server's weekend colour;
+     the greys are only a fallback for the pre-API skeleton. */
+  background: var(--s-bg, rgba(148, 163, 184, 0.14));
+  border: 1px dashed #cbd5e1;
   pointer-events: none;
   cursor: default;
 }
 .cal-cell.is-off .day-num {
-  color: #94a3b8;
+  color: var(--s-color, #64748b);
+}
+.weekend-tag {
+  margin-top: 5px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--s-color, #94a3b8);
+  line-height: 1;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 /* ── Past with no record ──────────────────────────────────────────── */
@@ -677,6 +689,7 @@
   .cal-hdr { font-size: 10px; padding: 2px 0 6px; }
   .day-num { font-size: 12px; }
   .dot { width: 4px; height: 4px; }
+  .weekend-tag { font-size: 7.5px; margin-top: 3px; }
 
   .legend { gap: 6px 10px; margin-top: 8px; padding-top: 8px; }
   .leg-item { font-size: 10px; }
@@ -924,6 +937,7 @@
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid #f1f5f9;
+  text-align: center;
 }
 
 .cdm-footer-hint {
@@ -934,21 +948,23 @@
 }
 
 .cdm-regularize-btn {
-  width: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 6px;
+  margin: 0 auto;
+  padding: 7px 14px;
   border: none;
-  border-radius: 12px;
+  border-radius: 9px;
   background: linear-gradient(135deg, #0d9488, #0891b2);
   color: #fff;
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s, transform 0.12s;
 
   &:hover  { opacity: 0.9; }
   &:active { transform: scale(0.98); }
+
+  svg { width: 13px; height: 13px; }
 }

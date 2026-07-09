@@ -3,20 +3,13 @@ import { Router } from '@angular/router';
 import { TrialEmailStepComponent, TrialStartData } from '../../components/trial-email-step/trial-email-step.component';
 import { CompanySetupComponent } from '../../components/company-setup/company-setup.component';
 import { OrgSetupData } from '../../components/org-setup-tab/org-setup-tab.component';
-import { AttendanceSetupData } from '../../components/attendance-setup-tab/attendance-setup-tab.component';
 import { OtpStepComponent } from '../../../auth/components/otp-step/otp-step.component';
 import { AuthShellComponent } from '../../../auth/components/auth-shell/auth-shell.component';
 import { AuthStateService } from '../../../auth/services/auth-state.service';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { OptionsService } from '../../../../core/services/options.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
-import {
-  mapTimezoneLabel,
-  normalizeCompanySize,
-  mapLocationRule,
-  mapGracePeriod,
-  mapLateThresholdMins,
-} from '../../../../core/utils/onboarding-mapping.util';
 
 export type TrialStep = 'email' | 'otp' | 'setup' | 'done';
 
@@ -33,14 +26,12 @@ export class FreeTrialComponent implements OnInit {
   private authState = inject(AuthStateService);
   private orgTheme = inject(OrgThemeService);
   private orgAuth = inject(OrgAuthService);
+  private options = inject(OptionsService);
   private toast   = inject(ToastService);
 
   step       = signal<TrialStep>('email');
   adminEmail = signal('');
   orgName    = signal('');
-
-  /** GET /api/tenant/options clockInMethods — fetched once, forwarded to the attendance setup tab. Never hardcoded. */
-  methodOptions = signal<string[]>([]);
 
   /** Surfaced on the email step if send-otp fails (e.g. org/email already taken). */
   emailStepError = signal('');
@@ -55,12 +46,8 @@ export class FreeTrialComponent implements OnInit {
 
   ngOnInit(): void {
     this.orgTheme.reset();
-    this.orgAuth.getTenantOptions().subscribe({
-      next: (res) => {
-        if (res.data.clockInMethods?.length) this.methodOptions.set(res.data.clockInMethods);
-      },
-      error: () => { /* attendance tab shows "loading available methods" until this resolves */ },
-    });
+    // Preload the public options catalogue so the org-setup dropdowns are ready.
+    this.options.ensureLoaded().subscribe();
   }
 
   onEmailSubmitted(data: TrialStartData): void {
@@ -91,46 +78,30 @@ export class FreeTrialComponent implements OnInit {
     this.step.set('setup');
   }
 
-  onSetupComplete(payload: { org: OrgSetupData; attendance: AttendanceSetupData }): void {
+  onSetupComplete(payload: { org: OrgSetupData }): void {
     if (this.setupSubmitting()) return;
     this.setupError.set('');
     this.setupSubmitting.set(true);
 
-    const { org, attendance } = payload;
-    const { checkInRuleType, checkInCustomMinutes } = mapGracePeriod(attendance.gracePeriod);
+    const { org } = payload;
 
+    // Slim, basic-only registration — codes come straight from the options
+    // catalogue. Advanced attendance config is applied server-side by default
+    // and configured later in Org Settings.
     this.orgAuth.registerOrg({
       verificationToken: this.verificationToken,
       organisationName: org.orgName,
       displayName: org.displayName || org.orgName,
       primaryEmail: this.adminEmail(),
       industry: org.industry,
-      companySize: normalizeCompanySize(org.companySize),
+      companySize: org.companySize,
       country: org.country,
-      defaultTimezone: mapTimezoneLabel(org.timezone),
+      defaultTimezone: org.timezone,
+      currency: org.currency || 'INR',
+      dateFormat: org.dateFormat || undefined,
+      timeFormat: org.timeFormat || undefined,
       emailDomain: org.emailDomain || this.adminEmail().split('@')[1] || '',
       website: org.website || undefined,
-
-      clockInMethods: attendance.clockInMethods as any,
-      weekStartDay: attendance.workWeekStart.toLowerCase(),
-      weekEndDay: attendance.workWeekEnd.toLowerCase(),
-      workHours: attendance.workHoursPerDay,
-      workDayStart: attendance.workDayStart || '09:00',
-      workDayEnd: attendance.workDayEnd || '18:00',
-      autoCheckoutBufferMins: attendance.autoCheckoutBufferMins ?? 0,
-      minPunchGapMins: attendance.minPunchGapMins ?? 2,
-      checkInRuleType,
-      checkInCustomMinutes,
-      halfDayThresholdHrs: attendance.halfDayThresholdHrs,
-      lateThresholdMins: mapLateThresholdMins(attendance.lateThreshold),
-      locationPolicy: mapLocationRule(attendance.locationRule),
-      overtimeEnabled: attendance.overtimeEnabled,
-      // Coming soon — no UI control yet, always sent as false.
-      requirePhotoOnClockIn: attendance.requirePhoto,
-      ipRestrictionEnabled: attendance.ipRestriction,
-      selfieVerificationEnabled: false,
-      autoCheckoutEnabled: attendance.autoCheckoutEnabled,
-      currency: 'INR',
     }).subscribe({
       next: () => {
         this.setupSubmitting.set(false);

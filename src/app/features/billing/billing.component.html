@@ -1,0 +1,185 @@
+<div class="bl-page">
+
+  <div class="bl-header">
+    <h1>Billing & Subscription</h1>
+    <p>Manage your plan, add-ons, and seats.</p>
+  </div>
+
+  <!-- Status + usage cards -->
+  @if (sub(); as s) {
+    <div class="bl-cards">
+      <!-- Status -->
+      <div class="bl-card">
+        <div class="bl-card__label">Current Plan</div>
+        <div class="bl-plan-name">
+          {{ s.plan || 'No plan' }}
+          @if (s.isCustom) { <span class="bl-chip">Custom</span> }
+        </div>
+        <div class="bl-status" [class]="statusClass(s.status)">{{ statusLabel(s.status) }}</div>
+        <div class="bl-meta">
+          @if (s.daysLeft != null) {
+            <span>{{ s.daysLeft }} day{{ s.daysLeft === 1 ? '' : 's' }} left</span>
+          }
+          @if (s.subscriptionExpiresAt) {
+            <span>· Renews {{ s.subscriptionExpiresAt | date:'MMM d, yyyy' }}</span>
+          } @else if (s.trialEndsAt) {
+            <span>· Trial ends {{ s.trialEndsAt | date:'MMM d, yyyy' }}</span>
+          }
+        </div>
+      </div>
+
+      <!-- Usage -->
+      <div class="bl-card">
+        <div class="bl-card__label">Usage</div>
+
+        <div class="bl-usage">
+          <div class="bl-usage__row">
+            <span>Employees</span>
+            <span class="bl-usage__count">{{ s.usage.employees }} / {{ limitLabel(s.limits.maxEmployees) }}</span>
+          </div>
+          <div class="bl-bar">
+            <div class="bl-bar__fill" [style.width.%]="usagePct(s.usage.employees, s.limits.maxEmployees)"></div>
+          </div>
+        </div>
+
+        <div class="bl-usage">
+          <div class="bl-usage__row">
+            <span>Admins</span>
+            <span class="bl-usage__count">{{ s.usage.admins }} / {{ limitLabel(s.limits.maxAdmins) }}</span>
+          </div>
+          <div class="bl-bar">
+            <div class="bl-bar__fill" [style.width.%]="usagePct(s.usage.admins, s.limits.maxAdmins)"></div>
+          </div>
+        </div>
+
+        @if (s.features.length) {
+          <div class="bl-features">
+            @for (f of s.features; track f) {
+              <span class="bl-feature-chip">{{ featureLabel(f) }}</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Plan + add-on picker -->
+  <div class="bl-picker">
+    <div class="bl-picker__head">
+      <h2>Choose a plan</h2>
+      <div class="bl-cycle">
+        <button type="button" [class.active]="billingCycle() === 'monthly'" (click)="setCycle('monthly')">Monthly</button>
+        <button type="button" [class.active]="billingCycle() === 'annual'" (click)="setCycle('annual')">
+          Annual <span class="bl-save">2 months free</span>
+        </button>
+      </div>
+    </div>
+
+    @if (loadingPlans()) {
+      <div class="bl-empty">Loading plans…</div>
+    } @else if (plansError()) {
+      <div class="bl-empty bl-empty--error">
+        {{ plansError() }}
+        <button class="bl-btn bl-btn--ghost bl-btn--sm" (click)="loadPlans()">Retry</button>
+      </div>
+    } @else {
+      <div class="bl-plan-grid">
+        @for (p of plans(); track p.code) {
+          <button type="button" class="bl-plan-card" [class.selected]="selectedPlan() === p.code" (click)="selectPlan(p.code)">
+            <div class="bl-plan-card__top">
+              <span class="bl-plan-card__name">{{ p.name }}</span>
+              @if (selectedPlan() === p.code) {
+                <span class="bl-tick">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+              }
+            </div>
+            @if (planTooSmall(p)) {
+              <span class="bl-plan-card__warn" title="Needs extra seats for your current team">
+                Below your {{ currentEmployees() }} employees
+              </span>
+            }
+            <div class="bl-plan-card__price">
+              {{ fmt(planPrice(p)) }}
+              <span class="bl-plan-card__cycle">/ {{ billingCycle() === 'annual' ? 'yr' : 'mo' }}</span>
+            </div>
+            <p class="bl-plan-card__desc">{{ p.description }}</p>
+            <ul class="bl-plan-card__meta">
+              <li>{{ p.maxEmployees == null ? 'Unlimited' : p.maxEmployees }} employees</li>
+              <li>{{ p.maxAdmins == null ? 'Unlimited' : p.maxAdmins }} admins</li>
+              @for (f of p.features; track f) { <li>{{ featureLabel(f) }}</li> }
+            </ul>
+          </button>
+        }
+      </div>
+
+      <!-- Add-ons -->
+      @if (addons().length) {
+        <div class="bl-addons">
+          <h3>Add-ons</h3>
+          <div class="bl-addon-list">
+            @for (a of addons(); track a.code) {
+              <label class="bl-addon" [class.checked]="isAddonSelected(a.code)">
+                <input type="checkbox" [checked]="isAddonSelected(a.code)" (change)="toggleAddon(a.code)" />
+                <span class="bl-addon__name">{{ a.name }}</span>
+                <span class="bl-addon__price">+{{ fmt(addonPrice(a)) }}/{{ billingCycle() === 'annual' ? 'yr' : 'mo' }}</span>
+              </label>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Extra seats -->
+      <div class="bl-seats">
+        <div class="bl-seats__info">
+          <span class="bl-seats__label">Extra seats</span>
+          <span class="bl-seats__hint">{{ fmt(extraSeatMonthlyPrice()) }} per seat / mo</span>
+        </div>
+        <div class="bl-stepper">
+          <button type="button" (click)="setExtraSeats(extraSeats() - 1)" [disabled]="extraSeats() <= 0">−</button>
+          <input type="number" min="0" [ngModel]="extraSeats()" (ngModelChange)="setExtraSeats($event)" />
+          <button type="button" (click)="setExtraSeats(extraSeats() + 1)">+</button>
+        </div>
+      </div>
+
+      <!-- Capacity warning: selected plan can't hold current usage -->
+      @if (!planFits()) {
+        <div class="bl-warn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div class="bl-warn__body">
+            @if (adminShortfall() > 0) {
+              <strong>This plan allows fewer admins than you have.</strong>
+              You currently have {{ currentAdmins() }} admin{{ currentAdmins() === 1 ? '' : 's' }}
+              but {{ selectedPlanObj()?.name }} covers {{ selectedPlanObj()?.maxAdmins }}.
+              Remove some admins or pick a larger plan.
+            } @else {
+              <strong>Not enough seats for your team.</strong>
+              Your organisation has {{ currentEmployees() }} employees but {{ selectedPlanObj()?.name }}
+              covers {{ selectedPlanObj()?.maxEmployees }}{{ extraSeats() > 0 ? ' + ' + extraSeats() + ' extra' : '' }}.
+              Add {{ seatShortfall() }} more seat{{ seatShortfall() === 1 ? '' : 's' }} or choose a larger plan.
+              <button type="button" class="bl-warn__fix" (click)="addSeatsToFit()">Add {{ seatShortfall() }} seat{{ seatShortfall() === 1 ? '' : 's' }}</button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Estimate + pay -->
+      <div class="bl-checkout">
+        <div class="bl-estimate">
+          <span class="bl-estimate__label">Estimated total</span>
+          <span class="bl-estimate__amount">
+            {{ fmt(estimate()) }}
+            <span class="bl-estimate__cycle">/ {{ billingCycle() === 'annual' ? 'year' : 'month' }}</span>
+          </span>
+          <span class="bl-estimate__note">Final amount is confirmed at checkout.</span>
+        </div>
+        <button class="bl-btn bl-btn--primary" [disabled]="!selectedPlan() || paying() || !planFits()" (click)="pay()">
+          {{ paying() ? 'Starting…' : (sub()?.status === 'active' ? 'Renew / Change plan' : 'Subscribe') }}
+        </button>
+      </div>
+    }
+  </div>
+
+</div>

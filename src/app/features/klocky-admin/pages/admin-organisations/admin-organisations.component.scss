@@ -81,6 +81,16 @@ $accent: #0d9488;
   font-size: 14px; color: #1e293b; outline: none;
   &:focus { border-color: var(--accent, #0d9488); }
 }
+.ao-feat-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+.ao-feat-check {
+  display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: #1e293b; cursor: pointer;
+  padding: 9px 12px; border: 1.5px solid #eef1f5; border-radius: 10px; background: #fbfcfe; transition: border-color .15s, background .15s;
+  input { width: 16px; height: 16px; accent-color: var(--accent, #0d9488); cursor: pointer; }
+  &.checked { border-color: var(--accent, #0d9488); background: color-mix(in srgb, var(--accent, #0d9488) 7%, #fff); }
+}
 .ao-toggle-field {
   --ui-toggle-label: #1e293b;
   --ui-toggle-hint: #94a3b8;

@@ -55,6 +55,11 @@ export type { UiIconName } from './ui-icon/ui-icon.component';
 
 // Directives
 export { HasPermissionDirective } from '../directives/has-permission.directive';
+export { HasFeatureDirective } from '../directives/has-feature.directive';
+
+// Subscription / upgrade prompt
+export { UpgradePromptComponent } from './upgrade-prompt/upgrade-prompt.component';
+export { UpgradePromptService } from './upgrade-prompt/upgrade-prompt.service';
 
 // Brand
 export { AppBrandComponent } from './app-brand/app-brand.component';

@@ -169,6 +169,15 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/organisation/organisation.routes').then((m) => m.organisationRoutes),
       },
+      {
+        // Reachable even when expired — the whole point is to let admins pay to
+        // unblock. Gated to admins/HR (billing management is admin-facing).
+        path: 'billing',
+        canActivate: [roleGuard],
+        data: { roles: ['admin', 'hr', 'super_admin'] },
+        loadChildren: () =>
+          import('./features/billing/billing.routes').then((m) => m.billingRoutes),
+      },
     ],
   },
       // Catch-all for invalid /:orgUrlName routes (e.g., /:orgUrlName/xyz)

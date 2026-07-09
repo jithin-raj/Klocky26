@@ -235,6 +235,19 @@
         </ui-form-grid>
       </ui-form-section>
 
+      <!-- Custom features (per-org override) -->
+      <ui-form-section title="Custom features"
+                       description="Per-org feature overrides — grants features beyond the plan. Validated against the allowed set.">
+        <div class="ao-feat-grid">
+          @for (f of featureCodes; track f) {
+            <label class="ao-feat-check" [class.checked]="hasEditFeature(f)">
+              <input type="checkbox" [checked]="hasEditFeature(f)" (change)="toggleEditFeature(f)" />
+              {{ featureLabel(f) }}
+            </label>
+          }
+        </div>
+      </ui-form-section>
+
       <!-- Org admin password -->
       <ui-form-section title="Org admin password"
                        description="The real password is hashed and can't be viewed — this resets it and shows a one-time temporary password.">

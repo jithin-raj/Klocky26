@@ -44,6 +44,8 @@ export interface PlatformOrgListItem {
   subscriptionExpiresAt: string | null;
   maxEmployees: number | null;
   maxAdminAccounts: number | null;
+  /** Per-org resolved/custom feature codes. */
+  features?: string[] | null;
 }
 
 /** POST /api/platform/organisations request — minimal-field creation */
@@ -80,6 +82,8 @@ export interface UpdatePlatformOrgRequest {
   subscriptionExpiresAt?: string;
   maxEmployees?: number;
   maxAdminAccounts?: number;
+  /** Per-org custom feature overrides (validated against the allowed set). */
+  features?: string[];
 }
 
 /**

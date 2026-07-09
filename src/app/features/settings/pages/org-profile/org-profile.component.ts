@@ -1,6 +1,7 @@
 import {
   Component,
   signal,
+  computed,
   ViewChild,
   ElementRef,
   inject,
@@ -23,6 +24,9 @@ import { AppStateService } from '../../../../core/services/app-state.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
 import { OrgLogoService } from '../../../../core/services/org-logo.service';
 import { OfficeService } from '../../../../core/services/office.service';
+import { SubscriptionService } from '../../../../core/services/subscription.service';
+import { OptionsService } from '../../../../core/services/options.service';
+import { UpgradePromptService } from '../../../../shared/components/upgrade-prompt/upgrade-prompt.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { Office as OfficeRecord } from '../../../../core/models/office.model';
 import {
@@ -140,7 +144,30 @@ export class OrgProfileComponent implements OnInit {
   private readonly orgAuth         = inject(OrgAuthService);
   private readonly officeSvc       = inject(OfficeService);
   private readonly logoSvc         = inject(OrgLogoService);
+  private readonly subscription    = inject(SubscriptionService);
+  private readonly upgradePrompt   = inject(UpgradePromptService);
+  private readonly optionsSvc      = inject(OptionsService);
   private readonly toast           = inject(ToastService);
+
+  // Reference-option pickers (shared with registration). _optionsTick bumps when
+  // the catalogue finishes loading so these computeds recompute.
+  private readonly _optionsTick = signal(0);
+  readonly dateFormatOpts = computed(() => {
+    this._optionsTick();
+    const o = this.optionsSvc.selectOptions('date_format');
+    return o.length ? o : DATE_FORMATS.map(f => ({ label: f, value: f }));
+  });
+  readonly timeFormatOpts = computed(() => {
+    this._optionsTick();
+    const o = this.optionsSvc.selectOptions('time_format');
+    return o.length ? o : [{ label: '24-hour', value: '24h' }, { label: '12-hour', value: '12h' }];
+  });
+  readonly currencyOpts = computed(() => {
+    this._optionsTick();
+    const o = this.optionsSvc.selectOptions('currency');
+    return o.length ? o : CURRENCIES;   // CURRENCIES is already { label, value }[]
+  });
+  readonly mobilePlatformOpts = computed(() => (this._optionsTick(), this.optionsSvc.get('mobile_platform')));
   private readonly fb              = inject(FormBuilder);
   private readonly location        = inject(Location);
   private readonly router          = inject(Router);
@@ -224,6 +251,10 @@ export class OrgProfileComponent implements OnInit {
       error: () => { /* keep the local fallback list */ },
     });
 
+    // Shared reference options (same catalogue as registration) — powers the
+    // date/time-format, currency, clock-in-method and mobile-platform pickers.
+    this.optionsSvc.ensureLoaded().subscribe(() => this._optionsTick.update(v => v + 1));
+
     this._pendingAction = 'load';
     if (this.appState.isOrgAdminAuthenticated()) {
       this._loadSettings();
@@ -276,7 +307,9 @@ export class OrgProfileComponent implements OnInit {
 
     this.defaultTimezone = s.defaultTimezone;
     this.dateFormat       = s.dateFormat ?? this.dateFormat;
+    this.timeFormat       = s.timeFormat ?? this.timeFormat;
     this.currency          = s.currency ?? this.currency;
+    this.allowedMobilePlatforms = [...(s.allowedMobilePlatforms ?? [])];
     this.workWeekStartDay = this._capitalize(s.weekStartDay);
     this.workWeekEndDay   = this._capitalize(s.weekEndDay);
     this.weekStart         = this.workWeekStartDay;
@@ -333,6 +366,9 @@ export class OrgProfileComponent implements OnInit {
       day: h.day,
       type: h.type,
     }));
+
+    // Freshly-loaded state is clean. (_loadOffices recaptures once offices land.)
+    this._captureBaseline();
   }
 
   private _capitalize(v: string): string {
@@ -359,6 +395,18 @@ export class OrgProfileComponent implements OnInit {
   clockInMethodLabel(value: string): string {
     return this.clockInMethodLabels[value] ?? value;
   }
+
+  // Allowed mobile platforms (options.mobile_platform) — multi-select.
+  isMobilePlatformSelected(code: string): boolean {
+    return this.allowedMobilePlatforms.includes(code);
+  }
+  toggleMobilePlatform(code: string): void {
+    this.allowedMobilePlatforms = this.isMobilePlatformSelected(code)
+      ? this.allowedMobilePlatforms.filter(c => c !== code)
+      : [...this.allowedMobilePlatforms, code];
+    this.markDirty();
+  }
+
   readonly employeeBands       = EMPLOYEE_BANDS;
   readonly currencies          = CURRENCIES;
   readonly dateFormats         = DATE_FORMATS;
@@ -417,7 +465,9 @@ export class OrgProfileComponent implements OnInit {
   // Localisation
   defaultTimezone = 'Asia/Kolkata';
   dateFormat      = 'DD/MM/YYYY';
+  timeFormat      = '24h';
   currency        = 'INR';
+  allowedMobilePlatforms: string[] = [];
   weekStart       = 'Monday';
 
   // Attendance Policy
@@ -489,8 +539,51 @@ export class OrgProfileComponent implements OnInit {
   readonly holidayMonth        = signal(1);  // 1–12, currently viewed month
   readonly colorWarning        = signal('');  // Warning for light colors
 
+  /** Serialised baseline (last loaded/saved payload) — dirty is a diff against this. */
+  private _baseline = '';
+
+  /** JSON of exactly what would be sent to the server right now. */
+  private _snapshot(): string {
+    try {
+      const { checkInRuleType, checkInCustomMinutes } = this._toCheckInRule();
+      return JSON.stringify(this._buildPayload(checkInRuleType, checkInCustomMinutes));
+    } catch {
+      return '__error__';   // treat an un-buildable state as changed
+    }
+  }
+
+  /** Snapshot the current state as the clean baseline (after load / save). */
+  private _captureBaseline(): void {
+    this._baseline = this._snapshot();
+    this.isDirty.set(false);
+  }
+
+  /**
+   * Recompute dirty by comparing what-would-be-saved against the loaded baseline,
+   * so reverting a field (e.g. re-selecting the mobile app) correctly clears it.
+   */
   markDirty(): void {
-    this.isDirty.set(true);
+    this.isDirty.set(this._snapshot() !== this._baseline);
+  }
+
+  /**
+   * Gate a premium feature toggle: the UI isn't hidden/disabled, but flipping it
+   * ON while the org isn't subscribed for `feature` bounces it back off and opens
+   * the subscribe/upgrade prompt. `field` is the component property bound to the
+   * toggle's ngModel — reset it so the switch visually reverts.
+   * (The server also rejects enabling these with 403/409 as a backstop.)
+   */
+  guardPremiumToggle(
+    feature: string,
+    field: 'geoFencingEnabled' | 'compOffEnabled' | 'lopEnabled' | 'earnedLeaveEnabled',
+    enabled: boolean,
+  ): void {
+    if (enabled && !this.subscription.hasFeature(feature)) {
+      (this as unknown as Record<string, boolean>)[field] = false;
+      this.upgradePrompt.open(feature);
+      return;
+    }
+    this.markDirty();
   }
 
   validateMonthStartDay(): void {
@@ -716,7 +809,19 @@ export class OrgProfileComponent implements OnInit {
     this.selectedClockInMethods = this.isClockInMethodSelected(value)
       ? this.selectedClockInMethods.filter(v => v !== value)
       : [...this.selectedClockInMethods, value];
+    // Keep the chosen platforms in memory even while mobile is off — the payload
+    // sends [] when mobile is disabled (see _buildPayload), so toggling mobile
+    // off then on again returns to the exact original state (no phantom dirty).
     this.markDirty();
+  }
+
+  /**
+   * True when a mobile-app clock-in method is currently selected. Matches any
+   * selected method whose code looks like "mobile" (e.g. 'mobile', 'mobile_app'),
+   * so it doesn't depend on one exact server code.
+   */
+  get mobileClockInEnabled(): boolean {
+    return this.selectedClockInMethods.some(m => m.toLowerCase().includes('mobile'));
   }
 
   // ── Secondary emails ───────────────────────────────────────────
@@ -743,6 +848,9 @@ export class OrgProfileComponent implements OnInit {
           timezone: o.timezone ?? '',
         }));
         this._removedOfficeIds = [];
+        // Offices are part of the saved payload — fold them into the clean baseline
+        // only when the user hasn't started editing yet.
+        if (!this.isDirty()) this._captureBaseline();
       },
       error: () => { this.offices = []; },
     });
@@ -935,7 +1043,10 @@ export class OrgProfileComponent implements OnInit {
       error: (err) => {
         console.error('[OrgProfile] save error:', err);
         this._loadOffices();
-        this.toast.error('Could not save', err?.error?.message ?? 'Your settings could not be saved.');
+        // Server backstop: enabling a premium feature without a subscription
+        // comes back as 403/409 { error } — surface it verbatim.
+        const msg = err?.error?.error ?? err?.error?.message ?? 'Your settings could not be saved.';
+        this.toast.error('Could not save', msg);
       },
     });
   }
@@ -969,7 +1080,9 @@ export class OrgProfileComponent implements OnInit {
       country: this.country ?? 'India',
       defaultTimezone: this.defaultTimezone ?? 'Asia/Kolkata',
       dateFormat: this.dateFormat ?? 'DD/MM/YYYY',
+      timeFormat: this.timeFormat ?? '24h',
       currency: this.currency ?? 'INR',
+      allowedMobilePlatforms: this.mobileClockInEnabled ? (this.allowedMobilePlatforms ?? []) : [],
       clockInMethods: (this.selectedClockInMethods.length ? this.selectedClockInMethods : ['web']) as any,
       weekStartDay: (this.workWeekStartDay ?? 'monday').toLowerCase(),
       weekEndDay: (this.workWeekEndDay ?? 'friday').toLowerCase(),
