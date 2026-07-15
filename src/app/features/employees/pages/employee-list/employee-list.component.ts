@@ -8,6 +8,8 @@ import { OrgNavigationService } from '../../../../core/services/org-navigation.s
 import { EmployeeService } from '../../../../core/services/employee.service';
 import { DepartmentService } from '../../../../core/services/department.service';
 import { PermissionService } from '../../../../core/services/permission.service';
+import { SubscriptionService } from '../../../../core/services/subscription.service';
+import { UpgradePromptService } from '../../../../shared/components/upgrade-prompt/upgrade-prompt.service';
 import { EmployeeResponse, BulkImportResponse } from '../../models/employee-api.model';
 import {
   UiDataGridComponent, GridColumnTemplateDirective, GridColumn, GridAction, SortDirection,
@@ -73,9 +75,6 @@ function toRow(e: EmployeeResponse): EmployeeRow {
     isActive: e.isActive,
     status: (e.isActive ? 'active' : 'inactive') as EmployeeStatus,
     isGuest: e.isGuest ?? false,
-    basicSalary: e.basicSalary,
-    allowances: e.allowances,
-    otherDeductions: e.otherDeductions,
   };
 }
 
@@ -95,9 +94,15 @@ export class EmployeeListComponent implements OnInit {
   private employeeService = inject(EmployeeService);
   private departmentService = inject(DepartmentService);
   private permissions = inject(PermissionService);
+  private subscription = inject(SubscriptionService);
+  private upgradePrompt = inject(UpgradePromptService);
 
-  /** Payroll columns/actions only for admin/HR (spec §3, §8). */
-  readonly canSeePayroll = computed(() => this.permissions.isAdmin() || this.permissions.isHr());
+  /** Subscription state (usage bar + add-employee gate). */
+  readonly sub = this.subscription.state;
+  readonly canAddEmployee = computed(() => this.subscription.canAddEmployee());
+
+  /** Compensation column only for those with at least view-level payroll access (admin/super_admin bypass). */
+  readonly canSeePayroll = computed(() => this.permissions.can('payroll', 1));
 
   private allEmployees: EmployeeRow[] = [];
 
@@ -182,8 +187,7 @@ export class EmployeeListComponent implements OnInit {
     ];
 
     if (this.canSeePayroll()) {
-      // Masked by default — reveal per row via the eye toggle in the custom cell.
-      cols.push({ key: 'basicSalary', label: 'Basic Salary', type: 'custom', width: '150px' });
+      cols.push({ key: 'compensation', label: 'Compensation', type: 'custom', width: '150px' });
     }
 
     cols.push({
@@ -197,14 +201,9 @@ export class EmployeeListComponent implements OnInit {
     return cols;
   });
 
-  // ── Basic-salary masking (reveal per row) ──────────────────────────
-  private readonly revealedSalary = signal<Set<string>>(new Set());
-  isSalaryRevealed(id: string) { return this.revealedSalary().has(id); }
-  toggleSalary(id: string, ev: Event) {
+  openCompensation(id: string, ev: Event) {
     ev.stopPropagation();
-    const next = new Set(this.revealedSalary());
-    next.has(id) ? next.delete(id) : next.add(id);
-    this.revealedSalary.set(next);
+    this.orgNav.navigate(['app', 'compensation', 'employee', id]);
   }
 
   empTypeLabel(t?: string | null): string {
@@ -261,6 +260,9 @@ export class EmployeeListComponent implements OnInit {
 
   ngOnInit() {
     this.loadEmployees();
+    // Usage changes when employees are added/removed — refresh the cap/usage bar
+    // each time the list is (re)visited, e.g. after returning from Add Employee.
+    this.subscription.load();
     this.departmentService.getAll().subscribe({
       next: (res) => this.departments.set((res.data ?? []).map(d => d.name)),
       error: () => { /* filter dropdown just stays empty on failure */ },
@@ -314,7 +316,12 @@ export class EmployeeListComponent implements OnInit {
 
   viewEmployee(id: string)   { this.orgNav.navigate(['app', 'employees', id]); }
   editEmployee(id: string)   { this.orgNav.navigate(['app', 'employees', id, 'edit']); }
-  addEmployee()              { this.orgNav.navigate(['app', 'employees', 'add']); }
+  addEmployee() {
+    // Seat cap is server-enforced; the gate here just routes to Upgrade instead
+    // of opening a form the server would reject on submit.
+    if (!this.canAddEmployee()) { this.upgradePrompt.openSeatLimit(); return; }
+    this.orgNav.navigate(['app', 'employees', 'add']);
+  }
   viewOrgTree()              { this.orgNav.navigate(['app', 'employees', 'tree']); }
 
   statusLabel(s: string) { return s === 'on_leave' ? 'On Leave' : (s.charAt(0).toUpperCase() + s.slice(1)); }
@@ -329,6 +336,7 @@ export class EmployeeListComponent implements OnInit {
   // ── Bulk import ────────────────────────────────────────────────────────
 
   openBulkImport() {
+    if (!this.canAddEmployee()) { this.upgradePrompt.openSeatLimit(); return; }
     this.bulkImportResult.set(null);
     this.bulkImportError.set(null);
     this.bulkImportOpen.set(true);

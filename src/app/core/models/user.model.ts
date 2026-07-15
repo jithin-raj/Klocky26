@@ -25,6 +25,15 @@ export interface LoginResponse {
   expiresAt: string;
   refreshTokenExpiresAt: string;
   mustChangePassword: boolean;
+  /**
+   * Subscription-gate fields (optional — older API versions may omit them, in
+   * which case the shell's own GET /org/subscription after login is the
+   * fallback source of truth). Only admins/HR/super_admin ever see `login`
+   * succeed with `subscriptionExpired: true` — regular employees are rejected
+   * at login with 401 when the org's subscription has expired.
+   */
+  subscriptionStatus?: 'trial' | 'active' | 'expired' | 'cancelled';
+  subscriptionExpired?: boolean;
 }
 
 /** POST /api/users/auth/refresh request */

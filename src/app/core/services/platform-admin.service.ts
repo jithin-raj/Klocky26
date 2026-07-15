@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpContext }        from '@angular/common/http';
-import { Observable, tap }    from 'rxjs';
+import { HttpContext, HttpResponse } from '@angular/common/http';
+import { Observable, tap, map } from 'rxjs';
 import { ApiService }         from './api.service';
 import { PlatformAdminStateService } from './platform-admin-state.service';
 import { AUTH_SCOPE }         from '../http/auth-scope.context';
@@ -14,6 +14,7 @@ import {
   UpdatePlatformOrgRequest,
   ResetOrgAdminPasswordResponse,
   SendOrgEmailRequest,
+  DeleteOrgResult,
 } from '../models/platform-auth.model';
 import { ChangePasswordRequest } from '../models/user.model';
 
@@ -54,9 +55,40 @@ export class PlatformAdminService {
     return this.api.get<ApiResponse<PlatformOrgListItem[]>>('/platform/organisations', undefined, PLATFORM_SCOPE);
   }
 
-  /** PUT /api/platform/organisations/{slug} — isActive toggles activate/deactivate; no DELETE endpoint exists. */
+  /** GET /api/platform/organisations/{slug} — one org's detail (OrganizationSummaryResponse). */
+  getOrganisation(slug: string): Observable<ApiResponse<PlatformOrgListItem>> {
+    return this.api.get<ApiResponse<PlatformOrgListItem>>(`/platform/organisations/${slug}`, undefined, PLATFORM_SCOPE);
+  }
+
+  /** PUT /api/platform/organisations/{slug} — isActive toggles activate/deactivate. */
   updateOrganisation(slug: string, payload: UpdatePlatformOrgRequest): Observable<ApiResponse<PlatformOrgListItem>> {
     return this.api.put<ApiResponse<PlatformOrgListItem>>(`/platform/organisations/${slug}`, payload, PLATFORM_SCOPE);
+  }
+
+  /**
+   * GET /api/platform/organisations/{slug}/backup — downloads a ZIP (one JSON
+   * file per table + a README) as a binary blob, with the full response so the
+   * caller can read the filename from Content-Disposition. Must run BEFORE the
+   * delete — afterwards the tenant DB is gone. Errors: 404 unknown slug,
+   * 401/403 without a platform-admin token.
+   */
+  backupOrganisation(slug: string): Observable<HttpResponse<Blob>> {
+    return this.api.getBlobResponse(`/platform/organisations/${slug}/backup`, undefined, PLATFORM_SCOPE);
+  }
+
+  /**
+   * DELETE /api/platform/organisations/{slug} — hard-deletes the org + tenant DB
+   * + payments (irreversible). Unless `skipBackup` is true a backup is written
+   * first and its path returned. 404 if the slug doesn't exist, 401/403 without
+   * a platform-admin token. Tolerant of both the standard envelope and a flat
+   * `{ message, backupPath }` body.
+   */
+  deleteOrganisation(slug: string, skipBackup = false): Observable<DeleteOrgResult> {
+    return this.api
+      .delete<ApiResponse<DeleteOrgResult> | DeleteOrgResult>(
+        `/platform/organisations/${slug}?skipBackup=${skipBackup}`, PLATFORM_SCOPE,
+      )
+      .pipe(map((res) => ((res as ApiResponse<DeleteOrgResult>)?.data ?? res) as DeleteOrgResult));
   }
 
   /**
@@ -69,10 +101,9 @@ export class PlatformAdminService {
   }
 
   /**
-   * POST /api/platform/organisations/{slug}/reset-admin-password — REQUESTED,
-   * not implemented server-side yet (SERVER_CHANGES_REQUEST.md §0). Will 404
-   * until that endpoint exists; callers should handle that explicitly rather
-   * than showing a generic network error.
+   * POST /api/platform/organisations/{slug}/reset-admin-password — issues a fresh
+   * one-time temporary password for the org's admin (the real one is hashed and
+   * can't be viewed). Live platform-admin endpoint.
    */
   resetOrgAdminPassword(slug: string): Observable<ApiResponse<ResetOrgAdminPasswordResponse>> {
     return this.api.post<ApiResponse<ResetOrgAdminPasswordResponse>>(`/platform/organisations/${slug}/reset-admin-password`, {}, PLATFORM_SCOPE);

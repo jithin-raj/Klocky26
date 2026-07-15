@@ -172,11 +172,15 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     if (!res) return;
     const records: Record<string, AttendanceRecord> = {};
     const holidays: Record<string, string> = {};
+    const weekendDates = new Set<string>();
     const dates: string[] = [];
     for (const day of res.days) {
       dates.push(day.date);
-      const status = this._mapStatus(day.status);
-      // Weekends + future days carry no record — the grid derives those itself.
+      // Weekend is whatever the API says (isWeekend) — never a hardcoded Sat/Sun.
+      if (day.isWeekend) weekendDates.add(day.date);
+      // A weekend day is always 'off' even if the API left its status as 'upcoming',
+      // so it carries the server's weekend colour and renders as a week-off.
+      const status = this._mapStatus(day.status) ?? (day.isWeekend ? 'off' : null);
       if (status) {
         const hours = day.hoursWorked ?? day.presentHours ?? undefined;
         records[day.date] = {
@@ -191,6 +195,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       if (day.holidayName) holidays[day.date] = day.holidayName;
     }
     this._cycleDates.set(dates);
+    this._weekendDates.set(weekendDates);
     this._recordMap.set(records);
     this._holidayMap.set(holidays);
   }
@@ -261,6 +266,8 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   readonly _holidayMap = signal<Record<string, string>>({});
   /** Ordered ISO dates for the current cycle as returned by the API. Empty until first fetch. */
   private readonly _cycleDates = signal<string[]>([]);
+  /** Dates the API flags as weekends (isWeekend) — the org's real week-off days, not a hardcoded Sat/Sun. */
+  private readonly _weekendDates = signal<Set<string>>(new Set());
 
   /** Currently "active" cell on mobile (tap to magnify) and for the detail modal */
   activeCell: DayCell | null = null;
@@ -295,12 +302,13 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
         })();
 
     const firstDow = dates[0]?.getDay() ?? 0;
+    const apiLoaded = isoDates.length > 0;
     const cells: (DayCell | null)[] = Array(firstDow).fill(null);
 
     for (const date of dates) {
       const dow = date.getDay();
-      const isOff = dow === 0 || dow === 6;
       const key = this._dateKey(date);
+      const isOff = this._isOff(key, dow, apiLoaded);
       const isFuture = date > this.today;
       const isToday  = this._sameDay(date, this.today);
       const isPast   = !isFuture && !isToday;
@@ -333,10 +341,11 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       ? isoDates.map(s => new Date(s + 'T00:00:00'))
       : (() => { const { year, month } = this._ym(); const n = new Date(year, month + 1, 0).getDate(); return Array.from({ length: n }, (_, i) => new Date(year, month, i + 1)); })();
 
+    const apiLoaded = isoDates.length > 0;
     for (const date of dates) {
       if (date > this.today) continue;
       const dow = date.getDay();
-      if (dow === 0 || dow === 6) continue;
+      if (this._isOff(this._dateKey(date), dow, apiLoaded)) continue;
       const s = map[this._dateKey(date)]?.status;
       if (s && s !== 'off' && counts[s] !== undefined) counts[s]++;
     }
@@ -388,10 +397,11 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       ? isoDates.map(s => new Date(s + 'T00:00:00'))
       : (() => { const { year, month } = this._ym(); const n = new Date(year, month + 1, 0).getDate(); return Array.from({ length: n }, (_, i) => new Date(year, month, i + 1)); })();
 
+    const apiLoaded = isoDates.length > 0;
     return dates.map(date => {
       const dow = date.getDay();
-      const isOff = dow === 0 || dow === 6;
       const key = this._dateKey(date);
+      const isOff = this._isOff(key, dow, apiLoaded);
       const isFuture = date > this.today;
       const isToday  = this._sameDay(date, this.today);
       const isPast   = !isFuture && !isToday;
@@ -462,6 +472,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   prevMonth(): void {
     const { year, month } = this._ym();
     this._cycleDates.set([]);
+    this._weekendDates.set(new Set());
     this.viewDate.set(new Date(year, month - 1, 1));
     this.activeCell = null;
     this.selectedCell.set(null);
@@ -470,6 +481,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   nextMonth(): void {
     const { year, month } = this._ym();
     this._cycleDates.set([]);
+    this._weekendDates.set(new Set());
     this.viewDate.set(new Date(year, month + 1, 1));
     this.activeCell = null;
     this.selectedCell.set(null);
@@ -489,18 +501,22 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     this.selectedCell.set(null);
   }
 
-  /** Whether this cell can be regularized — absent/leave/no-record or requiredHours not met */
+  /**
+   * Whether this cell can be regularized — only for absent/leave/no-record days
+   * and half-days. A full 'present' day (including overtime) needs no correction,
+   * and holidays/comp-off/weekends/future days are never regularizable.
+   */
   canRegularize(cell: DayCell): boolean {
-    if (cell.isFuture || cell.isOff || cell.status === 'holiday') return false;
-    if (cell.status === 'absent' || cell.status === 'leave' || cell.status === null) return true;
-    if ((cell.status === 'present' || cell.status === 'half') && cell.hours !== undefined && !cell.hoursMet) return true;
-    return false;
+    if (cell.isFuture || cell.isOff || cell.status === 'holiday' || cell.status === 'comp_off') return false;
+    if (cell.status === null || cell.status === 'absent' || cell.status === 'leave') return true;
+    return cell.status === 'half';
   }
 
   /** Text shown in the regularize hint area */
   regularizeHint(cell: DayCell): string {
-    if ((cell.status === 'present' || cell.status === 'half') && cell.hours !== undefined && !cell.hoursMet) {
-      return `You logged ${this.formatHours(cell.hours)} — below the ${this.requiredHours(cell)}h required. Submit a correction.`;
+    if (cell.status === 'half') {
+      const logged = cell.hours !== undefined ? `You logged ${this.formatHours(cell.hours)}. ` : '';
+      return `${logged}Marked as a half-day — submit a correction if this is wrong.`;
     }
     return 'This day needs attendance regularization.';
   }
@@ -643,6 +659,16 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   private _dateKey(date: Date): string {
     return this._key(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  /**
+   * Whether a date is a week-off. Once the API has responded, this is driven
+   * purely by its `isWeekend` flags (so an org that works Saturdays isn't greyed
+   * out, and a non-Sat/Sun weekend is honoured). Before the first response we
+   * fall back to Sat/Sun only to paint a reasonable skeleton.
+   */
+  private _isOff(key: string, dow: number, apiLoaded: boolean): boolean {
+    return apiLoaded ? this._weekendDates().has(key) : (dow === 0 || dow === 6);
   }
 
   private _sameDay(a: Date, b: Date): boolean {

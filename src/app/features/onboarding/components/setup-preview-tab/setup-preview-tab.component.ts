@@ -1,6 +1,6 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy, inject } from '@angular/core';
 import { OrgSetupData } from '../org-setup-tab/org-setup-tab.component';
-import { AttendanceSetupData } from '../attendance-setup-tab/attendance-setup-tab.component';
+import { OptionsService } from '../../../../core/services/options.service';
 
 @Component({
   selector: 'ob-setup-preview-tab',
@@ -11,7 +11,13 @@ import { AttendanceSetupData } from '../attendance-setup-tab/attendance-setup-ta
   styleUrl: './setup-preview-tab.component.scss',
 })
 export class SetupPreviewTabComponent {
+  private readonly optionsSvc = inject(OptionsService);
+
   @Input() orgData!: OrgSetupData;
-  @Input() attendanceData!: AttendanceSetupData;
   @Input() adminEmail = '';
+
+  /** Resolve an option code to its label for display. */
+  label(category: Parameters<OptionsService['labelFor']>[0], code: string): string {
+    return this.optionsSvc.labelFor(category, code) || '—';
+  }
 }

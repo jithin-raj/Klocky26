@@ -582,25 +582,24 @@
               hint="Used for reports and notifications when no office timezone is set"
               [(ngModel)]="defaultTimezone" (ngModelChange)="markDirty()">
             </ui-select>
-            <ui-select [dark]="false" label="Currency"
-              [options]="currencies"
+            <ui-select [dark]="false" label="Currency" [searchable]="true"
+              [options]="currencyOpts()"
               [(ngModel)]="currency" (ngModelChange)="markDirty()">
             </ui-select>
           </div>
 
           <div class="op-form-row">
-            <div class="op-field">
-              <p class="op-field-label">Date Format</p>
-              <div class="op-band-grid op-band-grid-sm">
-                @for (fmt of dateFormats; track fmt) {
-                  <button type="button" class="op-band-btn"
-                          [class.selected]="dateFormat === fmt"
-                          (click)="dateFormat = fmt; markDirty()">
-                    {{ fmt }}
-                  </button>
-                }
-              </div>
-            </div>
+            <ui-select [dark]="false" label="Date Format"
+              [options]="dateFormatOpts()"
+              [(ngModel)]="dateFormat" (ngModelChange)="markDirty()">
+            </ui-select>
+            <ui-select [dark]="false" label="Time Format"
+              [options]="timeFormatOpts()"
+              [(ngModel)]="timeFormat" (ngModelChange)="markDirty()">
+            </ui-select>
+          </div>
+
+          <div class="op-form-row">
             <div class="op-field">
               <p class="op-field-label">Week Starts On</p>
               <div class="op-band-grid op-band-grid-sm">
@@ -792,10 +791,28 @@
             </div>
           </div>
 
+          @if (mobileClockInEnabled) {
+            <div class="op-field">
+              <p class="op-field-label">Allowed Mobile Platforms</p>
+              <p class="op-field-desc">Which mobile app platforms (Android / iOS) employees may clock in from.</p>
+              <div class="op-lt-seg" style="flex-wrap: wrap;">
+                @for (p of mobilePlatformOpts(); track p.code) {
+                  <button type="button"
+                          [class.active]="isMobilePlatformSelected(p.code)"
+                          (click)="toggleMobilePlatform(p.code)">{{ p.label }}</button>
+                }
+                @if (mobilePlatformOpts().length === 0) {
+                  <span class="op-field-desc">No mobile platforms configured.</span>
+                }
+              </div>
+            </div>
+          }
+
           <ui-toggle [row]="true"
             label="Geo-Fencing"
             hint="Restrict check-in to within the office perimeter"
-            [(ngModel)]="geoFencingEnabled" (ngModelChange)="markDirty()">
+            [(ngModel)]="geoFencingEnabled"
+            (ngModelChange)="guardPremiumToggle('geofencing', 'geoFencingEnabled', $event)">
           </ui-toggle>
 
           <ui-toggle [row]="true"
@@ -996,7 +1013,8 @@
           <ui-toggle [row]="true"
             label="Compensatory Off (Comp-Off)"
             hint="Grant compensatory leave for working on holidays or weekends"
-            [(ngModel)]="compOffEnabled" (ngModelChange)="markDirty()">
+            [(ngModel)]="compOffEnabled"
+            (ngModelChange)="guardPremiumToggle('leave_automation', 'compOffEnabled', $event)">
           </ui-toggle>
           @if (compOffEnabled) {
             <div class="op-toggle-sub">
@@ -1019,7 +1037,8 @@
           <ui-toggle [row]="true"
             label="Loss of Pay (LOP) for Unauthorised Absence"
             hint="Automatically flag unmarked absence days as LOP for payroll"
-            [(ngModel)]="lopEnabled" (ngModelChange)="markDirty()">
+            [(ngModel)]="lopEnabled"
+            (ngModelChange)="guardPremiumToggle('leave_automation', 'lopEnabled', $event)">
           </ui-toggle>
 
           <ui-toggle [row]="true"
@@ -1031,7 +1050,8 @@
           <ui-toggle [row]="true"
             label="Earned Leave"
             hint="Automatically accrue leave credits each week or month (server-managed)"
-            [(ngModel)]="earnedLeaveEnabled" (ngModelChange)="markDirty()">
+            [(ngModel)]="earnedLeaveEnabled"
+            (ngModelChange)="guardPremiumToggle('leave_automation', 'earnedLeaveEnabled', $event)">
           </ui-toggle>
           @if (earnedLeaveEnabled) {
             <div class="op-toggle-sub op-el-grid">

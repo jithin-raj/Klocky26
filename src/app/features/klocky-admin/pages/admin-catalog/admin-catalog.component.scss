@@ -1,0 +1,107 @@
+$surface: rgba(255,255,255,.03);
+$border: rgba(255,255,255,.08);
+$text: rgba(255,255,255,.88);
+$muted: rgba(255,255,255,.42);
+$accent: #0d9488;
+
+:host { display: block; }
+.ac-page { padding: 32px 36px; min-height: 100%; display: flex; flex-direction: column; gap: 24px; }
+
+.ac-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ac-title { margin: 0 0 4px; font-size: 22px; font-weight: 750; color: $text; }
+.ac-sub { margin: 0; font-size: 13px; color: $muted; }
+.ac-header__meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.ac-meta-chip { font-size: 12px; font-weight: 600; color: $muted; background: $surface; border: 1px solid $border; padding: 5px 11px; border-radius: 20px; }
+
+.ac-empty { padding: 48px 20px; text-align: center; color: $muted; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  background: $surface; border: 1px solid $border; border-radius: 16px; }
+.ac-empty--error { color: #fca5a5; }
+.ac-empty--inline { grid-column: 1 / -1; background: transparent; border: 1px dashed $border; padding: 32px; }
+
+// ── Section ──────────────────────────────────────────────────────────────────
+.ac-section { display: flex; flex-direction: column; gap: 16px; }
+.ac-section__head { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  h2 { margin: 0; font-size: 16px; font-weight: 750; color: $text; display: flex; align-items: center; gap: 10px; } }
+.ac-count { font-size: 12px; font-weight: 700; color: $muted; background: $surface; border: 1px solid $border; padding: 2px 10px; border-radius: 20px; }
+
+.ac-muted { color: $muted; }
+.ac-code { font-family: monospace; font-size: 11.5px; background: rgba(255,255,255,.06); color: #7dd3fc; padding: 2px 7px; border-radius: 6px; }
+.ac-feat-chip { font-size: 10.5px; font-weight: 600; background: rgba(13,148,136,.18); color: #5eead4; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+
+.ac-badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+  &--on { background: rgba(34,197,94,.18); color: #86efac; }
+  &--off { background: rgba(255,255,255,.08); color: $muted; } }
+
+// ── Card grid ────────────────────────────────────────────────────────────────
+.ac-grid { display: grid; gap: 14px;
+  &--plans  { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  &--addons { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+}
+.ac-card {
+  position: relative; background: $surface; border: 1px solid $border; border-radius: 16px;
+  padding: 18px; display: flex; flex-direction: column; gap: 12px;
+  transition: border-color .15s, background .15s, transform .12s;
+  &:hover { border-color: rgba(255,255,255,.16); background: rgba(255,255,255,.05); transform: translateY(-2px); }
+  &--inactive { opacity: .55; }
+}
+.ac-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.ac-card__ident { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.ac-card__name { font-size: 16px; font-weight: 750; color: $text; }
+.ac-card__price { font-size: 26px; font-weight: 800; color: $text; line-height: 1;
+  span { font-size: 13px; font-weight: 600; color: $muted; margin-left: 2px; }
+  &--sm { font-size: 17px; }
+}
+.ac-card__desc { margin: 0; font-size: 12.5px; color: $muted; line-height: 1.45; }
+.ac-card__caps { display: flex; gap: 16px; font-size: 12.5px; color: $muted;
+  strong { color: $text; font-weight: 700; } }
+.ac-card__feats { display: flex; flex-wrap: wrap; gap: 5px; min-height: 22px; }
+.ac-card__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ac-card__actions { display: flex; gap: 6px; margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.06); }
+
+.ac-icon-btn {
+  padding: 6px 11px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+  background: rgba(255,255,255,.05); color: rgba(255,255,255,.75); border: 1px solid $border; transition: background .15s;
+  &:hover:not(:disabled) { background: rgba(255,255,255,.1); }
+  &:disabled { opacity: .4; cursor: not-allowed; }
+  &--danger { color: #fca5a5; margin-left: auto; &:hover:not(:disabled) { background: rgba(239,68,68,.16); } }
+}
+
+// ── Buttons ──────────────────────────────────────────────────────────────────
+.ac-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 650; cursor: pointer; border: 1px solid transparent; transition: all .15s;
+  &--primary { background: $accent; color: #fff; &:hover:not(:disabled) { filter: brightness(1.08); } &:disabled { opacity: .5; cursor: not-allowed; } }
+  &--ghost { background: transparent; color: rgba(255,255,255,.75); border-color: $border; &:hover { background: rgba(255,255,255,.05); } }
+  &--sm { padding: 7px 13px; font-size: 12.5px; }
+}
+
+// ── Modal (light surface, like the org edit form) ─────────────────────────────
+.ac-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.ac-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  &--sm { max-width: 460px; } }
+.ac-modal__head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #f1f5f9;
+  h3 { margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; } }
+.ac-x { border: none; background: none; font-size: 15px; color: #94a3b8; cursor: pointer; &:hover { color: #374151; } }
+.ac-modal__body { padding: 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.ac-modal__foot { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid #f1f5f9; justify-content: flex-end; }
+
+.ac-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; @media (max-width: 480px) { grid-template-columns: 1fr; } }
+.ac-field { display: flex; flex-direction: column; gap: 5px;
+  label { font-size: 12.5px; font-weight: 600; color: #374151; } }
+.ac-req { color: #ef4444; }
+.ac-hint { font-size: 11.5px; color: #94a3b8; }
+.ac-hint-inline { font-weight: 400; color: #94a3b8; font-size: 11px; }
+.ac-input {
+  height: 40px; padding: 0 12px; border: 1.5px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #0f172a; background: #fff; outline: none; font-family: inherit;
+  &:focus { border-color: $accent; box-shadow: 0 0 0 3px rgba(13,148,136,.12); }
+  &:disabled { background: #f8fafc; color: #64748b; }
+}
+.ac-textarea { padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #0f172a; resize: none; outline: none; font-family: inherit; &:focus { border-color: $accent; } }
+
+.ac-feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; @media (max-width: 480px) { grid-template-columns: 1fr; } }
+.ac-check {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; color: #374151; cursor: pointer;
+  padding: 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 9px; transition: border-color .15s, background .15s;
+  input { width: 16px; height: 16px; accent-color: $accent; cursor: pointer; }
+  &.checked { border-color: $accent; background: rgba(13,148,136,.06); }
+  &--wide { width: 100%; }
+}

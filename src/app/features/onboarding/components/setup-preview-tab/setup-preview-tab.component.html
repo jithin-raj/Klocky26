@@ -60,25 +60,43 @@
   <div class="ob-preview-row">
     <span class="ob-preview-key">Industry</span>
     <span class="ob-preview-val" [class.ob-preview-val-empty]="!orgData.industry">
-      {{ orgData.industry || '—' }}
+      {{ label('industry', orgData.industry) }}
     </span>
   </div>
   <div class="ob-preview-row">
     <span class="ob-preview-key">Company Size</span>
     <span class="ob-preview-val" [class.ob-preview-val-empty]="!orgData.companySize">
-      {{ orgData.companySize ? orgData.companySize + ' employees' : '—' }}
+      {{ label('company_size', orgData.companySize) }}
     </span>
   </div>
   <div class="ob-preview-row">
     <span class="ob-preview-key">Country</span>
     <span class="ob-preview-val" [class.ob-preview-val-empty]="!orgData.country">
-      {{ orgData.country || '—' }}
+      {{ label('country', orgData.country) }}
     </span>
   </div>
   <div class="ob-preview-row">
     <span class="ob-preview-key">Timezone</span>
     <span class="ob-preview-val" [class.ob-preview-val-empty]="!orgData.timezone">
-      {{ orgData.timezone || '—' }}
+      {{ label('timezone', orgData.timezone) }}
+    </span>
+  </div>
+  <div class="ob-preview-row">
+    <span class="ob-preview-key">Currency</span>
+    <span class="ob-preview-val" [class.ob-preview-val-empty]="!orgData.currency">
+      {{ label('currency', orgData.currency) }}
+    </span>
+  </div>
+  <div class="ob-preview-row">
+    <span class="ob-preview-key">Date Format</span>
+    <span class="ob-preview-val" [class.ob-preview-val-empty]="!orgData.dateFormat">
+      {{ label('date_format', orgData.dateFormat) }}
+    </span>
+  </div>
+  <div class="ob-preview-row">
+    <span class="ob-preview-key">Time Format</span>
+    <span class="ob-preview-val" [class.ob-preview-val-empty]="!orgData.timeFormat">
+      {{ label('time_format', orgData.timeFormat) }}
     </span>
   </div>
   @if (orgData.website) {
@@ -88,76 +106,3 @@
     </div>
   }
 </div>
-
-<!-- ── Attendance ─────────────────────────────────────────────────── -->
-<div class="ob-preview-block">
-  <div class="ob-preview-block-header">
-    <div class="ob-preview-icon">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2.2"
-           stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <polyline points="12 6 12 12 16 14"/>
-      </svg>
-    </div>
-    <span class="ob-preview-block-title">Attendance Settings</span>
-  </div>
-
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Clock-in Methods</span>
-    <span class="ob-preview-val" [class.ob-preview-val-empty]="!attendanceData.clockInMethods.length">
-      {{ attendanceData.clockInMethods.length ? attendanceData.clockInMethods.join(', ') : '—' }}
-    </span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Work Hours / Day</span>
-    <span class="ob-preview-val">{{ attendanceData.workHoursPerDay || 8 }} hrs</span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Work Week</span>
-    <span class="ob-preview-val">
-      {{ attendanceData.workWeekStart || 'Monday' }} – {{ attendanceData.workWeekEnd || 'Friday' }}
-    </span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Work Hours</span>
-    <span class="ob-preview-val">
-      {{ attendanceData.workDayStart || '09:00' }} – {{ attendanceData.workDayEnd || '18:00' }}
-    </span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Grace Period</span>
-    <span class="ob-preview-val">{{ attendanceData.gracePeriod || '10 minutes' }}</span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Half-Day Threshold</span>
-    <span class="ob-preview-val">{{ attendanceData.halfDayThresholdHrs || 4 }} hrs</span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Late Threshold</span>
-    <span class="ob-preview-val">{{ attendanceData.lateThreshold || 'After 15 minutes' }}</span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Location Policy</span>
-    <span class="ob-preview-val" [class.ob-preview-val-empty]="!attendanceData.locationRule">
-      {{ attendanceData.locationRule || '—' }}
-    </span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Overtime Tracking</span>
-    <span class="ob-preview-val">{{ attendanceData.overtimeEnabled ? 'Enabled (after ' + attendanceData.overtimeAfterHrs + ' hrs)' : 'Disabled' }}</span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Require Photo</span>
-    <span class="ob-preview-val">{{ attendanceData.requirePhoto ? 'Yes' : 'No' }}</span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">IP Restriction</span>
-    <span class="ob-preview-val">{{ attendanceData.ipRestriction ? 'Enabled' : 'Disabled' }}</span>
-  </div>
-  <div class="ob-preview-row">
-    <span class="ob-preview-key">Auto Check-Out</span>
-    <span class="ob-preview-val">{{ attendanceData.autoCheckoutEnabled ? 'Enabled at ' + attendanceData.autoCheckoutTime : 'Disabled' }}</span>
-  </div>
-</div>
-

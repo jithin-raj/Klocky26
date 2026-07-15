@@ -63,6 +63,19 @@
   }
 }
 
+/* Sidebar dimmed while the subscription is expired — cosmetic; the real block
+   is subscriptionGuard, so this only communicates the lock, doesn't enforce it. */
+.sidebar-wrap { display: contents; }
+.sidebar-wrap--locked {
+  klocky-sidebar {
+    display: block;
+    opacity: .45;
+    filter: grayscale(.4);
+    pointer-events: none;
+    transition: opacity .2s, filter .2s;
+  }
+}
+
 /* MOBILE BACKDROP */
 .mobile-backdrop {
   display: none;

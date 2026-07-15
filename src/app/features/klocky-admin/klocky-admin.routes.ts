@@ -29,6 +29,16 @@ export const klockyAdminRoutes: Routes = [
           import('./pages/admin-organisations/admin-organisations.component').then(m => m.AdminOrganisationsComponent),
       },
       {
+        path: 'catalog',
+        loadComponent: () =>
+          import('./pages/admin-catalog/admin-catalog.component').then(m => m.AdminCatalogComponent),
+      },
+      {
+        path: 'options',
+        loadComponent: () =>
+          import('./pages/admin-options/admin-options.component').then(m => m.AdminOptionsComponent),
+      },
+      {
         path: 'demo-requests',
         loadComponent: () =>
           import('./pages/admin-demo-requests/admin-demo-requests.component').then(m => m.AdminDemoRequestsComponent),

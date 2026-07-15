@@ -79,6 +79,39 @@
   border-radius: 20px;
 }
 
+/* ─── Seat usage bar ───────────────────────────────────────── */
+.el-usage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.el-usage__bar {
+  width: 80px;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.el-usage__fill {
+  height: 100%;
+  background: var(--accent, #6366f1);
+  border-radius: 4px;
+  transition: width .3s ease;
+}
+.el-usage__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+.el-usage--full {
+  .el-usage__fill { background: #ef4444; }
+  .el-usage__label { color: #dc2626; }
+}
+@media (max-width: 560px) {
+  .el-usage__bar { display: none; }
+}
+
 /* ─── Buttons ───────────────────────────────────────────── */
 .el-btn {
   display: inline-flex;

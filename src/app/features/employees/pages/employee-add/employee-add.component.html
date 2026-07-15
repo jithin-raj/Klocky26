@@ -16,7 +16,7 @@
       </div>
       <div class="ea-header__title">
         <h1>{{ isEdit() ? 'Edit employee' : 'Add new employee' }}</h1>
-        <p>{{ isEdit() ? 'Update profile, classification and payroll' : 'Create a profile and place them in the org' }}</p>
+        <p>{{ isEdit() ? 'Update profile and classification' : 'Create a profile and place them in the org' }}</p>
       </div>
     </div>
   </div>
@@ -58,12 +58,8 @@
   <div class="ea-tabs">
     <button type="button" class="ea-tab" [class.ea-tab--active]="tab() === 'general'" (click)="setTab('general')">General</button>
     <button type="button" class="ea-tab" [class.ea-tab--active]="tab() === 'classification'" (click)="setTab('classification')">Department &amp; Role</button>
-    @if (showPayrollTab()) {
-      <button type="button" class="ea-tab" [class.ea-tab--active]="tab() === 'payroll'" (click)="setTab('payroll')">Payroll</button>
-    }
   </div>
 
-  @if (tab() !== 'payroll') {
   <form class="ea-form" (ngSubmit)="submit()" #empForm="ngForm" novalidate>
 
     @if (tab() === 'general') {
@@ -196,66 +192,14 @@
       </ui-form-section>
     }
   </form>
-  }
 
   <!-- Floating save bar — appears only when the form has unsaved changes -->
   <ui-save-bar
-    [visible]="isDirty() && tab() !== 'payroll' && !saved()"
+    [visible]="isDirty() && !saved()"
     [saving]="loading()"
     [saveLabel]="isEdit() ? 'Save changes' : 'Add employee'"
     (save)="submit()"
     (discard)="discardChanges()"
   ></ui-save-bar>
-
-  @if (tab() === 'payroll') {
-    <div class="ea-payroll">
-      @if (payrollLoading()) {
-        <p class="ea-pay-state">Loading payroll…</p>
-      } @else if (payrollError()) {
-        <p class="ea-pay-state ea-pay-state--err">{{ payrollError() }}</p>
-      } @else {
-        <ui-form-section title="Payroll" description="Salary components — visible to admin & HR only.">
-          <ui-form-grid [columns]="3">
-            <ui-form-field label="Basic salary">
-              <ui-input type="number" inputmode="decimal" [ngModel]="payrollForm().basicSalary" (ngModelChange)="patchPayroll('basicSalary', $event)" />
-            </ui-form-field>
-            <ui-form-field label="Allowances">
-              <ui-input type="number" inputmode="decimal" [ngModel]="payrollForm().allowances" (ngModelChange)="patchPayroll('allowances', $event)" />
-            </ui-form-field>
-            <ui-form-field label="Other deductions">
-              <ui-input type="number" inputmode="decimal" [ngModel]="payrollForm().otherDeductions" (ngModelChange)="patchPayroll('otherDeductions', $event)" />
-            </ui-form-field>
-          </ui-form-grid>
-
-          <div class="ea-calc">
-            <span class="ea-calc-title">Calculate a month</span>
-            <div class="ea-calc-row">
-              <select class="ea-calc-sel" [ngModel]="calcMonth()" (ngModelChange)="calcMonth.set(+$event)">
-                @for (m of months; track m.value) { <option [value]="m.value">{{ m.label }}</option> }
-              </select>
-              <input class="ea-calc-yr" type="number" [ngModel]="calcYear()" (ngModelChange)="calcYear.set(+$event)" />
-              <button type="button" class="ea-btn ea-btn--ghost" [disabled]="calculating()" (click)="calculatePayroll()">
-                {{ calculating() ? 'Calculating…' : 'Calculate' }}
-              </button>
-            </div>
-            @if (payrollCalc(); as c) {
-              <div class="ea-calc-result">
-                <div class="ea-calc-line"><span>Gross pay</span><strong>{{ c.grossPay | number:'1.0-2' }}</strong></div>
-                <div class="ea-calc-line"><span>Deductions</span><strong>− {{ c.otherDeductions | number:'1.0-2' }}</strong></div>
-                <div class="ea-calc-line ea-calc-line--net"><span>Net pay</span><strong>{{ c.netPay | number:'1.0-2' }}</strong></div>
-              </div>
-            }
-          </div>
-        </ui-form-section>
-
-        <div class="ea-actions">
-          <button type="button" class="ea-btn ea-btn--ghost" (click)="cancel()">Back</button>
-          <button type="button" class="ea-btn ea-btn--primary" [disabled]="payrollSaving()" (click)="savePayroll()">
-            {{ payrollSaving() ? 'Saving…' : 'Save payroll' }}
-          </button>
-        </div>
-      }
-    </div>
-  }
   }
 </div>

@@ -1,0 +1,174 @@
+<div class="es-page">
+
+  <button class="es-back" (click)="back()">← Back to Compensation</button>
+
+  <div class="es-header">
+    <div>
+      <h1>{{ employee()?.fullName || 'Employee' }} — Salary</h1>
+      <p>{{ employee()?.employeeCode }} @if (employee()?.departmentName) { · {{ employee()?.departmentName }} }</p>
+    </div>
+    @if (canEdit() && !editing()) {
+      <button class="es-btn es-btn--primary" (click)="startEdit()">
+        {{ current() ? 'Revise / Increment' : 'Set Salary Structure' }}
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="es-empty">Loading…</div>
+  } @else {
+
+    @if (!editing()) {
+
+      <!-- ── Current structure ─────────────────────────────────── -->
+      <div class="es-card">
+        <div class="es-card__head"><span class="es-card__title">Current Structure</span></div>
+        @if (!current()) {
+          <div class="es-empty">No salary structure set yet.</div>
+        } @else {
+          <div class="es-stats">
+            <div class="es-stat"><span class="es-stat__label">Annual CTC</span><span class="es-stat__val">{{ current()!.annualCtc | number }}</span></div>
+            <div class="es-stat"><span class="es-stat__label">Monthly Gross</span><span class="es-stat__val">{{ current()!.monthlyGross | number }}</span></div>
+            <div class="es-stat"><span class="es-stat__label">Monthly Deductions</span><span class="es-stat__val">{{ current()!.monthlyDeductions | number }}</span></div>
+            <div class="es-stat"><span class="es-stat__label">Monthly Net</span><span class="es-stat__val es-stat__val--net">{{ current()!.monthlyNet | number }}</span></div>
+          </div>
+          <div class="es-meta">
+            Pay Grade: <strong>{{ current()!.payGradeName || '—' }}</strong> ·
+            Effective from <strong>{{ current()!.effectiveFrom | date:'MMM d, yyyy' }}</strong> ·
+            Reason: <strong>{{ current()!.reason }}</strong>
+          </div>
+
+          <div class="es-table-wrap">
+            <table class="es-table">
+              <thead><tr><th>Component</th><th>Type</th><th>Monthly Amount</th><th>Basic</th><th>Taxable</th></tr></thead>
+              <tbody>
+                @for (c of current()!.components; track c.id) {
+                  <tr>
+                    <td class="es-name">{{ c.name }}</td>
+                    <td><span class="es-badge" [class.es-badge--earning]="c.type === 'earning'" [class.es-badge--deduction]="c.type === 'deduction'">{{ c.type }}</span></td>
+                    <td>{{ c.monthlyAmount | number }}</td>
+                    <td>{{ c.isBasic ? '✓' : '—' }}</td>
+                    <td>{{ c.isTaxable ? '✓' : '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+      <!-- ── History ───────────────────────────────────────────── -->
+      <div class="es-card">
+        <div class="es-card__head"><span class="es-card__title">Revision History</span></div>
+        <div class="es-table-wrap">
+          <table class="es-table">
+            <thead><tr><th>Effective From</th><th>Reason</th><th>Annual CTC</th><th>Monthly Net</th><th>Notes</th></tr></thead>
+            <tbody>
+              @for (h of history(); track h.id) {
+                <tr [class.es-row--current]="h.isCurrent">
+                  <td>{{ h.effectiveFrom | date:'MMM d, yyyy' }} @if (h.isCurrent) { <span class="es-current-tag">Current</span> }</td>
+                  <td>{{ h.reason }}</td>
+                  <td>{{ h.annualCtc | number }}</td>
+                  <td>{{ h.monthlyNet | number }}</td>
+                  <td class="es-notes">{{ h.notes || '—' }}</td>
+                </tr>
+              }
+              @if (!history().length) { <tr><td colspan="5" class="es-empty-row">No revisions yet.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Bonuses ───────────────────────────────────────────── -->
+      <div class="es-card">
+        <div class="es-card__head"><span class="es-card__title">Bonuses</span></div>
+        <div class="es-table-wrap">
+          <table class="es-table">
+            <thead><tr><th>Period</th><th>Amount</th><th>Label</th></tr></thead>
+            <tbody>
+              @for (b of bonuses(); track b.id) {
+                <tr><td>{{ b.month }}/{{ b.year }}</td><td>{{ b.amount | number }}</td><td>{{ b.label || '—' }}</td></tr>
+              }
+              @if (!bonuses().length) { <tr><td colspan="3" class="es-empty-row">No bonuses for this employee.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    } @else {
+
+      <!-- ── Structure editor ──────────────────────────────────── -->
+      <div class="es-card">
+        <div class="es-card__head"><span class="es-card__title">{{ current() ? 'Revise Structure' : 'Set Salary Structure' }}</span></div>
+        <div class="es-editor-body">
+
+          <div class="es-form-row">
+            <div class="es-field">
+              <label>Pay Grade</label>
+              <ui-select [options]="gradeOptions()" [ngModel]="payGradeId() ?? ''" (ngModelChange)="payGradeId.set($event || null)"></ui-select>
+            </div>
+            <div class="es-field">
+              <label>Effective From <span class="es-req">*</span></label>
+              <ui-datepicker [ngModel]="effectiveFrom()" (ngModelChange)="effectiveFrom.set($event)"></ui-datepicker>
+            </div>
+            <div class="es-field">
+              <label>Reason</label>
+              <ui-select [options]="reasonOptions" [ngModel]="reason()" (ngModelChange)="reason.set($event)"></ui-select>
+            </div>
+          </div>
+
+          <div class="es-field">
+            <label>Notes</label>
+            <textarea class="es-textarea" rows="2" [ngModel]="notes()" (ngModelChange)="notes.set($event)"></textarea>
+          </div>
+
+          <div class="es-comp-head">
+            <span class="es-card__title">Components</span>
+            <div class="es-comp-add-btns">
+              <button type="button" class="es-btn es-btn--ghost es-btn--sm" (click)="addRow('earning')">+ Earning</button>
+              <button type="button" class="es-btn es-btn--ghost es-btn--sm" (click)="addRow('deduction')">+ Deduction</button>
+            </div>
+          </div>
+
+          @if (basicCount() !== 1) {
+            <p class="es-warn">Exactly one earning must be marked "Basic" (used as the PF base). Currently: {{ basicCount() }}.</p>
+          }
+
+          <div class="es-comp-rows">
+            @for (r of rows(); track r._key) {
+              <div class="es-comp-row">
+                <input class="es-input es-input--name" type="text" placeholder="Component name" [ngModel]="r.name" (ngModelChange)="r.name = $event" />
+                <span class="es-comp-type" [class.es-comp-type--earning]="r.type === 'earning'" [class.es-comp-type--deduction]="r.type === 'deduction'">{{ r.type }}</span>
+                <input class="es-input es-input--amount" type="number" placeholder="Amount" [ngModel]="r.monthlyAmount" (ngModelChange)="r.monthlyAmount = $event" />
+                @if (r.type === 'earning') {
+                  <label class="es-mini-check">
+                    <input type="radio" name="basicRow" [checked]="r.isBasic" (change)="setBasic(r._key)" /> Basic
+                  </label>
+                } @else {
+                  <span class="es-mini-check es-mini-check--spacer"></span>
+                }
+                <label class="es-mini-check">
+                  <input type="checkbox" [ngModel]="r.isTaxable" (ngModelChange)="r.isTaxable = $event" /> Taxable
+                </label>
+                <button type="button" class="es-row-remove" (click)="removeRow(r._key)" aria-label="Remove">✕</button>
+              </div>
+            }
+          </div>
+
+          <div class="es-comp-totals">
+            <span>Earnings: <strong>{{ totalEarnings() | number }}</strong></span>
+            <span>Deductions: <strong>{{ totalDeductions() | number }}</strong></span>
+            <span>Net / month: <strong class="es-net">{{ netMonthly() | number }}</strong></span>
+          </div>
+
+        </div>
+        <div class="es-editor-foot">
+          <button class="es-btn es-btn--ghost" (click)="cancelEdit()">Cancel</button>
+          <button class="es-btn es-btn--primary" [disabled]="!isValid() || saving()" (click)="saveStructure()">
+            {{ saving() ? 'Saving…' : 'Save Structure' }}
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

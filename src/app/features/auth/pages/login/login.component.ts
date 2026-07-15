@@ -10,6 +10,7 @@ import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { UserAuthService } from '../../../../core/services/user-auth.service';
 import { PermissionService } from '../../../../core/services/permission.service';
+import { SubscriptionService } from '../../../../core/services/subscription.service';
 import { RealtimeService } from '../../../../core/services/realtime.service';
 import { MobileBridgeService } from '../../../../core/services/mobile-bridge.service';
 import { UiModalComponent } from '../../../../shared/components/ui-modal/ui-modal.component';
@@ -272,6 +273,7 @@ export class LoginComponent implements OnInit {
   private appState  = inject(AppStateService);
   private userAuth  = inject(UserAuthService);
   private permissions = inject(PermissionService);
+  private subscription = inject(SubscriptionService);
   private realtime  = inject(RealtimeService);
   private bridge    = inject(MobileBridgeService);
   private fb        = inject(FormBuilder);
@@ -377,7 +379,11 @@ export class LoginComponent implements OnInit {
     // correctly on first paint (the permissionGuard also lazy-loads as a fallback).
     try { await firstValueFrom(this.permissions.load()); } catch { /* guard re-loads on demand */ }
     await this.delay(600);
-    await this.router.navigate([`/${this.orgUrlNameForNav}/app/dashboard`]);
+    // Route straight to billing when the login response flagged the org's
+    // subscription as expired (§1) — skips the dashboard→shell-redirect hop.
+    // subscriptionGuard keeps them pinned there on any further navigation.
+    const dest = this.subscription.isExpired() ? 'billing' : 'dashboard';
+    await this.router.navigate([`/${this.orgUrlNameForNav}/app/${dest}`]);
   }
 
   goRegister(): void {

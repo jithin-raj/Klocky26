@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { UserAuthService } from '../../../../core/services/user-auth.service';
+import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
 
 @Component({
   selector: 'app-my-profile',
@@ -15,6 +16,11 @@ import { UserAuthService } from '../../../../core/services/user-auth.service';
 export class MyProfileComponent implements OnInit {
   private readonly appState = inject(AppStateService);
   private readonly userAuth = inject(UserAuthService);
+  private readonly orgNav = inject(OrgNavigationService);
+
+  goToPayslips(): void {
+    this.orgNav.navigate(['app', 'profile', 'payslips']);
+  }
 
   /** authGuard only checks the token, not that /me has resolved — self-heal rather than crash if this is somehow null. */
   readonly me = computed(() => this.appState.user());

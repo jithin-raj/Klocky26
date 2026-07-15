@@ -59,8 +59,10 @@
 .ob-logo { display: flex; align-items: center; gap: 10px; }
 .ob-logo-mark {
   width: 30px; height: 30px; border-radius: 8px;
-  background: linear-gradient(135deg, var(--th-accent), var(--th-accent-dark));
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  overflow: hidden;
 }
 .ob-logo-name {
   font-size: 15px; font-weight: 700;

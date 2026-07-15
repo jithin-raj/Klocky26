@@ -1,5 +1,5 @@
 import {
-  Component, Input, forwardRef, ChangeDetectionStrategy
+  Component, Input, forwardRef, ChangeDetectionStrategy, ChangeDetectorRef, inject
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NgIf } from '@angular/common';
@@ -110,6 +110,7 @@ export class UiToggleComponent implements ControlValueAccessor {
   @Input() disabled = false;
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
 
+  private readonly cdr = inject(ChangeDetectorRef);
   value = false;
   onChange = (_: any) => {};
   onTouched = () => {};
@@ -120,7 +121,9 @@ export class UiToggleComponent implements ControlValueAccessor {
     this.onTouched();
   }
 
-  writeValue(val: boolean) { this.value = !!val; }
+  // markForCheck so a programmatic revert (e.g. a gated toggle bounced back to
+  // off) reflects immediately under OnPush.
+  writeValue(val: boolean) { this.value = !!val; this.cdr.markForCheck(); }
   registerOnChange(fn: any) { this.onChange = fn; }
   registerOnTouched(fn: any) { this.onTouched = fn; }
   setDisabledState(d: boolean) { this.disabled = d; }

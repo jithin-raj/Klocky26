@@ -13,6 +13,7 @@ import { authInterceptor }     from './core/interceptors/auth.interceptor';
 import { mobileHeaderInterceptor } from './core/interceptors/mobile-header.interceptor';
 import { errorInterceptor }    from './core/interceptors/error.interceptor';
 import { loadingInterceptor }  from './core/interceptors/loading.interceptor';
+import { subscriptionExpiryInterceptor } from './core/interceptors/subscription-expiry.interceptor';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // APP_INITIALIZER — runs before the app renders
@@ -36,6 +37,7 @@ export const appConfig: ApplicationConfig = {
     //  3. authInterceptor         — attaches Bearer token + X-Org-Slug header
     //  4. mobileHeaderInterceptor — adds `isMobile: true` in the RN WebView shell
     //  5. errorInterceptor        — handles 401 refresh, 403 redirect, 5xx messages
+    //  6. subscriptionExpiryInterceptor — 402 subscription_expired → /billing
     provideHttpClient(
       withInterceptors([
         loadingInterceptor,
@@ -43,6 +45,7 @@ export const appConfig: ApplicationConfig = {
         authInterceptor,
         mobileHeaderInterceptor,
         errorInterceptor,
+        subscriptionExpiryInterceptor,
       ]),
     ),
 

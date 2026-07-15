@@ -41,10 +41,70 @@ export class NotificationsComponent implements OnInit {
   readonly loading = computed(() => this.notifications.loading());
 
   open(n: AppNotification): void {
+    // Ignore the tap that ends a swipe gesture.
+    if (this.swipe()?.id === n.id && this.swipe()!.dx !== 0) return;
     this.notifications.markRead(n.id);
   }
   markAllRead(): void {
     this.notifications.markAllRead();
+  }
+
+  deleteOne(id: string, ev?: Event): void {
+    ev?.stopPropagation();
+    this.swipe.set(null);
+    this.notifications.remove(id);
+  }
+
+  clearAll(): void {
+    this.notifications.clearAll();
+  }
+
+  // ── Swipe-left-to-delete (mobile) ─────────────────────────────────
+  // One active row at a time; CSS `touch-action: pan-y` lets the browser keep
+  // vertical scrolling while we own horizontal drags — so no preventDefault.
+  readonly swipe = signal<{ id: string; dx: number } | null>(null);
+  private swipeStartX = 0;
+  private swipeStartY = 0;
+  private swipeEngaged = false;
+  private readonly SWIPE_DELETE = 72;   // px past which release deletes
+
+  rowDx(id: string): number {
+    const s = this.swipe();
+    return s && s.id === id ? s.dx : 0;
+  }
+
+  onTouchStart(id: string, ev: TouchEvent): void {
+    const t = ev.touches[0];
+    this.swipeStartX = t.clientX;
+    this.swipeStartY = t.clientY;
+    this.swipeEngaged = false;
+    this.swipe.set({ id, dx: 0 });
+  }
+
+  onTouchMove(id: string, ev: TouchEvent): void {
+    const cur = this.swipe();
+    if (!cur || cur.id !== id) return;
+    const t = ev.touches[0];
+    const dx = t.clientX - this.swipeStartX;
+    const dy = t.clientY - this.swipeStartY;
+    if (!this.swipeEngaged) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      if (Math.abs(dy) >= Math.abs(dx)) { this.swipe.set(null); return; } // vertical scroll — let it go
+      this.swipeEngaged = true;
+    }
+    this.swipe.set({ id, dx: Math.max(-104, Math.min(0, dx)) }); // clamp to left only
+  }
+
+  onTouchEnd(id: string): void {
+    const cur = this.swipe();
+    if (!cur || cur.id !== id) { this.swipe.set(null); return; }
+    if (cur.dx <= -this.SWIPE_DELETE) {
+      this.swipe.set({ id, dx: -420 });           // fling out
+      setTimeout(() => this.deleteOne(id), 170);
+    } else {
+      this.swipe.set(null);                        // snap back
+    }
+    this.swipeEngaged = false;
   }
 
   // ── Compose ──────────────────────────────────────────────────────

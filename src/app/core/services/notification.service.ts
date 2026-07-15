@@ -45,6 +45,22 @@ export class NotificationService {
       this._items.update(list =>
         list.some(x => x.id === n.id) ? list : [n, ...list]);
     });
+
+    // Cross-device sync — another device read/deleted/cleared; mirror it here.
+    this.realtime.on<{ id?: string }>('notification.read').subscribe((p) => {
+      const id = p?.id;
+      if (id) this._items.update(list => list.map(n => n.id === id ? { ...n, isRead: true } : n));
+    });
+    this.realtime.on<unknown>('notification.read_all').subscribe(() => {
+      this._items.update(list => list.map(n => n.isRead ? n : { ...n, isRead: true }));
+    });
+    this.realtime.on<{ id?: string }>('notification.deleted').subscribe((p) => {
+      const id = p?.id;
+      if (id) this._items.update(list => list.filter(n => n.id !== id));
+    });
+    this.realtime.on<unknown>('notification.cleared').subscribe(() => {
+      this._items.set([]);
+    });
   }
 
   /** GET /api/notifications — the caller's notifications (mine + org-wide). */
@@ -109,6 +125,27 @@ export class NotificationService {
     );
   }
 
+  /** DELETE /api/notifications/{id} — remove one of the caller's own (optimistic). */
+  remove(id: string): void {
+    const prev = this._items();
+    if (!prev.some(n => n.id === id)) return;
+    this._items.update(list => list.filter(n => n.id !== id));
+    this.api.delete(`/notifications/${id}`).subscribe({
+      error: () => { this._items.set(prev); /* restore on failure */ },
+    });
+  }
+
+  /** DELETE /api/notifications — clear all of the caller's notifications (optimistic). */
+  clearAll(): void {
+    const prev = this._items();
+    if (!prev.length) return;
+    this._items.set([]);
+    this.api.delete('/notifications').subscribe({
+      error: () => { this._items.set(prev); /* restore on failure */ },
+    });
+  }
+
+  /** Local reset on logout — does NOT hit the API. */
   clear(): void {
     this._items.set([]);
     this.loaded.set(false);

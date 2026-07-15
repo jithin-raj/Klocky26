@@ -7,7 +7,8 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 import { HeaderComponent } from '../header/header.component';
 import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
 import { UiModalOutletComponent, UiLoaderComponent } from '../../shared/components';
-import { Subscription, filter } from 'rxjs';
+import { TrialBannerComponent } from '../trial-banner/trial-banner.component';
+import { Subscription, filter, take } from 'rxjs';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
 import { OrgLogoService } from '../../core/services/org-logo.service';
@@ -17,11 +18,12 @@ import { RealtimeService } from '../../core/services/realtime.service';
 import { AttendanceStateService } from '../../core/services/attendance-state.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { LoadingService } from '../../core/services/loading.service';
+import { SubscriptionService } from '../../core/services/subscription.service';
 
 @Component({
   selector: 'klocky-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent, BottomNavComponent, UiModalOutletComponent, UiLoaderComponent],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, BottomNavComponent, UiModalOutletComponent, UiLoaderComponent, TrialBannerComponent],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss'],
 })
@@ -29,6 +31,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   @ViewChild('contentEl', { static: true }) contentEl!: ElementRef<HTMLElement>;
   isSidebarOpen = false;
   private _routerSub?: Subscription;
+  private _subFirstLoad?: Subscription;
 
   /** True while any HTTP request is in flight — drives the global top loading bar. */
   readonly isApiLoading = computed(() => this.loading.isLoading());
@@ -36,6 +39,15 @@ export class ShellComponent implements OnInit, OnDestroy {
   /** True while the router is navigating (incl. lazy-loading a route chunk) —
       drives the centered page loader overlay. */
   readonly routeLoading = signal(false);
+
+  /**
+   * Dims the sidebar nav while the subscription is expired (cosmetic only —
+   * subscriptionGuard is the real block). Backed by its own inject() field
+   * (not the `subscription` constructor param below) so this initializer
+   * doesn't depend on constructor-parameter assignment ordering.
+   */
+  private readonly subscriptionSvc = inject(SubscriptionService);
+  readonly isExpired = this.subscriptionSvc.isExpiredNow;
 
   // Human-facing org name — prefer the real displayName from GET /me (§3.3).
   // Only fall back to guessing one from the URL slug before /me has loaded
@@ -81,6 +93,7 @@ export class ShellComponent implements OnInit, OnDestroy {
     private attendance: AttendanceStateService,
     private notifications: NotificationService,
     private loading: LoadingService,
+    private subscription: SubscriptionService,
   ) {}
 
   ngOnInit() {
@@ -118,6 +131,19 @@ export class ShellComponent implements OnInit, OnDestroy {
       this.permissions.load().subscribe({ error: () => { /* guard re-loads on demand */ } });
     }
 
+    // Subscription state — single source of truth for feature gating, usage bars
+    // and the trial/expiry banner. Refreshed here on every shell mount so it's
+    // current after login and hard refresh. If it comes back expired, bounce
+    // admins to billing straight away (the 402 interceptor is the ongoing gate).
+    this.subscription.load();
+    this._subFirstLoad = this.subscription.state$
+      .pipe(filter((s): s is NonNullable<typeof s> => !!s), take(1))
+      .subscribe((s) => {
+        if (!s.accessAllowed && !this.router.url.includes('/app/billing')) {
+          this.router.navigate([this.appState.orgUrlName() || 'default', 'app', 'billing']);
+        }
+      });
+
     this._routerSub = this.router.events.subscribe(e => {
       if (e instanceof NavigationStart) {
         this.routeLoading.set(true);
@@ -138,6 +164,7 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this._routerSub?.unsubscribe();
+    this._subFirstLoad?.unsubscribe();
   }
 
   toggleSidebar() {

@@ -210,27 +210,13 @@ export class RegisterComponent implements OnInit {
       companySize,
       country,
       defaultTimezone: timezone,
+      currency: 'INR',
       emailDomain: adminEmail.split('@')[1] ?? '',
       website: website || undefined,
-
-      clockInMethods: ['web'],
+      // Advanced attendance config is no longer collected at sign-up — the server
+      // applies defaults and it's configured later in Org Settings.
       weekStartDay: (workWeekStart ?? 'Monday').toLowerCase(),
       weekEndDay: (workWeekEnd ?? 'Friday').toLowerCase(),
-      workHours: 8,
-      workDayStart: '09:00',
-      workDayEnd: '18:00',
-      autoCheckoutBufferMins: 0,
-      minPunchGapMins: 2,
-      checkInRuleType: 'none',
-      halfDayThresholdHrs: 4,
-      lateThresholdMins: 15,
-      locationPolicy: 'no_restrictions',
-      overtimeEnabled: false,
-      requirePhotoOnClockIn: false,
-      ipRestrictionEnabled: false,
-      selfieVerificationEnabled: false,
-      autoCheckoutEnabled: false,
-      currency: 'INR',
     }).subscribe({
       next: (res) => {
         this.loading = false;
