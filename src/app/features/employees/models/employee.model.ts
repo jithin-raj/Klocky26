@@ -50,10 +50,6 @@ export interface EmployeeRow {
   status: EmployeeStatus;
   /** Identity flag (spec §3/§7) — render a "Guest" badge when true. */
   isGuest?: boolean;
-  /** Payroll figures — null unless the caller is admin/HR (spec §3). */
-  basicSalary?: number | null;
-  allowances?: number | null;
-  otherDeductions?: number | null;
 }
 
 export const DEPARTMENTS = [

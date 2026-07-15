@@ -2,12 +2,13 @@
 
   <!-- ── Header ───────────────────────────────────────────────────── -->
   <div class="ao-header">
-    <div>
+    <div class="ao-header__text">
+      <span class="ao-eyebrow">Platform · Klock admin</span>
       <h1 class="ao-title">Organisations</h1>
-      <p class="ao-subtitle">{{ totalOrgs() }} registered · {{ activeOrgs() }} active · {{ trialOrgs() }} on trial</p>
+      <p class="ao-subtitle">Manage every tenant, subscription and access setting.</p>
     </div>
     <button class="ao-invite-btn" type="button" (click)="openAdd()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
@@ -19,27 +20,27 @@
     <p class="ao-empty" style="color:#ef4444;">{{ loadError() }} <button class="ao-action-btn" type="button" (click)="refresh()">Retry</button></p>
   }
 
-  <!-- ── Stat pills ────────────────────────────────────────────────── -->
+  <!-- ── Stat cards ────────────────────────────────────────────────── -->
   <div class="ao-stat-row">
     <div class="ao-stat ao-stat--teal">
-      <span class="ao-stat-val">{{ totalOrgs() }}</span>
-      <span class="ao-stat-lbl">Total</span>
+      <div class="ao-stat__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6"/></svg></div>
+      <div class="ao-stat__body"><span class="ao-stat-val">{{ totalOrgs() }}</span><span class="ao-stat-lbl">Total orgs</span></div>
     </div>
     <div class="ao-stat ao-stat--green">
-      <span class="ao-stat-val">{{ activeOrgs() }}</span>
-      <span class="ao-stat-lbl">Active</span>
+      <div class="ao-stat__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <div class="ao-stat__body"><span class="ao-stat-val">{{ activeOrgs() }}</span><span class="ao-stat-lbl">Active</span></div>
     </div>
     <div class="ao-stat ao-stat--amber">
-      <span class="ao-stat-val">{{ trialOrgs() }}</span>
-      <span class="ao-stat-lbl">On Trial</span>
+      <div class="ao-stat__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="ao-stat__body"><span class="ao-stat-val">{{ trialOrgs() }}</span><span class="ao-stat-lbl">On trial</span></div>
     </div>
     <div class="ao-stat ao-stat--red">
-      <span class="ao-stat-val">{{ inactiveOrgs() }}</span>
-      <span class="ao-stat-lbl">Deactivated</span>
+      <div class="ao-stat__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
+      <div class="ao-stat__body"><span class="ao-stat-val">{{ inactiveOrgs() }}</span><span class="ao-stat-lbl">Deactivated</span></div>
     </div>
     <div class="ao-stat ao-stat--purple">
-      <span class="ao-stat-val">{{ expiredOrgs() }}</span>
-      <span class="ao-stat-lbl">Expired / Cancelled</span>
+      <div class="ao-stat__ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="ao-stat__body"><span class="ao-stat-val">{{ expiredOrgs() }}</span><span class="ao-stat-lbl">Expired / cancelled</span></div>
     </div>
   </div>
 
@@ -76,71 +77,58 @@
   </div>
 
   <!-- ── Detail drawer ─────────────────────────────────────────────── -->
-  @if (selectedOrg()) {
+  @if (selectedOrg(); as org) {
     <div class="ao-overlay" (click)="closeDetail()"></div>
     <aside class="ao-drawer" aria-label="Organisation details">
-      <div class="ao-drawer-head">
-        <div class="ao-drawer-avatar">{{ selectedOrg()!.companyName.slice(0, 2).toUpperCase() }}</div>
-        <div class="ao-drawer-info">
-          <h2 class="ao-drawer-name">{{ selectedOrg()!.companyName }}</h2>
-          <p class="ao-drawer-slug">/{{ selectedOrg()!.orgUrlName }}/app &bull; login code: {{ selectedOrg()!.orgSlug }}</p>
-        </div>
-        <button class="ao-drawer-close" type="button" (click)="closeDetail()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2.5"
-               stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+      <!-- Accent-tinted hero -->
+      <div class="ao-hero" [style.--org-accent]="org.accentColor || '#0d9488'">
+        <button class="ao-drawer-close ao-hero-close" type="button" (click)="closeDetail()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
+        <div class="ao-hero-avatar">{{ org.companyName.slice(0, 2).toUpperCase() }}</div>
+        <h2 class="ao-hero-name">{{ org.companyName }}</h2>
+        <p class="ao-hero-slug">/{{ org.orgUrlName }}/app</p>
+        <div class="ao-hero-chips">
+          <span class="ao-status-chip" [class.ao-status-chip--active]="org.isActive" [class.ao-status-chip--suspended]="!org.isActive">{{ org.isActive ? 'Active' : 'Deactivated' }}</span>
+          <span class="ao-plan-chip">{{ subscriptionLabel(org.subscriptionStatus) }}</span>
+        </div>
       </div>
 
       <div class="ao-drawer-body">
         <div class="ao-section">
           <div class="ao-section-head">
-            <span class="ao-section-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
-            </span>
+            <span class="ao-section-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span>
             <p class="ao-section-title">Overview</p>
           </div>
-          <div class="ao-detail-row"><span class="ao-detail-label">Admin Email</span><span>{{ selectedOrg()!.primaryEmail }}</span></div>
-          <div class="ao-detail-row"><span class="ao-detail-label">Industry</span><span>{{ selectedOrg()!.industry || '—' }}</span></div>
-          <div class="ao-detail-row"><span class="ao-detail-label">Registered</span><span>{{ formatDate(selectedOrg()!.createdAt) }}</span></div>
-          <div class="ao-detail-row"><span class="ao-detail-label">Last Activity</span><span>{{ formatDate(selectedOrg()!.lastActivityAt) }}</span></div>
-          <div class="ao-detail-row">
-            <span class="ao-detail-label">Status</span>
-            <span class="ao-status-chip" [class.ao-status-chip--active]="selectedOrg()!.isActive" [class.ao-status-chip--suspended]="!selectedOrg()!.isActive">{{ selectedOrg()!.isActive ? 'active' : 'deactivated' }}</span>
-          </div>
+          <div class="ao-kv"><span class="ao-kv-k">Admin email</span><span class="ao-kv-v">{{ org.primaryEmail }}</span></div>
+          <div class="ao-kv"><span class="ao-kv-k">Login code</span><span class="ao-kv-v ao-mono">{{ org.orgSlug }}</span></div>
+          <div class="ao-kv"><span class="ao-kv-k">Registered</span><span class="ao-kv-v">{{ formatDate(org.createdAt) }}</span></div>
+          <div class="ao-kv"><span class="ao-kv-k">Last activity</span><span class="ao-kv-v">{{ formatDate(org.lastActivityAt) }}</span></div>
+          <div class="ao-kv"><span class="ao-kv-k">Retention</span><span class="ao-kv-v">{{ org.inactivityRetentionDays ? org.inactivityRetentionDays + ' days' : '—' }}</span></div>
         </div>
 
         <div class="ao-section">
           <div class="ao-section-head">
-            <span class="ao-section-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-            </span>
+            <span class="ao-section-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span>
             <p class="ao-section-title">Subscription</p>
           </div>
-          <div class="ao-detail-row"><span class="ao-detail-label">Plan Status</span><span class="ao-plan-chip">{{ subscriptionLabel(selectedOrg()!.subscriptionStatus) }}</span></div>
-          @if (selectedOrg()!.trialEndsAt) {
-            <div class="ao-detail-row"><span class="ao-detail-label">Trial Ends</span><span>{{ formatDate(selectedOrg()!.trialEndsAt) }}</span></div>
-          }
-          @if (selectedOrg()!.subscriptionExpiresAt) {
-            <div class="ao-detail-row"><span class="ao-detail-label">Subscription Expires</span><span>{{ formatDate(selectedOrg()!.subscriptionExpiresAt) }}</span></div>
-          }
-          @if (selectedOrg()!.maxEmployees) {
-            <div class="ao-detail-row"><span class="ao-detail-label">Max Employees</span><span>{{ selectedOrg()!.maxEmployees }}</span></div>
-          }
+          <div class="ao-kv"><span class="ao-kv-k">Status</span><span class="ao-kv-v">{{ subscriptionLabel(org.subscriptionStatus) }}</span></div>
+          @if (org.subscriptionPlan) { <div class="ao-kv"><span class="ao-kv-k">Plan</span><span class="ao-kv-v">{{ org.subscriptionPlan }}</span></div> }
+          @if (org.trialEndsAt) { <div class="ao-kv"><span class="ao-kv-k">Trial ends</span><span class="ao-kv-v">{{ formatDate(org.trialEndsAt) }}</span></div> }
+          @if (org.subscriptionExpiresAt) { <div class="ao-kv"><span class="ao-kv-k">Expires</span><span class="ao-kv-v">{{ formatDate(org.subscriptionExpiresAt) }}</span></div> }
+          <div class="ao-kv"><span class="ao-kv-k">Max employees</span><span class="ao-kv-v">{{ org.maxEmployees ?? 'Unlimited' }}</span></div>
+          <div class="ao-kv"><span class="ao-kv-k">Max admins</span><span class="ao-kv-v">{{ org.maxAdminAccounts ?? 'Unlimited' }}</span></div>
         </div>
       </div>
 
       <div class="ao-drawer-footer">
-        <button class="ao-drawer-action" type="button" (click)="openEdit(selectedOrg()!)">Edit Organisation</button>
-        <button class="ao-drawer-action"
-                [class.ao-drawer-action--danger]="selectedOrg()!.isActive"
-                type="button"
-                (click)="toggleActive(selectedOrg()!)">
-          {{ selectedOrg()!.isActive ? 'Deactivate Organisation' : 'Activate Organisation' }}
-        </button>
-        <!-- No DELETE /api/platform/organisations endpoint exists — deactivate is the closest equivalent. -->
+        <button class="ao-drawer-action ao-drawer-action--primary" type="button" (click)="openEdit(org)">Edit organisation</button>
+        <div class="ao-footer-row">
+          <button class="ao-drawer-action" [class.ao-drawer-action--danger]="org.isActive" type="button" (click)="toggleActive(org)">
+            {{ org.isActive ? 'Deactivate' : 'Activate' }}
+          </button>
+          <button class="ao-drawer-action ao-drawer-action--danger" type="button" (click)="openHardDelete(org)">Delete…</button>
+        </div>
       </div>
     </aside>
   }
@@ -157,41 +145,19 @@
     (cancel)="closeEdit()"
   >
     @if (editingOrg(); as org) {
-      <!-- URL name -->
-      <ui-form-section title="URL name" description="klock.vercel.app/<this>/app — Klock-admin only.">
-        <div class="ao-rename-row">
-          <ui-input class="ao-rename-input" [(ngModel)]="editOrgUrlName" placeholder="acme" />
-          <button type="button" class="ao-inline-btn" [disabled]="renameSubmitting()" (click)="submitRename()">
-            {{ renameSubmitting() ? 'Renaming…' : 'Rename' }}
-          </button>
-        </div>
-        @if (renameError()) { <p class="ao-modal-err">{{ renameError() }}</p> }
-      </ui-form-section>
-
-      <!-- Login code (orgSlug) — `.klock` is a fixed suffix, only the prefix is editable -->
-      <ui-form-section title="Login code (slug)" description="The org's sign-in identifier — Klock-admin only.">
-        <div class="ao-rename-row">
-          <ui-input class="ao-rename-input" [(ngModel)]="editOrgSlug" placeholder="acme">
-            <span suffix class="ao-slug-suffix">.klock</span>
-          </ui-input>
-          <button type="button" class="ao-inline-btn" [disabled]="slugSubmitting()" (click)="submitSlug()">
-            {{ slugSubmitting() ? 'Saving…' : 'Change code' }}
-          </button>
-        </div>
-        <p class="ao-modal-hint ao-modal-warn">
-          ⚠ Changing the login code signs out everyone currently logged into this org — they must sign in again with the new code.
-        </p>
-        @if (slugError()) { <p class="ao-modal-err">{{ slugError() }}</p> }
-      </ui-form-section>
-
       <!-- Identity -->
-      <ui-form-section title="Identity">
+      <ui-form-section title="Identity" description="How the organisation appears across Klock.">
         <ui-form-grid [columns]="2">
           <ui-form-field label="Company name">
             <ui-input [(ngModel)]="editCompanyName" />
           </ui-form-field>
-          <ui-form-field label="Accent color">
-            <ui-input [(ngModel)]="editAccentColor" placeholder="#0d9488" />
+          <ui-form-field label="Accent color" hint="Brand color used across the org's app.">
+            <div class="ao-accent-row">
+              <label class="ao-accent-swatch" [style.background]="editAccentColor || '#0d9488'">
+                <input type="color" [value]="editAccentColor || '#0d9488'" (input)="editAccentColor = asColor($event)" />
+              </label>
+              <ui-input [(ngModel)]="editAccentColor" placeholder="#0d9488" />
+            </div>
           </ui-form-field>
           <ui-form-field [full]="true">
             <div class="ao-toggle-field">
@@ -203,54 +169,96 @@
       </ui-form-section>
 
       <!-- Subscription -->
-      <ui-form-section title="Subscription &amp; billing">
+      <ui-form-section title="Subscription &amp; billing" description="Grant access, extend a trial, or set a paid period.">
         <ui-form-grid [columns]="2">
-          <ui-form-field label="Payment status">
-            <ui-select [options]="subscriptionSelectOptions" [(ngModel)]="editSubscriptionStatus"></ui-select>
+          <ui-form-field label="Payment status" hint="Changing this resets the plan/dates below for the new status.">
+            <ui-select [options]="subscriptionSelectOptions" [ngModel]="editSubscriptionStatus" (ngModelChange)="onSubscriptionStatusChange($event)"></ui-select>
           </ui-form-field>
-          <ui-form-field label="Subscription plan">
-            <ui-input [(ngModel)]="editSubscriptionPlan" placeholder="e.g. pro, enterprise" />
+          <ui-form-field label="Subscription plan" hint="Plan code, or “custom” for a tailored deal.">
+            <ui-input [(ngModel)]="editSubscriptionPlan" placeholder="e.g. growth, enterprise, custom" />
           </ui-form-field>
-          <ui-form-field label="Trial ends at">
+          <ui-form-field label="Trial ends at" hint="Set or extend the trial end date.">
             <ui-datepicker [(ngModel)]="editTrialEndsAt"></ui-datepicker>
           </ui-form-field>
-          <ui-form-field label="Subscription expires at">
+          <ui-form-field label="Subscription expires at" hint="Paid-period end date.">
             <ui-datepicker [(ngModel)]="editSubscriptionExpiresAt"></ui-datepicker>
           </ui-form-field>
         </ui-form-grid>
       </ui-form-section>
 
       <!-- Limits -->
-      <ui-form-section title="Limits">
+      <ui-form-section title="Caps &amp; retention" description="Leave employee/admin caps blank for unlimited.">
         <ui-form-grid [columns]="3">
           <ui-form-field label="Max employees">
-            <input class="ao-num-input" type="number" [(ngModel)]="editMaxEmployees" placeholder="unlimited" />
+            <input class="ao-num-input" type="number" [(ngModel)]="editMaxEmployees" placeholder="∞" />
           </ui-form-field>
           <ui-form-field label="Max admin accounts">
-            <input class="ao-num-input" type="number" [(ngModel)]="editMaxAdminAccounts" placeholder="unlimited" />
+            <input class="ao-num-input" type="number" [(ngModel)]="editMaxAdminAccounts" placeholder="∞" />
           </ui-form-field>
-          <ui-form-field label="Inactivity retention (days)">
-            <input class="ao-num-input" type="number" [(ngModel)]="editInactivityRetentionDays" />
+          <ui-form-field label="Inactivity retention (days)" hint="1–3650">
+            <input class="ao-num-input" type="number" [(ngModel)]="editInactivityRetentionDays" placeholder="90" />
           </ui-form-field>
         </ui-form-grid>
       </ui-form-section>
 
       <!-- Custom features (per-org override) -->
       <ui-form-section title="Custom features"
-                       description="Per-org feature overrides — grants features beyond the plan. Validated against the allowed set.">
+                       description="Grant features beyond the plan — used for bespoke/custom deals.">
         <div class="ao-feat-grid">
           @for (f of featureCodes; track f) {
             <label class="ao-feat-check" [class.checked]="hasEditFeature(f)">
               <input type="checkbox" [checked]="hasEditFeature(f)" (change)="toggleEditFeature(f)" />
+              <span class="ao-feat-check__box">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
               {{ featureLabel(f) }}
             </label>
           }
         </div>
       </ui-form-section>
 
+      @if (editError()) { <p class="ao-modal-err">{{ editError() }}</p> }
+
+      <!-- ── Instant-apply actions (save on their own, not via “Save changes”) ── -->
+      <div class="ao-instant-head">
+        <span class="ao-instant-line"></span>
+        <span class="ao-instant-label">Applies immediately · saved on click</span>
+        <span class="ao-instant-line"></span>
+      </div>
+
+      <!-- URL name -->
+      <ui-form-section title="Workspace URL" description="klock.vercel.app/&lt;this&gt;/app">
+        <span actions class="ao-instant-chip">Instant</span>
+        <div class="ao-rename-row">
+          <ui-input class="ao-rename-input" [(ngModel)]="editOrgUrlName" placeholder="acme" />
+          <button type="button" class="ao-inline-btn" [disabled]="renameSubmitting()" (click)="submitRename()">
+            {{ renameSubmitting() ? 'Renaming…' : 'Rename' }}
+          </button>
+        </div>
+        @if (renameError()) { <p class="ao-modal-err">{{ renameError() }}</p> }
+      </ui-form-section>
+
+      <!-- Login code (orgSlug) — `.klock` is a fixed suffix, only the prefix is editable -->
+      <ui-form-section title="Login code" description="The org's sign-in identifier.">
+        <span actions class="ao-instant-chip">Instant</span>
+        <div class="ao-rename-row">
+          <ui-input class="ao-rename-input" [(ngModel)]="editOrgSlug" placeholder="acme">
+            <span suffix class="ao-slug-suffix">.klock</span>
+          </ui-input>
+          <button type="button" class="ao-inline-btn" [disabled]="slugSubmitting()" (click)="submitSlug()">
+            {{ slugSubmitting() ? 'Saving…' : 'Change code' }}
+          </button>
+        </div>
+        <p class="ao-modal-hint ao-modal-warn">
+          ⚠ Changing the login code signs everyone out of this org — they must sign in again with the new code.
+        </p>
+        @if (slugError()) { <p class="ao-modal-err">{{ slugError() }}</p> }
+      </ui-form-section>
+
       <!-- Org admin password -->
       <ui-form-section title="Org admin password"
-                       description="The real password is hashed and can't be viewed — this resets it and shows a one-time temporary password.">
+                       description="Can't be viewed (hashed) — reset to get a one-time temporary password.">
+        <span actions class="ao-instant-chip">Instant</span>
         @if (resetPwResult()) {
           <div class="ao-modal-banner">{{ resetPwResult() }}</div>
         } @else {
@@ -260,8 +268,6 @@
         }
         @if (resetPwError()) { <p class="ao-modal-err">{{ resetPwError() }}</p> }
       </ui-form-section>
-
-      @if (editError()) { <p class="ao-modal-err">{{ editError() }}</p> }
     }
   </ui-form-modal>
 
@@ -320,5 +326,17 @@
       </div>
     </aside>
   }
+
+  <!-- Hard delete — type-to-confirm, irreversible -->
+  <ui-confirm-danger
+    [open]="!!hardDeleteTarget()"
+    title="Delete organisation permanently"
+    [message]="'A backup ZIP downloads to your device first, then ' + (hardDeleteTarget()?.companyName || 'this organisation') + ', its tenant database and all payment records are permanently removed. This cannot be undone.'"
+    [confirmWord]="hardDeleteTarget()?.orgSlug || ''"
+    confirmLabel="Back up & delete"
+    [busy]="hardDeleting()"
+    (confirm)="doHardDelete()"
+    (cancel)="cancelHardDelete()"
+  ></ui-confirm-danger>
 
 </div>

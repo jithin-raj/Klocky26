@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { RouterLink } from '@angular/router';
 import { AuthStateService } from '../../services/auth-state.service';
 import { UserAuthService } from '../../../../core/services/user-auth.service';
+import { SubscriptionService } from '../../../../core/services/subscription.service';
 
 @Component({
   selector: 'klocky-email-step',
@@ -23,6 +24,7 @@ export class EmailStepComponent {
   form: FormGroup;
 
   private userAuth = inject(UserAuthService);
+  private subscription = inject(SubscriptionService);
 
   constructor(public state: AuthStateService, private fb: FormBuilder) {
     this.form = this.fb.group({
@@ -59,15 +61,26 @@ export class EmailStepComponent {
       email,
       password: this.form.value.passwordInput,
     }).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading = false;
+        // Admins/HR can still log in with an expired subscription (per §1) — set
+        // the gate immediately so finishLogin() routes straight to /billing
+        // instead of /dashboard, without waiting on a /org/subscription round-trip.
+        if (res.data.subscriptionExpired != null) {
+          this.subscription.setExpired(res.data.subscriptionExpired);
+        }
         this.loggedIn.emit();
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.status === 402
-          ? 'Your organisation’s trial/subscription has expired. Please contact your administrator to renew access.'
-          : (err?.error?.message ?? 'Invalid email or password.');
+        const serverMsg: string = err?.error?.message ?? err?.error?.error ?? '';
+        // Regular employees are rejected outright (401) when the org's subscription
+        // has expired — the server's own message explains it; 402 is the legacy/
+        // org-wide-block variant. Either way, surface the server's wording.
+        const isExpiredRejection = err?.status === 402 || (err?.status === 401 && /expired/i.test(serverMsg));
+        this.error = isExpiredRejection
+          ? (serverMsg || 'Your organisation’s trial/subscription has expired. Please contact your administrator to renew access.')
+          : (serverMsg || 'Invalid email or password.');
       },
     });
   }

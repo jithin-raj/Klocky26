@@ -572,13 +572,16 @@ export class OrgProfileComponent implements OnInit {
    * the subscribe/upgrade prompt. `field` is the component property bound to the
    * toggle's ngModel — reset it so the switch visually reverts.
    * (The server also rejects enabling these with 403/409 as a backstop.)
+   *
+   * Trial orgs get everything: during the trial the server allows enabling any
+   * feature, so we must NOT block it here or the FE would contradict the backend.
    */
   guardPremiumToggle(
     feature: string,
     field: 'geoFencingEnabled' | 'compOffEnabled' | 'lopEnabled' | 'earnedLeaveEnabled',
     enabled: boolean,
   ): void {
-    if (enabled && !this.subscription.hasFeature(feature)) {
+    if (enabled && !this.subscription.isTrial() && !this.subscription.hasFeature(feature)) {
       (this as unknown as Record<string, boolean>)[field] = false;
       this.upgradePrompt.open(feature);
       return;

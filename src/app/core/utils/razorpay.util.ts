@@ -8,24 +8,52 @@
 
 const RAZORPAY_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 
+/** Shown in the Checkout modal header — Klock's logo, next to the app name. */
+export const KLOCK_LOGO_URL = 'https://klock-api.onrender.com/logo.png';
+
 export interface RazorpayHandlerResponse {
   razorpay_order_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
 }
 
-export interface RazorpayOptions {
+/** Handler payload for a subscription (auto-renew) checkout — no order_id, has subscription_id instead. */
+export interface RazorpaySubscriptionHandlerResponse {
+  razorpay_subscription_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayOptionsBase {
   key: string;
-  order_id: string;
-  amount: number;         // in paise
-  currency: string;
+  amount?: number;         // in paise — omitted for subscription checkout (Razorpay reads it off the plan)
+  currency?: string;
   name: string;
+  /** Logo shown in the Checkout modal header, next to `name`. */
+  image?: string;
   description?: string;
   prefill?: { name?: string; email?: string; contact?: string };
   theme?: { color?: string };
-  handler: (resp: RazorpayHandlerResponse) => void;
   modal?: { ondismiss?: () => void };
 }
+
+/** One-time payment checkout — order_id + a fixed amount. */
+export interface RazorpayOrderOptions extends RazorpayOptionsBase {
+  order_id: string;
+  subscription_id?: never;
+  amount: number;
+  currency: string;
+  handler: (resp: RazorpayHandlerResponse) => void;
+}
+
+/** Recurring/auto-renew checkout — subscription_id; Razorpay charges each cycle automatically. */
+export interface RazorpaySubscriptionOptions extends RazorpayOptionsBase {
+  subscription_id: string;
+  order_id?: never;
+  handler: (resp: RazorpaySubscriptionHandlerResponse) => void;
+}
+
+export type RazorpayOptions = RazorpayOrderOptions | RazorpaySubscriptionOptions;
 
 export interface RazorpayInstance { open(): void; }
 type RazorpayCtor = new (options: RazorpayOptions) => RazorpayInstance;

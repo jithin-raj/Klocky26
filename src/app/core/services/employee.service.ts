@@ -9,11 +9,8 @@ import {
   EmployeeHierarchyNode,
   EmployeeResponse,
   EmployeeTreeResponse,
-  PayrollCalculation,
-  PayrollResponse,
   ResetPasswordResponse,
   UpdateEmployeeRequest,
-  UpdatePayrollRequest,
 } from '../../features/employees/models/employee-api.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -137,22 +134,5 @@ export class EmployeeService {
   /** GET /api/employees/bulk-import-template — binary .xlsx blob, not JSON */
   downloadBulkImportTemplate(): Observable<Blob> {
     return this.api.getBlob('/employees/bulk-import-template');
-  }
-
-  // ── Payroll (spec §8) — admin/HR only; any other role gets 403 ────────────────
-
-  /** GET /api/employees/{id}/payroll */
-  getPayroll(id: string): Observable<ApiResponse<PayrollResponse>> {
-    return this.api.get<ApiResponse<PayrollResponse>>(`/employees/${id}/payroll`);
-  }
-
-  /** PUT /api/employees/{id}/payroll */
-  updatePayroll(id: string, payload: UpdatePayrollRequest): Observable<ApiResponse<PayrollResponse>> {
-    return this.api.put<ApiResponse<PayrollResponse>>(`/employees/${id}/payroll`, payload);
-  }
-
-  /** GET /api/employees/{id}/payroll/calculate?year&month */
-  calculatePayroll(id: string, year: number, month: number): Observable<ApiResponse<PayrollCalculation>> {
-    return this.api.get<ApiResponse<PayrollCalculation>>(`/employees/${id}/payroll/calculate?year=${year}&month=${month}`);
   }
 }

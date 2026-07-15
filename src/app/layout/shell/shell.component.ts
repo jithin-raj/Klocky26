@@ -40,6 +40,15 @@ export class ShellComponent implements OnInit, OnDestroy {
       drives the centered page loader overlay. */
   readonly routeLoading = signal(false);
 
+  /**
+   * Dims the sidebar nav while the subscription is expired (cosmetic only —
+   * subscriptionGuard is the real block). Backed by its own inject() field
+   * (not the `subscription` constructor param below) so this initializer
+   * doesn't depend on constructor-parameter assignment ordering.
+   */
+  private readonly subscriptionSvc = inject(SubscriptionService);
+  readonly isExpired = this.subscriptionSvc.isExpiredNow;
+
   // Human-facing org name — prefer the real displayName from GET /me (§3.3).
   // Only fall back to guessing one from the URL slug before /me has loaded
   // (e.g. first paint right after redirecting in from login).

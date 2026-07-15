@@ -9,9 +9,7 @@ import { EmployeeService } from '../../../../core/services/employee.service';
 import { DepartmentService } from '../../../../core/services/department.service';
 import { OfficeService } from '../../../../core/services/office.service';
 import { OrgRoleService } from '../../../../core/services/org-role.service';
-import { PermissionService } from '../../../../core/services/permission.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
-import { PayrollCalculation } from '../../models/employee-api.model';
 import { Department } from '../../../../core/models/department.model';
 import { Office } from '../../../../core/models/office.model';
 import { OrgRole } from '../../../../core/models/org-role.model';
@@ -47,13 +45,7 @@ interface EmployeeForm {
   emergencyContactPhone: string;
 }
 
-type EmployeeTab = 'general' | 'classification' | 'payroll';
-
-interface PayrollForm {
-  basicSalary: number;
-  allowances: number;
-  otherDeductions: number;
-}
+type EmployeeTab = 'general' | 'classification';
 
 @Component({
   selector: 'app-employee-add',
@@ -74,7 +66,6 @@ export class EmployeeAddComponent implements OnInit {
   private departmentService = inject(DepartmentService);
   private officeService = inject(OfficeService);
   private orgRoleService = inject(OrgRoleService);
-  private permissions = inject(PermissionService);
   private toast = inject(ToastService);
 
   isEdit      = signal(false);
@@ -87,13 +78,9 @@ export class EmployeeAddComponent implements OnInit {
 
   // ── Tabs ──────────────────────────────────────────────────────
   tab = signal<EmployeeTab>('general');
-  /** Payroll is admin/HR only and only on an existing employee (spec §8). */
-  readonly canSeePayroll = computed(() => this.permissions.isAdmin() || this.permissions.isHr());
-  readonly showPayrollTab = computed(() => this.isEdit() && this.canSeePayroll());
 
   setTab(t: EmployeeTab) {
     this.tab.set(t);
-    if (t === 'payroll' && !this.payrollLoaded()) this.loadPayroll();
   }
 
   /** Shown once after a successful create — never returned by the API again. */
@@ -103,76 +90,6 @@ export class EmployeeAddComponent implements OnInit {
   offices      = signal<Office[]>([]);
   managers     = signal<EmployeeResponse[]>([]);
   orgRoles     = signal<OrgRole[]>([]);
-
-  // ── Payroll tab (edit mode, admin/HR only) ─────────────────────
-  payrollForm = signal<PayrollForm>({ basicSalary: 0, allowances: 0, otherDeductions: 0 });
-  payrollLoaded = signal(false);
-  payrollLoading = signal(false);
-  payrollSaving = signal(false);
-  payrollError = signal<string | null>(null);
-  calcYear = signal(new Date().getFullYear());
-  calcMonth = signal(new Date().getMonth() + 1);
-  calculating = signal(false);
-  payrollCalc = signal<PayrollCalculation | null>(null);
-  readonly months = [
-    'January','February','March','April','May','June',
-    'July','August','September','October','November','December',
-  ].map((label, i) => ({ label, value: i + 1 }));
-
-  loadPayroll() {
-    const id = this.empId();
-    if (!id) return;
-    this.payrollLoading.set(true);
-    this.payrollError.set(null);
-    this.employeeService.getPayroll(id).subscribe({
-      next: (res) => {
-        const p = res.data;
-        this.payrollForm.set({
-          basicSalary: p?.basicSalary ?? 0,
-          allowances: p?.allowances ?? 0,
-          otherDeductions: p?.otherDeductions ?? 0,
-        });
-        this.payrollLoaded.set(true);
-        this.payrollLoading.set(false);
-      },
-      error: (err) => {
-        this.payrollLoading.set(false);
-        this.payrollError.set(err?.status === 403
-          ? 'You do not have access to payroll for this employee.'
-          : extractApiErrorMessage(err, 'Could not load payroll.'));
-      },
-    });
-  }
-
-  patchPayroll(field: keyof PayrollForm, value: number) {
-    this.payrollForm.update(p => ({ ...p, [field]: Number(value) || 0 }));
-  }
-
-  savePayroll() {
-    const id = this.empId();
-    if (!id || this.payrollSaving()) return;
-    this.payrollSaving.set(true);
-    this.employeeService.updatePayroll(id, this.payrollForm()).subscribe({
-      next: () => {
-        this.payrollSaving.set(false);
-        this.toast.success('Payroll saved', 'Salary details were updated.');
-      },
-      error: (err) => {
-        this.payrollSaving.set(false);
-        this.toast.error('Could not save payroll', extractApiErrorMessage(err));
-      },
-    });
-  }
-
-  calculatePayroll() {
-    const id = this.empId();
-    if (!id || this.calculating()) return;
-    this.calculating.set(true);
-    this.employeeService.calculatePayroll(id, this.calcYear(), this.calcMonth()).subscribe({
-      next: (res) => { this.payrollCalc.set(res.data); this.calculating.set(false); },
-      error: (err) => { this.calculating.set(false); this.toast.error('Could not calculate payroll', extractApiErrorMessage(err)); },
-    });
-  }
 
   // Access role is no longer shown on the form — the form defaults role to
   // 'employee' and still sends it until the backend makes `role` optional/derived.

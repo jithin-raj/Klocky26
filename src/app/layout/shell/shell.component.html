@@ -2,13 +2,18 @@
   <!-- Mobile backdrop -->
   <div class="mobile-backdrop" [class.visible]="isSidebarOpen" (click)="closeSidebar()"></div>
 
-  <klocky-sidebar [isOpen]="isSidebarOpen" [orgName]="orgName()" [orgLogoUrl]="orgLogoUrl" [orgLogoFallbackUrl]="orgLogoFallbackUrl" [orgAccentColor]="orgAccentColor"></klocky-sidebar>
+  <!-- Belt-and-suspenders only — subscriptionGuard is the real block on
+       navigation; this just visually communicates the lock on the nav itself. -->
+  <div class="sidebar-wrap" [class.sidebar-wrap--locked]="isExpired()">
+    <klocky-sidebar [isOpen]="isSidebarOpen" [orgName]="orgName()" [orgLogoUrl]="orgLogoUrl" [orgLogoFallbackUrl]="orgLogoFallbackUrl" [orgAccentColor]="orgAccentColor"></klocky-sidebar>
+  </div>
 
   <div class="main">
+    <klocky-trial-banner></klocky-trial-banner>
+
     <klocky-header (toggleSidebar)="toggleSidebar()" [orgName]="orgName()" [orgLogoUrl]="orgLogoUrl" [orgLogoFallbackUrl]="orgLogoFallbackUrl" [orgAccentColor]="orgAccentColor"></klocky-header>
 
     <div class="content" #contentEl>
-      <klocky-trial-banner></klocky-trial-banner>
       @if (routeLoading()) {
         <div class="page-loader">
           <ui-loader variant="klocky" [size]="72"></ui-loader>

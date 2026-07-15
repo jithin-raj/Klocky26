@@ -1,13 +1,15 @@
 import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } from '@angular/core';
+import { HttpResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { PlatformAdminService } from '../../../../core/services/platform-admin.service';
-import { PlatformOrgListItem, SubscriptionStatus, OrgEmailType } from '../../../../core/models/platform-auth.model';
+import { PlatformOrgListItem, SubscriptionStatus, OrgEmailType, UpdatePlatformOrgRequest } from '../../../../core/models/platform-auth.model';
 import { FEATURE_CODES, FEATURE_LABELS } from '../../../../core/models/subscription.model';
 import {
   UiSelectComponent, UiDatePickerComponent, SelectOption,
   UiDataGridComponent, GridColumn, GridAction,
   UiFormModalComponent, UiFormSectionComponent, UiFormGridComponent, UiFormFieldComponent,
-  UiInputComponent, UiToggleComponent,
+  UiInputComponent, UiToggleComponent, UiConfirmDangerComponent, ToastService,
 } from '../../../../shared/components';
 
 const ORG_AVATAR_COLORS = ['#0d9488','#6366f1','#ec4899','#f59e0b','#22c55e','#8b5cf6','#0ea5e9','#ef4444'];
@@ -20,13 +22,14 @@ const ORG_AVATAR_COLORS = ['#0d9488','#6366f1','#ec4899','#f59e0b','#22c55e','#8
     FormsModule, UiSelectComponent, UiDatePickerComponent,
     UiDataGridComponent,
     UiFormModalComponent, UiFormSectionComponent, UiFormGridComponent, UiFormFieldComponent,
-    UiInputComponent, UiToggleComponent,
+    UiInputComponent, UiToggleComponent, UiConfirmDangerComponent,
   ],
   templateUrl: './admin-organisations.component.html',
   styleUrl: './admin-organisations.component.scss',
 })
 export class AdminOrganisationsComponent implements OnInit {
   private readonly platformAdmin = inject(PlatformAdminService);
+  private readonly toast = inject(ToastService);
 
   readonly orgs    = signal<PlatformOrgListItem[]>([]);
   readonly loading = signal(false);
@@ -89,9 +92,14 @@ export class AdminOrganisationsComponent implements OnInit {
     { label: 'Edit', click: (o) => this.openEdit(o) },
     { label: 'Deactivate', danger: true, visible: (o) => o.isActive, click: (o) => this.toggleActive(o) },
     { label: 'Activate', visible: (o) => !o.isActive, click: (o) => this.toggleActive(o) },
+    { label: 'Delete permanently', danger: true, click: (o) => this.openHardDelete(o) },
   ];
 
   readonly selectedOrg  = signal<PlatformOrgListItem | null>(null);
+
+  // ── Hard delete (DELETE /api/platform/organisations/{slug}) ───────
+  readonly hardDeleteTarget = signal<PlatformOrgListItem | null>(null);
+  readonly hardDeleting     = signal(false);
 
   // ── Add organisation ─────────────────────────────────────────────
   readonly showAdd        = signal(false);
@@ -206,18 +214,137 @@ export class AdminOrganisationsComponent implements OnInit {
   readonly expiredOrgs  = computed(() => this.orgs().filter(o => o.subscriptionStatus === 'expired' || o.subscriptionStatus === 'cancelled').length);
 
   // ── Actions ───────────────────────────────────────────────────
-  viewOrg(org: PlatformOrgListItem): void { this.selectedOrg.set(org); }
+  viewOrg(org: PlatformOrgListItem): void {
+    // Show the list row immediately, then refresh from the single-org endpoint.
+    this.selectedOrg.set(org);
+    this.platformAdmin.getOrganisation(org.orgSlug).subscribe({
+      next: (res) => {
+        const fresh = this.mergeOrg(org, res.data);
+        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? fresh : o));
+        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(fresh);
+      },
+      error: () => { /* keep the list row's data */ },
+    });
+  }
   closeDetail(): void { this.selectedOrg.set(null); }
+
+  /**
+   * The summary response (OrganizationSummaryResponse) omits `features` and
+   * `industry`, so a raw replace would blank them. Merge onto the existing row,
+   * keeping locally-known values the API didn't echo back.
+   */
+  private mergeOrg(existing: PlatformOrgListItem, patch: PlatformOrgListItem): PlatformOrgListItem {
+    return {
+      ...existing,
+      ...patch,
+      features: patch.features ?? existing.features,
+      industry: patch.industry ?? existing.industry,
+    };
+  }
 
   /** Maps to PUT .../organisations/{slug} { isActive } — there's no separate "suspend" endpoint. */
   toggleActive(org: PlatformOrgListItem): void {
     const nextActive = !org.isActive;
     this.platformAdmin.updateOrganisation(org.orgSlug, { isActive: nextActive }).subscribe({
       next: (res) => {
-        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? res.data : o));
-        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(res.data);
+        const merged = this.mergeOrg(org, res.data);
+        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? merged : o));
+        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(merged);
       },
     });
+  }
+
+  // ── Hard delete (irreversible; type-to-confirm) ───────────────
+  openHardDelete(org: PlatformOrgListItem): void {
+    this.hardDeleteTarget.set(org);
+  }
+
+  cancelHardDelete(): void {
+    if (this.hardDeleting()) return;
+    this.hardDeleteTarget.set(null);
+  }
+
+  /**
+   * Backup first, then delete — after the delete the tenant DB is gone, so the
+   * backup ZIP must be downloaded while the org still exists. If the backup
+   * fails, we abort and delete nothing.
+   */
+  async doHardDelete(): Promise<void> {
+    const org = this.hardDeleteTarget();
+    if (!org || this.hardDeleting()) return;
+    this.hardDeleting.set(true);
+
+    // 1) Download the backup ZIP (one JSON per table + README).
+    try {
+      const res = await firstValueFrom(this.platformAdmin.backupOrganisation(org.orgSlug));
+      this.triggerDownload(res, `${org.orgSlug}-backup.zip`);
+    } catch (err) {
+      this.hardDeleting.set(false);
+      this.toast.error('Backup failed — nothing was deleted', await this.extractBlobError(err));
+      return;
+    }
+
+    // 2) Delete (server-side backup skipped — we just downloaded our own).
+    this.platformAdmin.deleteOrganisation(org.orgSlug, true).subscribe({
+      next: (res) => {
+        this.hardDeleting.set(false);
+        this.hardDeleteTarget.set(null);
+        this.orgs.update(list => list.filter(o => o.orgSlug !== org.orgSlug));
+        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(null);
+        if (this.editingOrg()?.orgSlug === org.orgSlug) this.editingOrg.set(null);
+        this.toast.success(`${org.companyName} deleted`, res.message || 'Backup downloaded; the organisation and its data were removed.');
+      },
+      error: (err) => {
+        this.hardDeleting.set(false);
+        if (err?.status === 404) {
+          this.hardDeleteTarget.set(null);
+          this.orgs.update(list => list.filter(o => o.orgSlug !== org.orgSlug));
+          this.toast.error('Organisation not found', 'It may have already been deleted.');
+        } else {
+          this.toast.error('Could not delete organisation', err?.error?.error ?? err?.error?.message ?? 'Please try again.');
+        }
+      },
+    });
+  }
+
+  /** Save a binary response to disk, using the Content-Disposition filename when present. */
+  private triggerDownload(res: HttpResponse<Blob>, fallbackName: string): void {
+    const body = res.body;
+    if (!body) return;
+    const filename = this.filenameFromDisposition(res.headers.get('Content-Disposition')) ?? fallbackName;
+    const url = URL.createObjectURL(body);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  private filenameFromDisposition(cd: string | null): string | null {
+    if (!cd) return null;
+    const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(cd);
+    if (star) { try { return decodeURIComponent(star[1].trim().replace(/^"|"$/g, '')); } catch { /* fall through */ } }
+    const plain = /filename="?([^";]+)"?/i.exec(cd);
+    return plain ? plain[1].trim() : null;
+  }
+
+  /** Blob error responses carry the JSON body as a Blob — read it to surface { error }. */
+  private async extractBlobError(err: unknown): Promise<string> {
+    const body = (err as { error?: unknown })?.error;
+    if (body instanceof Blob) {
+      try {
+        const parsed = JSON.parse(await body.text());
+        return parsed?.error ?? parsed?.message ?? 'Please try again.';
+      } catch { /* not JSON */ }
+    }
+    const status = (err as { status?: number })?.status;
+    if (status === 404) return 'Organisation not found.';
+    if (status === 401 || status === 403) return 'This needs a platform-admin session.';
+    return (body as { error?: string; message?: string })?.error
+        ?? (body as { message?: string })?.message
+        ?? 'Please try again.';
   }
 
   // ── Add organisation (POST /api/platform/organisations) ────────
@@ -301,6 +428,22 @@ export class AdminOrganisationsComponent implements OnInit {
     this.editingOrg.set(null);
   }
 
+  /**
+   * The date pickers emit a plain 'YYYY-MM-DD', but the API's trialEndsAt /
+   * subscriptionExpiresAt expect a full ISO datetime — a date-only string isn't
+   * applied. Normalise to midnight UTC so the change actually sticks.
+   */
+  private toIsoDateTime(dateOnly: string): string | undefined {
+    const d = (dateOnly || '').trim();
+    if (!d) return undefined;
+    return d.includes('T') ? d : `${d}T00:00:00Z`;
+  }
+
+  /** Read the value off a native color input's change event. */
+  asColor(ev: Event): string {
+    return (ev.target as HTMLInputElement).value;
+  }
+
   // Per-org custom feature overrides
   readonly featureCodes = FEATURE_CODES;
   readonly featureLabels = FEATURE_LABELS;
@@ -310,34 +453,97 @@ export class AdminOrganisationsComponent implements OnInit {
     this.editFeatures.has(code) ? this.editFeatures.delete(code) : this.editFeatures.add(code);
   }
 
+  /**
+   * Manually flipping the payment status can otherwise leave stale plan/date
+   * fields behind from whatever status the org was in before (e.g. an old paid
+   * plan + future expiry still sitting there after switching back to "trial").
+   * Reset them on every change so the admin always fills in fresh values for
+   * the new status, instead of risking a mismatched save.
+   */
+  onSubscriptionStatusChange(next: SubscriptionStatus): void {
+    this.editSubscriptionStatus = next;
+    this.editSubscriptionPlan = '';
+    this.editSubscriptionExpiresAt = '';
+    // Trial end is the one field that's actually relevant to the new status —
+    // give it a fresh 14-day default instead of just blanking it; anything
+    // else has no trial period, so clear it outright.
+    this.editTrialEndsAt = next === 'trial' ? this.defaultTrialEndDate() : '';
+  }
+
+  private defaultTrialEndDate(): string {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().slice(0, 10);
+  }
+
   submitEdit(): void {
     const org = this.editingOrg();
     if (!org || this.editSubmitting()) return;
     this.editError.set('');
-    this.editSubmitting.set(true);
 
-    this.platformAdmin.updateOrganisation(org.orgSlug, {
-      companyName: this.editCompanyName.trim(),
-      accentColor: this.editAccentColor.trim() || undefined,
-      isActive: this.editIsActive,
-      subscriptionStatus: this.editSubscriptionStatus,
-      subscriptionPlan: this.editSubscriptionPlan.trim() || undefined,
-      trialEndsAt: this.editTrialEndsAt || undefined,
-      subscriptionExpiresAt: this.editSubscriptionExpiresAt || undefined,
-      maxEmployees: this.editMaxEmployees ?? undefined,
-      maxAdminAccounts: this.editMaxAdminAccounts ?? undefined,
-      inactivityRetentionDays: this.editInactivityRetentionDays ?? undefined,
-      features: [...this.editFeatures],
-    }).subscribe({
+    // ── True PATCH: send ONLY changed fields (per the API contract) ──────────
+    const body: UpdatePlatformOrgRequest = {};
+
+    const name = this.editCompanyName.trim();
+    if (name && name !== org.companyName) body.companyName = name;
+
+    const accent = this.editAccentColor.trim();
+    if (accent !== (org.accentColor ?? '')) body.accentColor = accent || undefined;
+
+    if (this.editIsActive !== org.isActive) body.isActive = this.editIsActive;
+
+    // Note: an explicit '' is sent (not `undefined`) when a field is CLEARED —
+    // `undefined` keys are dropped by JSON.stringify, which the API reads as
+    // "unchanged", not "clear it". `|| undefined` here would silently defeat
+    // the plan/date reset that happens on a manual status change below.
+    const plan = this.editSubscriptionPlan.trim();
+    if (plan !== (org.subscriptionPlan ?? '')) body.subscriptionPlan = plan;
+
+    if ((this.editMaxEmployees ?? null) !== (org.maxEmployees ?? null)) body.maxEmployees = this.editMaxEmployees ?? undefined;
+    if ((this.editMaxAdminAccounts ?? null) !== (org.maxAdminAccounts ?? null)) body.maxAdminAccounts = this.editMaxAdminAccounts ?? undefined;
+    if ((this.editInactivityRetentionDays ?? null) !== (org.inactivityRetentionDays ?? null)) body.inactivityRetentionDays = this.editInactivityRetentionDays ?? undefined;
+
+    // Dates — compare on the date-only form the pickers use; send as ISO datetime,
+    // or an explicit '' when cleared (see note above — never send `undefined` here).
+    const origTrial  = org.trialEndsAt ? org.trialEndsAt.slice(0, 10) : '';
+    const origExpiry = org.subscriptionExpiresAt ? org.subscriptionExpiresAt.slice(0, 10) : '';
+    const trialChanged = this.editTrialEndsAt !== origTrial;
+    if (trialChanged) body.trialEndsAt = this.editTrialEndsAt ? this.toIsoDateTime(this.editTrialEndsAt) : '';
+    if (this.editSubscriptionExpiresAt !== origExpiry) {
+      body.subscriptionExpiresAt = this.editSubscriptionExpiresAt ? this.toIsoDateTime(this.editSubscriptionExpiresAt) : '';
+    }
+
+    // Status: send when it changed, OR always pair it with a trial-date change —
+    // the API extends a trial from `{ subscriptionStatus:'trial', trialEndsAt }`.
+    if (this.editSubscriptionStatus !== org.subscriptionStatus || trialChanged) {
+      body.subscriptionStatus = this.editSubscriptionStatus;
+    }
+
+    // Features — send only if the set changed.
+    const submittedFeatures = [...this.editFeatures];
+    const featuresChanged =
+      [...submittedFeatures].sort().join(',') !== [...(org.features ?? [])].sort().join(',');
+    if (featuresChanged) body.features = submittedFeatures;
+
+    if (Object.keys(body).length === 0) {
+      this.closeEdit();   // nothing to save
+      return;
+    }
+
+    this.editSubmitting.set(true);
+    this.platformAdmin.updateOrganisation(org.orgSlug, body).subscribe({
       next: (res) => {
         this.editSubmitting.set(false);
-        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? res.data : o));
-        this.editingOrg.set(res.data);
-        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(res.data);
+        // Response omits features — keep the set we submitted if we changed it.
+        const merged = { ...this.mergeOrg(org, res.data), features: body.features ?? org.features };
+        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? merged : o));
+        this.editingOrg.set(merged);
+        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(merged);
+        this.toast.success('Organisation updated', name || org.companyName);
       },
       error: (err) => {
         this.editSubmitting.set(false);
-        this.editError.set(err?.error?.message ?? 'Could not save changes.');
+        this.editError.set(err?.error?.error ?? err?.error?.message ?? 'Could not save changes.');
       },
     });
   }
@@ -352,9 +558,11 @@ export class AdminOrganisationsComponent implements OnInit {
     this.platformAdmin.renameOrgUrlName(org.orgSlug, this.editOrgUrlName.trim()).subscribe({
       next: (res) => {
         this.renameSubmitting.set(false);
-        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? res.data : o));
-        this.editingOrg.set(res.data);
-        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(res.data);
+        const merged = this.mergeOrg(org, res.data);
+        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? merged : o));
+        this.editingOrg.set(merged);
+        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(merged);
+        this.toast.success('URL name updated', `/${merged.orgUrlName}/app`);
       },
       error: (err) => {
         this.renameSubmitting.set(false);
@@ -384,10 +592,12 @@ export class AdminOrganisationsComponent implements OnInit {
     this.platformAdmin.updateOrganisation(org.orgSlug, { orgSlug: next }).subscribe({
       next: (res) => {
         this.slugSubmitting.set(false);
-        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? res.data : o));
-        this.editingOrg.set(res.data);
-        this.editOrgSlug = res.data.orgSlug.replace(/\.klock$/i, '');
-        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(res.data);
+        const merged = this.mergeOrg(org, res.data);
+        this.orgs.update(list => list.map(o => o.orgSlug === org.orgSlug ? merged : o));
+        this.editingOrg.set(merged);
+        this.editOrgSlug = merged.orgSlug.replace(/\.klock$/i, '');
+        if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(merged);
+        this.toast.success('Login code changed', merged.orgSlug);
       },
       error: (err) => {
         this.slugSubmitting.set(false);
@@ -417,7 +627,7 @@ export class AdminOrganisationsComponent implements OnInit {
         this.resetPwSubmitting.set(false);
         this.resetPwError.set(
           err?.status === 404
-            ? 'This action needs a backend endpoint that doesn\'t exist yet (see SERVER_CHANGES_REQUEST.md).'
+            ? 'Organisation not found.'
             : (err?.error?.message ?? 'Could not reset the password.'),
         );
       },

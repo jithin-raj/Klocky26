@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiResponse, PaginationParams } from '../models/api-response.model';
 
@@ -91,6 +91,21 @@ export class ApiService {
       params: this._buildParams(params),
       context: options?.context,
       responseType: 'blob',
+    });
+  }
+
+  /**
+   * GET a binary body with the FULL response, so callers can read headers
+   * (e.g. Content-Disposition for a download filename). The server must expose
+   * that header via CORS (`Access-Control-Expose-Headers: Content-Disposition`)
+   * for it to be readable cross-origin.
+   */
+  getBlobResponse(path: string, params?: PaginationParams | Record<string, unknown>, options?: ApiCallOptions): Observable<HttpResponse<Blob>> {
+    return this.http.get(path, {
+      params: this._buildParams(params),
+      context: options?.context,
+      responseType: 'blob',
+      observe: 'response',
     });
   }
 

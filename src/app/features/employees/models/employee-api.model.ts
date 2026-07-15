@@ -92,13 +92,6 @@ export interface EmployeeResponse {
   overrideOfficeId: string | null;
   overrideOfficeName: string | null;
   mustChangePassword: boolean;
-  /**
-   * Payroll figures (spec §3) — `null` unless the caller is admin/HR. Only show
-   * payroll columns when these are non-null.
-   */
-  basicSalary: number | null;
-  allowances: number | null;
-  otherDeductions: number | null;
   /** Only ever non-null on the response to the POST (or a platform-admin reset) that generated it. */
   temporaryPassword: string | null;
 }
@@ -175,31 +168,3 @@ export interface ResetPasswordResponse {
   temporaryPassword: string;
 }
 
-// ── Payroll (spec §8) — admin/HR only; any other role gets 403 ────────────────
-
-/** GET /api/employees/{id}/payroll response (data) */
-export interface PayrollResponse {
-  employeeId: string;
-  basicSalary: number;
-  allowances: number;
-  otherDeductions: number;
-  currency: string | null;
-}
-
-/** PUT /api/employees/{id}/payroll request */
-export interface UpdatePayrollRequest {
-  basicSalary: number;
-  allowances: number;
-  otherDeductions: number;
-}
-
-/** GET /api/employees/{id}/payroll/calculate?year&month response (data) */
-export interface PayrollCalculation {
-  year: number;
-  month: number;
-  basicSalary: number;
-  allowances: number;
-  grossPay: number;
-  otherDeductions: number;
-  netPay: number;
-}

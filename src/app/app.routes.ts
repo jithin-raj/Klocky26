@@ -4,6 +4,7 @@ import { publicGuard } from './core/guards/public.guard';
 import { roleGuard }   from './core/guards/role.guard';
 import { permissionGuard } from './core/guards/permission.guard';
 import { webOnlyGuard } from './core/guards/web-only.guard';
+import { subscriptionGuard } from './core/guards/subscription.guard';
 
 export const routes: Routes = [
   // ── Public / marketing ─────────────────────────────────────────────────────
@@ -67,6 +68,9 @@ export const routes: Routes = [
         path: 'app',
         // authGuard: unauthenticated → /login?returnUrl=/:orgUrlName/app/...
         canActivate: [authGuard],
+        // subscriptionGuard: expired org → pinned to /billing on every child nav
+        // (billing itself is always allowed — it's the only way to unblock).
+        canActivateChild: [subscriptionGuard],
         loadComponent: () =>
           import('./layout/shell/shell.component').then((m) => m.ShellComponent),
         children: [
@@ -161,6 +165,8 @@ export const routes: Routes = [
       },
       {
         path: 'compensation',
+        // Level 0 on 'payroll' hides the whole area (admin/super_admin bypass per spec §11).
+        canActivate: [permissionGuard('payroll', 1)],
         loadChildren: () =>
           import('./features/compensation/compensation.routes').then((m) => m.compensationRoutes),
       },

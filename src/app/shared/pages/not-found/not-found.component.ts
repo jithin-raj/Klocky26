@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { OrgThemeService } from '../../../core/services/org-theme.service';
 import { AppStateService } from '../../../core/services/app-state.service';
+import { SubscriptionService } from '../../../core/services/subscription.service';
+import { ToastService } from '../../components/ui-toast/toast.service';
 
 @Component({
   selector: 'klocky-not-found',
@@ -18,13 +20,30 @@ import { AppStateService } from '../../../core/services/app-state.service';
       <!-- Gradient overlay -->
       <div class="gradient-overlay"></div>
 
+      <!-- Rotating aurora glow -->
+      <div class="aurora"></div>
+
       <div class="not-found-container">
         <!-- Glitch effect wrapper -->
         <div class="glitch-wrapper">
           <!-- Animated 404 with glitch effect -->
           <div class="not-found-number" data-text="404">
             <span class="digit" data-digit="4">4</span>
-            <span class="digit middle" data-digit="0">0</span>
+            <span class="zero-wrap">
+              <span class="orbit"><i class="orbit-dot"></i></span>
+              <span class="digit middle" data-digit="0">0</span>
+              <!-- The zero doubles as a ticking clock (Klock ⏱) -->
+              <span class="clock" aria-hidden="true">
+                <i class="clock-tick clock-tick--12"></i>
+                <i class="clock-tick clock-tick--3"></i>
+                <i class="clock-tick clock-tick--6"></i>
+                <i class="clock-tick clock-tick--9"></i>
+                <i class="clock-hand clock-hand--hour"></i>
+                <i class="clock-hand clock-hand--min"></i>
+                <i class="clock-hand clock-hand--sec"></i>
+                <i class="clock-center"></i>
+              </span>
+            </span>
             <span class="digit" data-digit="4">4</span>
           </div>
         </div>
@@ -48,7 +67,13 @@ import { AppStateService } from '../../../core/services/app-state.service';
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                 <polyline points="9 22 9 12 15 12 15 22"/>
               </svg>
-              {{ isAuthenticated() ? 'Go to Dashboard' : 'Go to Home' }}
+              @if (!isAuthenticated()) {
+                Go to Home
+              } @else if (needsSubscription()) {
+                {{ canManageBilling() ? 'Complete Subscription' : 'Got it' }}
+              } @else {
+                Go to Dashboard
+              }
             </span>
           </button>
         </div>
@@ -66,6 +91,13 @@ import { AppStateService } from '../../../core/services/app-state.service';
           <div class="shape shape-1"></div>
           <div class="shape shape-2"></div>
           <div class="shape shape-3"></div>
+
+          <!-- Twinkling stars -->
+          <div class="twinkle twinkle-1"></div>
+          <div class="twinkle twinkle-2"></div>
+          <div class="twinkle twinkle-3"></div>
+          <div class="twinkle twinkle-4"></div>
+          <div class="twinkle twinkle-5"></div>
         </div>
       </div>
     </div>
@@ -117,6 +149,113 @@ import { AppStateService } from '../../../core/services/app-state.service';
       bottom: 0;
       background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.15) 100%);
       z-index: 1;
+    }
+
+    /* Rotating aurora glow behind the content */
+    .aurora {
+      position: absolute;
+      width: 720px; height: 720px;
+      top: 50%; left: 50%;
+      border-radius: 45% 55% 52% 48%;
+      background: conic-gradient(from 0deg,
+        rgba(255,255,255,.20), rgba(255,255,255,0) 30%,
+        rgba(255,255,255,.16) 55%, rgba(255,255,255,0) 78%, rgba(255,255,255,.20));
+      filter: blur(60px);
+      opacity: .5;
+      z-index: 1;
+      transform: translate(-50%, -50%);
+      animation: auroraSpin 18s linear infinite;
+      pointer-events: none;
+      mix-blend-mode: soft-light;
+    }
+
+    @keyframes auroraSpin {
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* Orbit ring around the middle 0 */
+    .zero-wrap { position: relative; display: inline-grid; place-items: center; }
+    .orbit {
+      position: absolute;
+      width: 165px; height: 165px;
+      border: 1.5px dashed currentColor;
+      border-radius: 50%;
+      opacity: .35;
+      animation: orbitSpin 12s linear infinite;
+    }
+    .orbit-dot {
+      position: absolute; top: -5px; left: 50%;
+      width: 10px; height: 10px; margin-left: -5px;
+      background: currentColor; border-radius: 50%;
+      box-shadow: 0 0 14px 2px currentColor;
+    }
+    @keyframes orbitSpin { to { transform: rotate(360deg); } }
+
+    /* ── The zero as a ticking clock ──
+       .clock is a sibling of .digit.middle (the "0" text), not a child of it —
+       so it needs the SAME float animation + delay applied here, otherwise the
+       "0" bounces via digitFloat on .digit while the clock overlay stays put,
+       visibly detaching from the digit it's supposed to sit inside. */
+    .clock {
+      position: absolute; inset: 0; z-index: 4;
+      pointer-events: none;
+      animation: digitFloat 3s ease-in-out infinite;
+      animation-delay: 0.15s;
+    }
+    .clock-hand {
+      position: absolute; left: 50%; bottom: 50%;
+      transform-origin: bottom center;
+      border-radius: 6px; background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+    }
+    .clock-hand--hour { width: 6px; height: 30px; opacity: .95;
+      animation: clockSpin 24s linear infinite; }
+    .clock-hand--min  { width: 4px; height: 44px; opacity: .8;
+      animation: clockSpin 8s linear infinite; }
+    .clock-hand--sec  { width: 2px; height: 50px;
+      background: #fff; box-shadow: 0 0 12px #fff;
+      animation: clockSpin 3s steps(30, end) infinite; }
+    .clock-center {
+      position: absolute; left: 50%; top: 50%;
+      width: 12px; height: 12px; margin: -6px 0 0 -6px;
+      border-radius: 50%; background: #fff;
+      box-shadow: 0 0 12px rgba(255,255,255,.9);
+    }
+    .clock-tick {
+      position: absolute; left: 50%; top: 50%;
+      width: 4px; height: 10px; margin-left: -2px;
+      background: currentColor; opacity: .5; border-radius: 3px;
+      transform-origin: 50% 0;
+    }
+    .clock-tick--12 { transform: translateY(-46px); }
+    .clock-tick--6  { transform: rotate(180deg) translateY(-46px); }
+    .clock-tick--3  { transform: rotate(90deg) translateY(-46px); }
+    .clock-tick--9  { transform: rotate(-90deg) translateY(-46px); }
+
+    @keyframes clockSpin {
+      from { transform: translateX(-50%) rotate(0deg); }
+      to   { transform: translateX(-50%) rotate(360deg); }
+    }
+
+    /* ── Twinkling stars ── */
+    .twinkle {
+      position: absolute; z-index: 1; border-radius: 50%;
+      background: currentColor; box-shadow: 0 0 6px currentColor;
+      animation: twinkle 3.5s ease-in-out infinite;
+    }
+    .twinkle-1 { width: 4px; height: 4px; top: 18%; left: 30%; animation-delay: 0s; }
+    .twinkle-2 { width: 3px; height: 3px; top: 28%; right: 26%; animation-delay: .8s; }
+    .twinkle-3 { width: 5px; height: 5px; bottom: 26%; left: 34%; animation-delay: 1.6s; }
+    .twinkle-4 { width: 3px; height: 3px; bottom: 32%; right: 32%; animation-delay: 2.3s; }
+    .twinkle-5 { width: 4px; height: 4px; top: 42%; left: 20%; animation-delay: 1.1s; }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; transform: scale(.4); }
+      50%      { opacity: .9; transform: scale(1.15); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .aurora, .orbit, .grid-bg, .digit, .digit::before,
+      .particle, .shape, .clock, .clock-hand, .twinkle { animation: none !important; }
     }
 
     .not-found-container {
@@ -544,6 +683,8 @@ export class NotFoundComponent implements OnInit {
   private router = inject(Router);
   private orgTheme = inject(OrgThemeService);
   private appState = inject(AppStateService);
+  private subscription = inject(SubscriptionService);
+  private toast = inject(ToastService);
 
   constructor() {
     // Load theme from storage on component init
@@ -621,6 +762,21 @@ export class NotFoundComponent implements OnInit {
 
   isAuthenticated = computed(() => this.appState.isAuthenticated());
 
+  /** Authenticated but the org's subscription is expired. */
+  needsSubscription = computed(() => this.isAuthenticated() && this.subscription.isExpired());
+
+  /**
+   * /billing is role-gated (roleGuard: admin/hr/super_admin only) — sending
+   * anyone else there gets bounced straight back to /404 by that guard, which
+   * looks like "the button does nothing". So only admins/HR get the
+   * "Complete Subscription" CTA that navigates there; everyone else sees an
+   * informational message instead (same split as the trial banner).
+   */
+  canManageBilling = computed(() => {
+    const u = this.appState.user();
+    return !!(u?.isAdmin || u?.isHr || u?.role === 'super_admin');
+  });
+
   private _getLuminance(hex: string): number {
     const rgb = parseInt(hex.replace('#', ''), 16);
     const r = ((rgb >> 16) & 0xff) / 255;
@@ -630,34 +786,32 @@ export class NotFoundComponent implements OnInit {
   }
 
   getTitle(): string {
-    const url = this.router.url;
-    
-    // // Check if URL contains wrong org slug
-    // if (this.isAuthenticated() && url.includes('/') && url.split('/')[1] !== this.appState.orgSlug()) {
-    //   return 'Access Denied';
-    // }
-    
-    return 'Page Not Found';
+    return this.needsSubscription() ? 'Subscription Required' : 'Page Not Found';
   }
 
   getMessage(): string {
-    const url = this.router.url;
-    
-    // Check if URL contains wrong org slug
-    // if (this.isAuthenticated() && url.includes('/') && url.split('/')[1] !== this.appState.orgSlug()) {
-    //   return "You don't have permission to access this organization's workspace. Please check the URL or contact your administrator.";
-    // }
-    
-    // if (this.isAuthenticated()) {
-    //   return "The page you're looking for doesn't exist in your organization's workspace.";
-    // }
-    
+    if (this.needsSubscription()) {
+      return this.canManageBilling()
+        ? "Your organisation's subscription has expired. Complete your subscription to keep using Klock."
+        : "Your organisation's subscription has expired. Ask your administrator to renew — access is locked until then.";
+    }
     return "The page you're looking for doesn't exist or has been moved.";
   }
 
   goHome(): void {
     const orgUrlName = this.appState.orgUrlName();
     if (orgUrlName && this.appState.isAuthenticated()) {
+      if (this.needsSubscription()) {
+        if (this.canManageBilling()) {
+          this.toast.error('Subscription required', 'Please complete your subscription to keep using Klock.');
+          this.router.navigate([`/${orgUrlName}/app/billing`]);
+        } else {
+          // Non-admins can't reach /billing (roleGuard would just bounce them
+          // back to /404) — there's nothing to navigate to, just remind them.
+          this.toast.error('Subscription required', 'Ask your administrator to renew your organisation\'s subscription.');
+        }
+        return;
+      }
       this.router.navigate([`/${orgUrlName}/app/dashboard`]);
     } else {
       // Redirect unauthenticated users to landing page

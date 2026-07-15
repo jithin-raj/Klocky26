@@ -5,8 +5,13 @@
       <h1>Notifications</h1>
       <p>{{ activeTab() === 'send' ? 'Compose and send a notification to your team' : 'Your messages and updates' }}</p>
     </div>
-    @if (activeTab() === 'inbox' && unread() > 0) {
-      <button class="nt-btn nt-btn--ghost" (click)="markAllRead()">Mark all read</button>
+    @if (activeTab() === 'inbox' && items().length > 0) {
+      <div class="nt-header-actions">
+        @if (unread() > 0) {
+          <button class="nt-btn nt-btn--ghost" (click)="markAllRead()">Mark all read</button>
+        }
+        <button class="nt-btn nt-btn--ghost nt-btn--danger" (click)="clearAll()">Clear all</button>
+      </div>
     }
   </div>
 
@@ -34,19 +39,39 @@
     } @else {
       <div class="nt-inbox">
         @for (n of items(); track n.id) {
-          <button class="nt-msg" type="button" [class.unread]="!n.isRead" (click)="open(n)">
-            <span class="nt-msg-ico" [style.--nc]="color(n.type)">
-              <ui-icon [name]="icon(n.type)" [size]="18"></ui-icon>
-            </span>
-            <span class="nt-msg-body">
-              <span class="nt-msg-top">
-                <span class="nt-msg-title">{{ n.title }}</span>
-                <span class="nt-msg-time">{{ when(n.createdAt) }}</span>
+          <div class="nt-swipe">
+            <!-- Revealed behind the row as it slides left -->
+            <div class="nt-swipe-action" (click)="deleteOne(n.id, $event)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              <span>Delete</span>
+            </div>
+
+            <button class="nt-msg" type="button" [class.unread]="!n.isRead"
+                    [class.nt-msg--dragging]="rowDx(n.id) !== 0"
+                    [style.transform]="'translateX(' + rowDx(n.id) + 'px)'"
+                    (click)="open(n)"
+                    (touchstart)="onTouchStart(n.id, $event)"
+                    (touchmove)="onTouchMove(n.id, $event)"
+                    (touchend)="onTouchEnd(n.id)"
+                    (touchcancel)="onTouchEnd(n.id)">
+              <span class="nt-msg-ico" [style.--nc]="color(n.type)">
+                <ui-icon [name]="icon(n.type)" [size]="18"></ui-icon>
               </span>
-              <span class="nt-msg-text">{{ n.body }}</span>
-            </span>
-            @if (!n.isRead) { <span class="nt-msg-dot"></span> }
-          </button>
+              <span class="nt-msg-body">
+                <span class="nt-msg-top">
+                  <span class="nt-msg-title">{{ n.title }}</span>
+                  <span class="nt-msg-time">{{ when(n.createdAt) }}</span>
+                </span>
+                <span class="nt-msg-text">{{ n.body }}</span>
+              </span>
+              @if (!n.isRead) { <span class="nt-msg-dot"></span> }
+              <!-- Desktop / non-touch: hover delete -->
+              <span class="nt-msg-del" role="button" tabindex="0" aria-label="Delete notification"
+                    (click)="deleteOne(n.id, $event)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
+            </button>
+          </div>
         }
       </div>
     }

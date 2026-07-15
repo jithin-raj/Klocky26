@@ -65,24 +65,37 @@ export interface CreatePlatformOrgResponse {
   trialEndsAt: string;
 }
 
-/** PUT /api/platform/organisations/{slug} request — every field optional */
+/**
+ * PUT /api/platform/organisations/{slug} request (EditOrganizationRequest) —
+ * every field optional; only non-null fields are applied (PATCH-style). Returns
+ * OrganizationSummaryResponse (mirrored by PlatformOrgListItem). Note: `industry`
+ * is NOT an editable field (it's not in the request or summary response).
+ */
 export interface UpdatePlatformOrgRequest {
+  /** Soft on/off — login is blocked when false. */
   isActive?: boolean;
+  /** max 200 */
   companyName?: string;
-  industry?: string;
-  /** Klock-admin-only rename — ORG_URL_NAME_INTEGRATION.md §3. 400 if format invalid, 409 if taken. */
+  /** max 40 — SPA path segment; Klock-admin-only, unique. 400 invalid / 409 taken. */
   orgUrlName?: string;
-  /** Klock-admin-only login-code change. 400 if format invalid, 409 if taken. Signs out current sessions. */
+  /** max 60 — login code; unique. Signs out current sessions. 400 invalid / 409 taken. */
   orgSlug?: string;
+  /** max 10 — brand hex e.g. "#2563eb" */
   accentColor?: string;
+  /** 1–3650 — days of inactivity before auto backup+delete */
   inactivityRetentionDays?: number;
   subscriptionStatus?: SubscriptionStatus;
+  /** ISO datetime */
   trialEndsAt?: string;
+  /** plan code, or "custom" for a tailored plan */
   subscriptionPlan?: string;
+  /** ISO datetime — paid-period end */
   subscriptionExpiresAt?: string;
+  /** 0–100000 */
   maxEmployees?: number;
+  /** 0–10000 */
   maxAdminAccounts?: number;
-  /** Per-org custom feature overrides (validated against the allowed set). */
+  /** Custom-plan feature grant. [] clears (core only); omit leaves unchanged. */
   features?: string[];
 }
 
@@ -95,6 +108,16 @@ export interface UpdatePlatformOrgRequest {
  */
 export interface ResetOrgAdminPasswordResponse {
   temporaryPassword: string;
+}
+
+/**
+ * DELETE /api/platform/organisations/{slug}[?skipBackup=true] — hard-deletes the
+ * org, its tenant DB and payments. Unless skipBackup is set the server writes a
+ * backup first and returns its location.
+ */
+export interface DeleteOrgResult {
+  message: string;
+  backupPath: string | null;
 }
 
 export type OrgEmailType = 'resend_welcome' | 'resend_otp' | 'subscription_alert' | 'custom';

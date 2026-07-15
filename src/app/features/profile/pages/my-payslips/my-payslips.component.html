@@ -1,0 +1,83 @@
+<div class="mps-page">
+
+  <button class="mps-back" (click)="back()">← Back to Profile</button>
+
+  <div class="mps-header">
+    <h1>My Payslips</h1>
+    <p>View and review your monthly payslips.</p>
+  </div>
+
+  @if (loading()) {
+    <div class="mps-empty">Loading…</div>
+  } @else if (!selected()) {
+
+    <div class="mps-card">
+      @if (!payslips().length) {
+        <div class="mps-empty">No payslips available yet.</div>
+      } @else {
+        <div class="mps-table-wrap">
+          <table class="mps-table">
+            <thead><tr><th>Period</th><th>Gross Earnings</th><th>Deductions</th><th>Net Pay</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              @for (p of payslips(); track p.id) {
+                <tr>
+                  <td class="mps-name">{{ monthLabel(p) }}</td>
+                  <td>{{ p.grossEarnings | number }}</td>
+                  <td>{{ p.totalDeductions | number }}</td>
+                  <td class="mps-net">{{ p.netPay | number }}</td>
+                  <td><span class="mps-badge">{{ p.status }}</span></td>
+                  <td class="mps-col-actions"><button class="mps-icon-btn" (click)="open(p)">View</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+  } @else {
+
+    <div class="mps-card">
+      <div class="mps-detail-head">
+        <div>
+          <h2>{{ monthLabel(selected()!) }}</h2>
+          <p>{{ selected()!.employeeName }} · Payable days: {{ selected()!.payableDays }}/{{ selected()!.daysInMonth }} @if (selected()!.lopDays > 0) { · LOP: {{ selected()!.lopDays }} }</p>
+        </div>
+        <button class="mps-icon-btn" (click)="closeDetail()">✕ Close</button>
+      </div>
+
+      <div class="mps-stats">
+        <div class="mps-stat"><span class="mps-stat__label">Gross Earnings</span><span class="mps-stat__val">{{ selected()!.grossEarnings | number }}</span></div>
+        <div class="mps-stat"><span class="mps-stat__label">Deductions</span><span class="mps-stat__val">{{ selected()!.totalDeductions | number }}</span></div>
+        <div class="mps-stat"><span class="mps-stat__label">Net Pay</span><span class="mps-stat__val mps-stat__val--net">{{ selected()!.netPay | number }}</span></div>
+        <div class="mps-stat"><span class="mps-stat__label">Employer Contributions</span><span class="mps-stat__val">{{ selected()!.employerContributions | number }}</span></div>
+      </div>
+
+      <div class="mps-lines-grid">
+        <div class="mps-lines-col">
+          <h3>Earnings</h3>
+          @for (l of earningLines(); track l.name) {
+            <div class="mps-line"><span>{{ l.name }}</span><span>{{ l.amount | number }}</span></div>
+          }
+          @if (!earningLines().length) { <p class="mps-line-empty">No earning lines.</p> }
+        </div>
+        <div class="mps-lines-col">
+          <h3>Deductions</h3>
+          @for (l of deductionLines(); track l.name) {
+            <div class="mps-line"><span>{{ l.name }}</span><span>{{ l.amount | number }}</span></div>
+          }
+          @if (!deductionLines().length) { <p class="mps-line-empty">No deduction lines.</p> }
+        </div>
+      </div>
+
+      @if (employerLines().length) {
+        <div class="mps-lines-col mps-lines-col--full">
+          <h3>Employer Contributions (not deducted from your pay)</h3>
+          @for (l of employerLines(); track l.name) {
+            <div class="mps-line"><span>{{ l.name }}</span><span>{{ l.amount | number }}</span></div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

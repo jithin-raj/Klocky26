@@ -1,0 +1,291 @@
+<div class="cp-page">
+
+  <div class="cp-header">
+    <div class="cp-header__text">
+      <h1>Compensation</h1>
+      <p>Pay grades, salary structures, bonuses and payslip runs.</p>
+    </div>
+  </div>
+
+  <div class="cp-tabs" role="tablist">
+    @for (tab of tabs; track tab.id) {
+      <button class="cp-tab" role="tab" [class.cp-tab--active]="activeTab() === tab.id" (click)="selectTab(tab.id)">
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  @switch (activeTab()) {
+
+    <!-- ── Employees ─────────────────────────────────────────── -->
+    @case ('employees') {
+      <div class="cp-panel">
+        <div class="cp-panel__head">
+          <div class="cp-panel__titles">
+            <h2>Employees</h2>
+            <p>Open an employee to set or revise their salary structure.</p>
+          </div>
+          <div class="cp-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search employees…" [ngModel]="employeeSearch()" (ngModelChange)="employeeSearch.set($event)" />
+          </div>
+        </div>
+        <ui-data-grid
+          [columns]="employeeColumns"
+          [rows]="filteredEmployees()"
+          [actions]="employeeActions"
+          [trackBy]="employeeTrackBy"
+          emptyMessage="No employees found"
+          (rowClick)="openEmployee($event.employeeId)"
+        ></ui-data-grid>
+      </div>
+    }
+
+    <!-- ── Pay grades ────────────────────────────────────────── -->
+    @case ('grades') {
+      <div class="cp-panel">
+        <div class="cp-panel__head">
+          <div class="cp-panel__titles">
+            <h2>Pay Grades</h2>
+            <p>Salary bands used when assigning structures.</p>
+          </div>
+          @if (canEdit()) {
+            <button class="cp-btn cp-btn--primary" (click)="openNewGrade()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Grade
+            </button>
+          }
+        </div>
+        <ui-data-grid
+          [columns]="gradeColumns"
+          [rows]="grades()"
+          [actions]="gradeActions"
+          [loading]="loadingGrades()"
+          emptyMessage="No pay grades yet"
+        ></ui-data-grid>
+      </div>
+    }
+
+    <!-- ── Bonuses ───────────────────────────────────────────── -->
+    @case ('bonuses') {
+      <div class="cp-panel">
+        <div class="cp-panel__head">
+          <div class="cp-panel__titles">
+            <h2>Bonuses</h2>
+            <p>One-off amounts added to a payslip run.</p>
+          </div>
+          @if (canEdit()) {
+            <button class="cp-btn cp-btn--primary" (click)="openNewBonus()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Bonus
+            </button>
+          }
+        </div>
+        <ui-data-grid
+          [columns]="bonusColumns"
+          [rows]="bonuses()"
+          [actions]="bonusActions"
+          [loading]="loadingBonuses()"
+          emptyMessage="No bonuses recorded"
+        ></ui-data-grid>
+      </div>
+    }
+
+    <!-- ── Run payroll / payslips ───────────────────────────── -->
+    @case ('payslips') {
+      <div class="cp-panel">
+        <div class="cp-panel__head">
+          <div class="cp-panel__titles">
+            <h2>Run Payroll</h2>
+            <p>Generate payslips for a pay period.</p>
+          </div>
+        </div>
+
+        <div class="cp-run">
+          <div class="cp-run__controls">
+            <div class="cp-run__field">
+              <label>Year</label>
+              <ui-input type="number" [ngModel]="runYear()" (ngModelChange)="runYear.set($event)"></ui-input>
+            </div>
+            <div class="cp-run__field">
+              <label>Month</label>
+              <ui-select [options]="monthOptions" [ngModel]="runMonth()" (ngModelChange)="runMonth.set($event)"></ui-select>
+            </div>
+            <button class="cp-btn cp-btn--ghost" (click)="loadPayslips()">Refresh</button>
+            @if (canEdit()) {
+              <button class="cp-btn cp-btn--primary" [disabled]="generating()" (click)="runPayrollForOrg()">
+                {{ generating() ? 'Running…' : 'Generate payslips (whole org)' }}
+              </button>
+            }
+          </div>
+
+          @if (lastRunResult(); as r) {
+            <div class="cp-run__result">
+              <strong>Generated {{ r.generated }}</strong>, skipped {{ r.skipped }}.
+              @if (r.errors.length) {
+                <ul>@for (e of r.errors; track e) { <li>{{ e }}</li> }</ul>
+              }
+            </div>
+          }
+        </div>
+
+        <ui-data-grid
+          [columns]="payslipColumns"
+          [rows]="payslips()"
+          [loading]="loadingPayslips()"
+          emptyMessage="No payslips generated for this period yet"
+        ></ui-data-grid>
+
+        @if (payslips().length) {
+          <div class="cp-run__total">Total net pay <strong>{{ totalNet() | number }}</strong></div>
+        }
+      </div>
+    }
+
+    <!-- ── Settings ──────────────────────────────────────────── -->
+    @case ('settings') {
+      <div class="cp-panel">
+        <div class="cp-panel__head">
+          <div class="cp-panel__titles">
+            <h2>Statutory Settings</h2>
+            <p>Configure PF, ESI, PT and TDS deductions.</p>
+          </div>
+        </div>
+
+        @if (loadingSettings()) {
+          <div class="cp-empty">Loading…</div>
+        } @else if (settings()) { @let s = settings()!;
+          <div class="cp-settings">
+
+            <div class="cp-stat">
+              <div class="cp-stat__head">
+                <div>
+                  <span class="cp-stat__name">Provident Fund (PF)</span>
+                  <span class="cp-stat__sub">Retirement contribution on basic pay.</span>
+                </div>
+                <ui-toggle [ngModel]="s.pfEnabled" (ngModelChange)="s.pfEnabled = $event" [disabled]="!canEdit()"></ui-toggle>
+              </div>
+              @if (s.pfEnabled) {
+                <div class="cp-stat__grid">
+                  <ui-form-field label="Employee %"><ui-input type="number" [ngModel]="s.pfEmployeePercent" (ngModelChange)="s.pfEmployeePercent = $event" [disabled]="!canEdit()"></ui-input></ui-form-field>
+                  <ui-form-field label="Employer %"><ui-input type="number" [ngModel]="s.pfEmployerPercent" (ngModelChange)="s.pfEmployerPercent = $event" [disabled]="!canEdit()"></ui-input></ui-form-field>
+                  <ui-form-field label="Wage ceiling" hint="Leave 0 for no ceiling"><ui-input type="number" [ngModel]="s.pfWageCeiling" (ngModelChange)="s.pfWageCeiling = $event" [disabled]="!canEdit()"></ui-input></ui-form-field>
+                </div>
+              }
+            </div>
+
+            <div class="cp-stat">
+              <div class="cp-stat__head">
+                <div>
+                  <span class="cp-stat__name">Employee State Insurance (ESI)</span>
+                  <span class="cp-stat__sub">Applies only under the gross threshold.</span>
+                </div>
+                <ui-toggle [ngModel]="s.esiEnabled" (ngModelChange)="s.esiEnabled = $event" [disabled]="!canEdit()"></ui-toggle>
+              </div>
+              @if (s.esiEnabled) {
+                <div class="cp-stat__grid">
+                  <ui-form-field label="Employee %"><ui-input type="number" [ngModel]="s.esiEmployeePercent" (ngModelChange)="s.esiEmployeePercent = $event" [disabled]="!canEdit()"></ui-input></ui-form-field>
+                  <ui-form-field label="Employer %"><ui-input type="number" [ngModel]="s.esiEmployerPercent" (ngModelChange)="s.esiEmployerPercent = $event" [disabled]="!canEdit()"></ui-input></ui-form-field>
+                  <ui-form-field label="Gross threshold"><ui-input type="number" [ngModel]="s.esiGrossThreshold" (ngModelChange)="s.esiGrossThreshold = $event" [disabled]="!canEdit()"></ui-input></ui-form-field>
+                </div>
+              }
+            </div>
+
+            <div class="cp-stat">
+              <div class="cp-stat__head">
+                <div>
+                  <span class="cp-stat__name">Professional Tax (PT)</span>
+                  <span class="cp-stat__sub">Flat monthly state levy.</span>
+                </div>
+                <ui-toggle [ngModel]="s.ptEnabled" (ngModelChange)="s.ptEnabled = $event" [disabled]="!canEdit()"></ui-toggle>
+              </div>
+              @if (s.ptEnabled) {
+                <div class="cp-stat__grid">
+                  <ui-form-field label="Monthly amount"><ui-input type="number" [ngModel]="s.ptMonthlyAmount" (ngModelChange)="s.ptMonthlyAmount = $event" [disabled]="!canEdit()"></ui-input></ui-form-field>
+                </div>
+              }
+            </div>
+
+            <div class="cp-stat">
+              <div class="cp-stat__head">
+                <div>
+                  <span class="cp-stat__name">TDS (Tax Deducted at Source)</span>
+                  <span class="cp-stat__sub">Income-tax withholding on payslips.</span>
+                </div>
+                <ui-toggle [ngModel]="s.tdsEnabled" (ngModelChange)="s.tdsEnabled = $event" [disabled]="!canEdit()"></ui-toggle>
+              </div>
+            </div>
+
+          </div>
+
+          @if (canEdit()) {
+            <div class="cp-settings__foot">
+              <button class="cp-btn cp-btn--primary" [disabled]="savingSettings()" (click)="saveSettings()">
+                {{ savingSettings() ? 'Saving…' : 'Save settings' }}
+              </button>
+            </div>
+          }
+        }
+      </div>
+    }
+  }
+</div>
+
+<!-- Grade editor modal -->
+<ui-form-modal
+  [open]="gradeEditorOpen()"
+  [title]="gradeForm.id ? 'Edit pay grade' : 'New pay grade'"
+  size="md"
+  [busy]="gradeBusy()"
+  [submitDisabled]="!gradeValid"
+  [submitLabel]="gradeForm.id ? 'Save changes' : 'Create grade'"
+  (submit)="saveGrade()"
+  (cancel)="closeGradeEditor()"
+>
+  <ui-form-grid [columns]="2">
+    <ui-form-field label="Name" [required]="true">
+      <ui-input [(ngModel)]="gradeForm.name" placeholder="e.g. Senior Engineer"></ui-input>
+    </ui-form-field>
+    <ui-form-field label="Code">
+      <ui-input [(ngModel)]="gradeForm.code" placeholder="e.g. L3"></ui-input>
+    </ui-form-field>
+  </ui-form-grid>
+  <ui-form-grid [columns]="3">
+    <ui-form-field label="Min CTC"><ui-input type="number" [(ngModel)]="gradeForm.minCtc"></ui-input></ui-form-field>
+    <ui-form-field label="Mid CTC"><ui-input type="number" [(ngModel)]="gradeForm.midCtc"></ui-input></ui-form-field>
+    <ui-form-field label="Max CTC"><ui-input type="number" [(ngModel)]="gradeForm.maxCtc"></ui-input></ui-form-field>
+  </ui-form-grid>
+  <label class="cp-modal-toggle">
+    <ui-toggle [(ngModel)]="gradeForm.isActive"></ui-toggle>
+    <span>Active</span>
+  </label>
+</ui-form-modal>
+
+<!-- Bonus editor modal -->
+<ui-form-modal
+  [open]="bonusEditorOpen()"
+  title="Add bonus"
+  size="md"
+  [busy]="bonusBusy()"
+  [submitDisabled]="!bonusValid"
+  submitLabel="Add bonus"
+  (submit)="saveBonus()"
+  (cancel)="closeBonusEditor()"
+>
+  <ui-form-field label="Employee" [required]="true">
+    <ui-select [options]="employeeOptions()" [searchable]="true" [(ngModel)]="bonusForm.userId"></ui-select>
+  </ui-form-field>
+  <ui-form-grid [columns]="2">
+    <ui-form-field label="Year"><ui-input type="number" [(ngModel)]="bonusForm.year"></ui-input></ui-form-field>
+    <ui-form-field label="Month"><ui-select [options]="monthOptions" [(ngModel)]="bonusForm.month"></ui-select></ui-form-field>
+  </ui-form-grid>
+  <ui-form-field label="Amount" [required]="true">
+    <ui-input type="number" [(ngModel)]="bonusForm.amount"></ui-input>
+  </ui-form-field>
+  <ui-form-field label="Label">
+    <ui-input [(ngModel)]="bonusForm.label" placeholder="e.g. Diwali Bonus"></ui-input>
+  </ui-form-field>
+  <ui-form-field label="Notes">
+    <ui-input [(ngModel)]="bonusForm.notes"></ui-input>
+  </ui-form-field>
+</ui-form-modal>

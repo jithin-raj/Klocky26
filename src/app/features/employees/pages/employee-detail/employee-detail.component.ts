@@ -7,6 +7,7 @@ import { ActivatedRoute } from '@angular/router';
 import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
 import { EmployeeService } from '../../../../core/services/employee.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
+import { PermissionService } from '../../../../core/services/permission.service';
 import { ModalService } from '../../../../shared/components/ui-modal/modal.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import {
@@ -49,13 +50,20 @@ export class EmployeeDetailComponent implements OnInit {
   private appState = inject(AppStateService);
   private modal = inject(ModalService);
   private toast = inject(ToastService);
+  private permissions = inject(PermissionService);
 
   employee = signal<EmployeeResponse | null>(null);
   loading  = signal(true);
   notFound = signal(false);
 
-  /** Basic salary is masked by default; reveal with the eye toggle (admin/HR data). */
-  readonly salaryRevealed = signal(false);
+  readonly canViewSalary = computed(() => this.permissions.can('payroll', 1));
+  readonly canEditSalary = computed(() => this.permissions.can('payroll', 2));
+
+  openSalary(): void {
+    const id = this.employee()?.employeeId;
+    if (!id) return;
+    this.orgNav.navigate(['app', 'compensation', 'employee', id]);
+  }
 
   empTypeLabel(t?: string | null): string {
     if (!t) return '—';

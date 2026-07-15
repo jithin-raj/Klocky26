@@ -65,6 +65,9 @@ export { UpgradePromptService } from './upgrade-prompt/upgrade-prompt.service';
 export { AppBrandComponent } from './app-brand/app-brand.component';
 export type { BrandSize } from './app-brand/app-brand.component';
 
+// Connectivity
+export { OfflineModalComponent } from './offline-modal/offline-modal.component';
+
 // Org Registration
 export { OrgRegisterModalComponent } from './org-register-modal/org-register-modal.component';
 export { OrgRegisterModalService } from './org-register-modal/org-register-modal.service';

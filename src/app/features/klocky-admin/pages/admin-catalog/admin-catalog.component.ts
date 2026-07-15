@@ -53,7 +53,30 @@ export class AdminCatalogComponent implements OnInit {
   addonEditCode = signal<string | null>(null);
   addonForm: AddonForm = this.blankAddon();
 
+  syncing = signal(false);
+
   ngOnInit(): void { this.load(); }
+
+  /**
+   * Reset the whole catalogue to the shipped defaults (repriced plans/add-ons,
+   * retired ones deactivated). Bulk overwrite — confirm first.
+   */
+  syncDefaults(): void {
+    if (this.syncing() || this.busy()) return;
+    if (!window.confirm('Reset every plan and add-on to the shipped defaults? This overwrites current names, prices, caps and features, and deactivates retired items.')) return;
+    this.syncing.set(true);
+    this.catalogSvc.syncDefaults().subscribe({
+      next: () => {
+        this.syncing.set(false);
+        this.toast.success('Catalogue synced', 'Plans and add-ons reset to the latest defaults.');
+        this.load();
+      },
+      error: (err) => {
+        this.syncing.set(false);
+        this.toast.error('Could not sync defaults', err?.error?.error ?? err?.error?.message ?? 'Please try again.');
+      },
+    });
+  }
 
   load(): void {
     this.loading.set(true);

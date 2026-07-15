@@ -26,6 +26,16 @@ export class PlatformCatalogService {
       .pipe(map(res => res.data));
   }
 
+  /**
+   * POST /api/platform/catalog/sync-defaults — upsert every plan + add-on to the
+   * shipped defaults (and deactivate retired ones). Fastest way to apply new
+   * pricing after a deploy; GET /api/plans then reflects the new values.
+   */
+  syncDefaults(): Observable<CatalogResponse> {
+    return this.api.post<ApiResponse<CatalogResponse>>('/platform/catalog/sync-defaults', {}, PLATFORM_SCOPE)
+      .pipe(map(res => res.data));
+  }
+
   // ── Plans ──────────────────────────────────────────────────────────────────
 
   createPlan(body: PlanUpsertRequest): Observable<CatalogPlan> {
@@ -33,10 +43,12 @@ export class PlatformCatalogService {
       .pipe(map(res => res.data));
   }
 
-  /** `code` is immutable — the path key identifies the row; the body omits it. */
+  /**
+   * `code` is immutable, but the server validates it as required on the body, so
+   * we always send the path key back in the payload (same value — can't change).
+   */
   updatePlan(code: string, body: PlanUpsertRequest): Observable<CatalogPlan> {
-    const { code: _omit, ...rest } = body;
-    return this.api.put<ApiResponse<CatalogPlan>>(`/platform/catalog/plans/${code}`, rest, PLATFORM_SCOPE)
+    return this.api.put<ApiResponse<CatalogPlan>>(`/platform/catalog/plans/${code}`, { ...body, code }, PLATFORM_SCOPE)
       .pipe(map(res => res.data));
   }
 
@@ -52,9 +64,9 @@ export class PlatformCatalogService {
       .pipe(map(res => res.data));
   }
 
+  /** Server validates `code` as required on the body — send the (immutable) path key back. */
   updateAddon(code: string, body: AddonUpsertRequest): Observable<CatalogAddon> {
-    const { code: _omit, ...rest } = body;
-    return this.api.put<ApiResponse<CatalogAddon>>(`/platform/catalog/addons/${code}`, rest, PLATFORM_SCOPE)
+    return this.api.put<ApiResponse<CatalogAddon>>(`/platform/catalog/addons/${code}`, { ...body, code }, PLATFORM_SCOPE)
       .pipe(map(res => res.data));
   }
 

@@ -38,6 +38,7 @@
     <button [class.active]="activeTab() === 'profile'"     (click)="activeTab.set('profile')">Profile</button>
     <button [class.active]="activeTab() === 'security'"    (click)="activeTab.set('security')">Security</button>
     <button [class.active]="activeTab() === 'preferences'" (click)="activeTab.set('preferences')">Preferences</button>
+    <button (click)="goToPayslips()">My Payslips</button>
   </div>
 
   <!-- Profile tab -->
