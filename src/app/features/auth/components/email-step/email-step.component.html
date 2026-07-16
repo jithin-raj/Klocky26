@@ -119,7 +119,10 @@
 
   <p class="lk-legal">
     By signing in, you agree to Klock's
-    <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+    <a href="#" (click)="$event.preventDefault(); legalModal.open('terms_of_service', state.orgSlugForLogin())">Terms of Service</a> and
+    <a href="#" (click)="$event.preventDefault(); legalModal.open('privacy_policy', state.orgSlugForLogin())">Privacy Policy</a>.
   </p>
+
+  <app-public-legal-document-modal #legalModal></app-public-legal-document-modal>
 
 </form>

@@ -1,0 +1,131 @@
+<div class="lg-page">
+
+  <div class="lg-header">
+    <div>
+      <h1>Legal &amp; Privacy</h1>
+      <p>Review the documents you've accepted, or withdraw your consent.</p>
+    </div>
+    @if (canManagePolicies()) {
+      <div class="lg-header-actions">
+        <button type="button" class="lg-btn lg-btn--ghost" (click)="openReport()">Consent report</button>
+        <button type="button" class="lg-btn lg-btn--primary" (click)="openPublish()">Publish new version</button>
+      </div>
+    }
+  </div>
+
+  <div class="lg-list">
+    @for (item of items(); track item.documentType) {
+      <div class="lg-card">
+        <div class="lg-card__main">
+          <div class="lg-card__title">
+            {{ item.title }}
+            <span class="lg-status" [class]="statusClass(item)">{{ statusLabel(item) }}</span>
+          </div>
+          <div class="lg-card__meta">
+            Current version v{{ item.currentVersion }}
+            @if (item.acceptedVersion) {
+              · You accepted v{{ item.acceptedVersion }}@if (item.acceptedAt) { on {{ item.acceptedAt | orgDate }} }
+            }
+          </div>
+        </div>
+        <div class="lg-card__actions">
+          <button type="button" class="lg-btn lg-btn--ghost" (click)="view(item)">View</button>
+          @if (!item.needsAcceptance && !item.withdrawn) {
+            <button type="button" class="lg-btn lg-btn--danger-ghost" [disabled]="withdrawing() === item.documentType" (click)="withdraw(item)">
+              {{ withdrawing() === item.documentType ? 'Withdrawing…' : 'Withdraw' }}
+            </button>
+          }
+        </div>
+      </div>
+    } @empty {
+      <div class="lg-empty">No legal documents on file yet.</div>
+    }
+  </div>
+
+  <!-- ── View document modal ─────────────────────────────────────────── -->
+  @if (viewing(); as item) {
+    <div class="lg-overlay" (click)="closeView()">
+      <div class="lg-modal" (click)="$event.stopPropagation()">
+        <div class="lg-modal__head">
+          <h2>{{ item.title }}</h2>
+          <button type="button" class="lg-modal__close" (click)="closeView()">✕</button>
+        </div>
+        <div class="lg-modal__body">
+          @if (viewingLoading()) {
+            <div class="lg-state">Loading…</div>
+          } @else if (viewingError()) {
+            <div class="lg-state lg-state--error">{{ viewingError() }}</div>
+          } @else {
+            <div class="lg-content" [innerHTML]="viewingHtml()"></div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Admin: publish new version ──────────────────────────────────── -->
+  @if (publishOpen()) {
+    <div class="lg-overlay" (click)="closePublish()">
+      <div class="lg-modal" (click)="$event.stopPropagation()">
+        <div class="lg-modal__head">
+          <h2>Publish new version</h2>
+          <button type="button" class="lg-modal__close" (click)="closePublish()">✕</button>
+        </div>
+        <div class="lg-modal__body lg-modal__body--form">
+          <ui-select label="Document" [options]="documentTypeOptions" [ngModel]="publishType()" (ngModelChange)="publishType.set($event)"></ui-select>
+          <ui-input label="Version" placeholder="e.g. 2.1" [ngModel]="publishVersion()" (ngModelChange)="publishVersion.set($event)"></ui-input>
+          <ui-input label="Title" [ngModel]="publishTitle()" (ngModelChange)="publishTitle.set($event)"></ui-input>
+          <ui-textarea label="Content (Markdown)" [rows]="12" [ngModel]="publishContent()" (ngModelChange)="publishContent.set($event)"></ui-textarea>
+          <ui-input label="Effective from (optional)" type="date" [ngModel]="publishEffectiveFrom()" (ngModelChange)="publishEffectiveFrom.set($event)"></ui-input>
+          <p class="lg-hint">Publishing makes every employee's acceptance for this document type required again.</p>
+        </div>
+        <div class="lg-modal__footer">
+          <button type="button" class="lg-btn lg-btn--ghost" (click)="closePublish()">Cancel</button>
+          <button type="button" class="lg-btn lg-btn--primary" [disabled]="publishing()" (click)="submitPublish()">
+            {{ publishing() ? 'Publishing…' : 'Publish' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Admin: consent report ───────────────────────────────────────── -->
+  @if (reportOpen()) {
+    <div class="lg-overlay" (click)="closeReport()">
+      <div class="lg-modal lg-modal--wide" (click)="$event.stopPropagation()">
+        <div class="lg-modal__head">
+          <h2>Consent report</h2>
+          <button type="button" class="lg-modal__close" (click)="closeReport()">✕</button>
+        </div>
+        <div class="lg-modal__body">
+          @if (reportLoading()) {
+            <div class="lg-state">Loading…</div>
+          } @else if (reportError()) {
+            <div class="lg-state lg-state--error">{{ reportError() }}</div>
+          } @else {
+            <p class="lg-hint">Privacy Policy only.</p>
+            <table class="lg-table">
+              <thead>
+                <tr><th>Employee</th><th>Version accepted</th><th>Accepted on</th><th>On current version</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                @for (row of reportRows(); track row.userId) {
+                  <tr>
+                    <td>{{ row.employeeName }}</td>
+                    <td>{{ row.acceptedVersion || '—' }}</td>
+                    <td>{{ row.acceptedAt ? (row.acceptedAt | orgDate) : '—' }}</td>
+                    <td>{{ row.onCurrentVersion ? 'Yes' : 'No' }}</td>
+                    <td>{{ row.withdrawn ? 'Withdrawn' : (row.acceptedVersion ? 'Accepted' : 'Pending') }}</td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="5" class="lg-table__empty">No data.</td></tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

@@ -1,0 +1,47 @@
+:host { display: contents; }
+
+.pl-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  padding: 20px; box-sizing: border-box;
+}
+
+.pl-card {
+  width: 100%; max-width: 620px; max-height: 88vh;
+  background: #fff; border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+.pl-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px; border-bottom: 1px solid #eef1f6; flex-shrink: 0;
+}
+.pl-head h2 { margin: 0; font-size: 17px; font-weight: 750; color: #0f172a; }
+.pl-close {
+  border: none; background: none; font-size: 15px; color: #94a3b8; cursor: pointer;
+  width: 28px; height: 28px; border-radius: 8px;
+  &:hover { background: #f1f5f9; color: #334155; }
+}
+
+.pl-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 22px; }
+.pl-state { padding: 40px 10px; text-align: center; color: #64748b; font-size: 13.5px; }
+.pl-state--error { color: #b91c1c; }
+
+.pl-content {
+  font-size: 13.5px; line-height: 1.7; color: #334155;
+  ::ng-deep h1, ::ng-deep h2, ::ng-deep h3 { color: #0f172a; margin: 1.1em 0 .4em; }
+  ::ng-deep p { margin: 0 0 1em; }
+  ::ng-deep ul, ::ng-deep ol { margin: 0 0 1em; padding-left: 20px; }
+  ::ng-deep a { color: #4f46e5; }
+}
+
+@media (max-width: 520px) {
+  .pl-overlay { padding: 12px; }
+  .pl-card { max-height: 94vh; border-radius: 14px; }
+  .pl-head { padding: 14px 16px; }
+  .pl-head h2 { font-size: 15.5px; }
+  .pl-body { padding: 16px; }
+}
