@@ -1388,6 +1388,23 @@ ui-toggle + ui-toggle {
   margin-bottom: 0;
 }
 
+.op-upgrade-note {
+  margin: -6px 0 4px;
+  font-size: 12px;
+}
+.op-upgrade-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent, #6366f1);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  &:hover { filter: brightness(0.9); }
+}
+
 .op-el-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2197,6 +2214,12 @@ ui-toggle + ui-toggle {
   font-weight: 500;
   color: #0f172a;
   font-family: inherit;
+  // Force normal glyph rendering regardless of the browser/OS/extension —
+  // some password-manager overlays (and the odd UA default) widen spacing on
+  // password-type inputs even once toggled to type="text" to reveal them.
+  letter-spacing: normal;
+  word-spacing: normal;
+  -webkit-text-security: none;
   &::placeholder { color: #94a3b8; font-weight: 400; }
 }
 
@@ -2204,16 +2227,18 @@ ui-toggle + ui-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   background: none;
   color: #94a3b8;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background .14s, color .14s;
-  &:hover { background: #eef2f7; color: #475569; }
+  transition: color .14s;
+  // Plain icon, no boxed hover background — reads as part of the same pill
+  // as the field instead of a separate compartment.
+  &:hover { color: #475569; }
 }
 
 .su-error {

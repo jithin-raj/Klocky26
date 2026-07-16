@@ -14,6 +14,7 @@ import { HolidayDto } from '../../../../core/models/org-auth.model';
 import { TeamAttendanceItem } from '../../../../core/models/attendance.model';
 import { LeaveRequestView } from '../../../../core/models/leave.model';
 import { UiIconComponent, UiIconName } from '../../../../shared/components';
+import { LocalizationService } from '../../../../core/services/localization.service';
 
 interface RecentActivity { name: string; initials: string; detail: string; time: string; color: string; }
 interface UpcomingHoliday { name: string; date: string; daysLeft: number; }
@@ -38,6 +39,7 @@ export class DashboardComponent implements OnInit {
   private readonly orgAuth        = inject(OrgAuthService);
   private readonly attendanceSvc  = inject(AttendanceStateService);
   private readonly leaveSvc       = inject(LeaveService);
+  private readonly loc            = inject(LocalizationService);
 
   today = new Date();
 
@@ -173,7 +175,7 @@ export class DashboardComponent implements OnInit {
         name: e.fullName,
         initials: e.fullName.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase(),
         detail: `${e.orgRoleName || e.role} · ${e.departmentName ?? 'Unassigned'}`,
-        time: new Date(e.dateOfJoining!).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        time: this.loc.formatDateOnly(e.dateOfJoining!),
         color: this.AVATAR_COLORS[i % this.AVATAR_COLORS.length],
       })),
   );
@@ -187,7 +189,7 @@ export class DashboardComponent implements OnInit {
         let next = new Date(now.getFullYear(), h.month - 1, h.day);
         if (next < startOfToday) next = new Date(now.getFullYear() + 1, h.month - 1, h.day);
         const daysLeft = Math.round((next.getTime() - startOfToday.getTime()) / 86_400_000);
-        return { name: h.name, date: next.toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' }), daysLeft };
+        return { name: h.name, date: this.loc.formatDateOnly(next), daysLeft };
       })
       .sort((a, b) => a.daysLeft - b.daysLeft)
       .slice(0, 5);

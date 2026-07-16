@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MOCK_EMPLOYEES } from '../../../employees/models/employee.model';
 import { UiSelectComponent } from '../../../../shared/components';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 
 interface Review {
   id: string;
@@ -55,7 +56,7 @@ const GOALS: Goal[] = [
   selector: 'app-performance',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, OrgDateOnlyPipe],
   templateUrl: './performance.component.html',
   styleUrl: './performance.component.scss',
 })

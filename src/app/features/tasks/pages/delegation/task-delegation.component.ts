@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../../../core/services/task.service';
 import { Delegation, CreateDelegationRequest } from '../../../../core/models/task.model';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 
 @Component({
   selector: 'app-task-delegation',
@@ -19,6 +20,7 @@ export class TaskDelegationComponent implements OnInit {
 
   private readonly svc   = inject(TaskService);
   private readonly toast = inject(ToastService);
+  private readonly loc   = inject(LocalizationService);
 
   delegations = signal<Delegation[]>([]);
   loading     = signal(false);
@@ -110,6 +112,6 @@ export class TaskDelegationComponent implements OnInit {
 
   formatDate(iso: string | undefined): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    return this.loc.formatDateOnly(iso);
   }
 }

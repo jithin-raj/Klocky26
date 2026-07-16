@@ -291,9 +291,11 @@
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 16px;
 
-  @media (max-width: 500px) {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+  // Single column below 640px — a forced 2-up grid left the Preview/Delete
+  // button row too cramped for comfortable tap targets on a phone.
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }
 
@@ -360,6 +362,8 @@
   padding-top: 6px;
   border-top: 1px solid #f1f5f9;
   margin-top: 4px;
+
+  .action-btn { flex: 1; text-align: center; }
 }
 
 // ── Employee List Card View ───────────────────────────────────────────────────
@@ -577,6 +581,32 @@
 @media (max-width: 600px) {
   .preview-overlay { padding: 0; }
   .preview-modal { max-width: 100%; height: 100%; border-radius: 0; }
+
+  // The header used to keep its full desktop padding + a text-and-icon
+  // Download button at every width, squeezing the title down to a handful of
+  // visible characters. Tighten the chrome and drop the Download button to
+  // icon-only so the title actually gets room to breathe.
+  .preview-head { padding: 10px 12px; gap: 8px; }
+  .preview-title { font-size: 13.5px; }
+  .preview-head-actions { gap: 6px; }
+  .preview-head-actions .btn--ghost.btn--sm {
+    padding: 7px 9px;
+    .btn-label { display: none; }
+  }
+  .preview-close { width: 28px; height: 28px; }
+}
+
+// ── Page-level mobile ──────────────────────────────────────────────────────
+@media (max-width: 640px) {
+  .page { padding: 16px; gap: 16px; }
+  .page-title { font-size: 19px; }
+  .page-subtitle { font-size: 13px; }
+  .page-header .btn--primary { width: 100%; justify-content: center; }
+
+  .card { padding: 16px; }
+
+  .doc-list-card { padding: 12px; gap: 10px; }
+  .doc-list-title { font-size: 13.5px; }
 }
 
 // ── Empty state ──────────────────────────────────────────────────────────────

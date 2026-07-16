@@ -6,13 +6,14 @@ import { FormsModule } from '@angular/forms';
 import { UiSelectComponent } from '../../../../shared/components';
 import { LeaveService } from '../../../../core/services/leave.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
+import { OrgDateOnlyPipe, OrgDatePipe } from '../../../../shared/pipes/localization.pipes';
 import { LeaveApprovalStage, LeaveRequestView } from '../../../../core/models/leave.model';
 
 @Component({
   selector: 'app-leave-approvals',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, OrgDateOnlyPipe, OrgDatePipe],
   templateUrl: './leave-approvals.component.html',
   styleUrl: './leave-approvals.component.scss',
 })

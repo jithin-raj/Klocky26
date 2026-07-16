@@ -49,7 +49,7 @@
                 <td data-label="Category"><span class="badge badge--gray">{{ item.category }}</span></td>
                 <td data-label="Status"><span [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span></td>
                 <td data-label="Assigned To">{{ item.assignedTo.name }}</td>
-                <td data-label="Completed At">{{ item.completedAt ? (item.completedAt | date:'dd MMM yyyy') : '—' }}</td>
+                <td data-label="Completed At">{{ item.completedAt ? (item.completedAt | orgDate) : '—' }}</td>
               </tr>
             }
           </tbody>

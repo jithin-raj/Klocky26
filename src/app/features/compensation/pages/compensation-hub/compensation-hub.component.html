@@ -27,17 +27,28 @@
           </div>
           <div class="cp-search">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" placeholder="Search employees…" [ngModel]="employeeSearch()" (ngModelChange)="employeeSearch.set($event)" />
+            <input type="text" placeholder="Search employees…" [ngModel]="employeeSearch()" (ngModelChange)="setEmployeeSearch($event)" />
           </div>
         </div>
         <ui-data-grid
           [columns]="employeeColumns"
-          [rows]="filteredEmployees()"
+          [rows]="pagedEmployees()"
           [actions]="employeeActions"
           [trackBy]="employeeTrackBy"
           emptyMessage="No employees found"
           (rowClick)="openEmployee($event.employeeId)"
         ></ui-data-grid>
+        @if (filteredEmployees().length > 0) {
+          <ui-pagination
+            [currentPage]="employeePage()"
+            [totalPages]="employeeTotalPages()"
+            [pageSize]="employeePageSize()"
+            [pageSizeOptions]="employeePageSizeOptions"
+            [resultLabel]="'Showing ' + employeeStartResult() + '–' + employeeEndResult() + ' of ' + filteredEmployees().length"
+            (pageChange)="setEmployeePage($event)"
+            (pageSizeChange)="setEmployeePageSize($event)"
+          ></ui-pagination>
+        }
       </div>
     }
 

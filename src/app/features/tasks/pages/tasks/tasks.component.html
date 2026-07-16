@@ -75,7 +75,7 @@
                       </td>
                       <td data-label="By">{{ item.requestedBy.name }}</td>
                       <td data-label="Status"><span class="tk-status-badge">{{ item.status }}</span></td>
-                      <td data-label="Closing Date">{{ closingDate(item) ? (closingDate(item) | date:'MMM d, yyyy') : '—' }}</td>
+                      <td data-label="Closing Date">{{ closingDate(item) ? (closingDate(item) | orgDateOnly) : '—' }}</td>
                       <td class="tk-col-actions" data-label="Actions">
                         <div class="tk-row-actions">
                           <button class="tk-action-btn tk-action-btn--view" (click)="openView(item)" title="View details">
@@ -180,17 +180,17 @@
         </div>
         <div class="tk-detail-row">
           <span class="tk-detail-label">Requested Date</span>
-          <span class="tk-detail-value">{{ item.createdAt | date:'MMM d, yyyy, h:mm a' }}</span>
+          <span class="tk-detail-value">{{ item.createdAt | orgDateTime }}</span>
         </div>
         @if (item.from) {
           <div class="tk-detail-row">
             <span class="tk-detail-label">From</span>
-            <span class="tk-detail-value">{{ item.from | date:'MMM d, yyyy' }}</span>
+            <span class="tk-detail-value">{{ item.from | orgDateOnly }}</span>
           </div>
         }
         <div class="tk-detail-row">
           <span class="tk-detail-label">Closing Date</span>
-          <span class="tk-detail-value">{{ closingDate(item) ? (closingDate(item) | date:'MMM d, yyyy') : '—' }}</span>
+          <span class="tk-detail-value">{{ closingDate(item) ? (closingDate(item) | orgDateOnly) : '—' }}</span>
         </div>
         @if (item.detail) {
           <div class="tk-detail-row">

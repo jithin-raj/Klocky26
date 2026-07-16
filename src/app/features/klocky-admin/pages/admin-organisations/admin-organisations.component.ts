@@ -3,6 +3,7 @@ import { HttpResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { PlatformAdminService } from '../../../../core/services/platform-admin.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { PlatformOrgListItem, SubscriptionStatus, OrgEmailType, UpdatePlatformOrgRequest } from '../../../../core/models/platform-auth.model';
 import { FEATURE_CODES, FEATURE_LABELS } from '../../../../core/models/subscription.model';
 import {
@@ -30,6 +31,7 @@ const ORG_AVATAR_COLORS = ['#0d9488','#6366f1','#ec4899','#f59e0b','#22c55e','#8
 export class AdminOrganisationsComponent implements OnInit {
   private readonly platformAdmin = inject(PlatformAdminService);
   private readonly toast = inject(ToastService);
+  private readonly loc = inject(LocalizationService);
 
   readonly orgs    = signal<PlatformOrgListItem[]>([]);
   readonly loading = signal(false);
@@ -100,6 +102,16 @@ export class AdminOrganisationsComponent implements OnInit {
   // ── Hard delete (DELETE /api/platform/organisations/{slug}) ───────
   readonly hardDeleteTarget = signal<PlatformOrgListItem | null>(null);
   readonly hardDeleting     = signal(false);
+  /** Whether to download a backup ZIP before deleting — the admin's choice, defaults to yes. */
+  readonly hardDeleteWithBackup = signal(true);
+  readonly hardDeleteMessage = computed(() => {
+    const name = this.hardDeleteTarget()?.companyName || 'this organisation';
+    const tail = `${name}, its tenant database and all payment records are permanently removed. This cannot be undone.`;
+    return this.hardDeleteWithBackup()
+      ? `A backup ZIP downloads to your device first, then ${tail}`
+      : `No backup will be taken — ${tail}`;
+  });
+  readonly hardDeleteConfirmLabel = computed(() => this.hardDeleteWithBackup() ? 'Back up & delete' : 'Delete without backup');
 
   // ── Add organisation ─────────────────────────────────────────────
   readonly showAdd        = signal(false);
@@ -256,6 +268,7 @@ export class AdminOrganisationsComponent implements OnInit {
 
   // ── Hard delete (irreversible; type-to-confirm) ───────────────
   openHardDelete(org: PlatformOrgListItem): void {
+    this.hardDeleteWithBackup.set(true);   // reset to the safe default each time the dialog opens
     this.hardDeleteTarget.set(org);
   }
 
@@ -265,26 +278,31 @@ export class AdminOrganisationsComponent implements OnInit {
   }
 
   /**
-   * Backup first, then delete — after the delete the tenant DB is gone, so the
-   * backup ZIP must be downloaded while the org still exists. If the backup
-   * fails, we abort and delete nothing.
+   * Backup is the admin's choice (checkbox in the dialog): if wanted, download
+   * the ZIP first — while the org still exists, since the tenant DB is gone
+   * right after delete — and abort without deleting if that download fails.
+   * If NOT wanted, skip the backup call entirely and delete straight away.
+   * Either way, `skipBackup=true` on the delete call itself: the backup this
+   * screen offers is the dedicated /backup endpoint above, not the delete
+   * endpoint's own redundant server-side copy.
    */
   async doHardDelete(): Promise<void> {
     const org = this.hardDeleteTarget();
     if (!org || this.hardDeleting()) return;
     this.hardDeleting.set(true);
 
-    // 1) Download the backup ZIP (one JSON per table + README).
-    try {
-      const res = await firstValueFrom(this.platformAdmin.backupOrganisation(org.orgSlug));
-      this.triggerDownload(res, `${org.orgSlug}-backup.zip`);
-    } catch (err) {
-      this.hardDeleting.set(false);
-      this.toast.error('Backup failed — nothing was deleted', await this.extractBlobError(err));
-      return;
+    if (this.hardDeleteWithBackup()) {
+      // Download the backup ZIP (one JSON per table + README) before deleting.
+      try {
+        const res = await firstValueFrom(this.platformAdmin.backupOrganisation(org.orgSlug));
+        this.triggerDownload(res, `${org.orgSlug}-backup.zip`);
+      } catch (err) {
+        this.hardDeleting.set(false);
+        this.toast.error('Backup failed — nothing was deleted', await this.extractBlobError(err));
+        return;
+      }
     }
 
-    // 2) Delete (server-side backup skipped — we just downloaded our own).
     this.platformAdmin.deleteOrganisation(org.orgSlug, true).subscribe({
       next: (res) => {
         this.hardDeleting.set(false);
@@ -292,7 +310,12 @@ export class AdminOrganisationsComponent implements OnInit {
         this.orgs.update(list => list.filter(o => o.orgSlug !== org.orgSlug));
         if (this.selectedOrg()?.orgSlug === org.orgSlug) this.selectedOrg.set(null);
         if (this.editingOrg()?.orgSlug === org.orgSlug) this.editingOrg.set(null);
-        this.toast.success(`${org.companyName} deleted`, res.message || 'Backup downloaded; the organisation and its data were removed.');
+        this.toast.success(
+          `${org.companyName} deleted`,
+          res.message || (this.hardDeleteWithBackup()
+            ? 'Backup downloaded; the organisation and its data were removed.'
+            : 'The organisation and its data were removed — no backup was taken.'),
+        );
       },
       error: (err) => {
         this.hardDeleting.set(false);
@@ -689,7 +712,7 @@ export class AdminOrganisationsComponent implements OnInit {
 
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    return this.loc.formatDate(iso);
   }
 
   onSearch(e: Event): void             { this.search.set((e.target as HTMLInputElement).value); }

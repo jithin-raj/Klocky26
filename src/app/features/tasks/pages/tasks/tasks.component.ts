@@ -10,6 +10,7 @@ import { ToastService } from '../../../../shared/components/ui-toast/toast.servi
 import { PendingTaskItem, PendingTaskType } from '../../../../core/models/task.model';
 import { TaskHistoryComponent } from '../history/task-history.component';
 import { WorkTasksComponent } from '../work-tasks/work-tasks.component';
+import { OrgDateOnlyPipe, OrgDateTimePipe } from '../../../../shared/pipes/localization.pipes';
 
 export type TaskListTab = 'all' | 'pending' | 'history';
 
@@ -17,7 +18,7 @@ export type TaskListTab = 'all' | 'pending' | 'history';
   selector: 'app-tasks',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiIconComponent, TaskHistoryComponent, WorkTasksComponent],
+  imports: [CommonModule, FormsModule, UiIconComponent, TaskHistoryComponent, WorkTasksComponent, OrgDateOnlyPipe, OrgDateTimePipe],
   templateUrl: './tasks.component.html',
   styleUrl: './tasks.component.scss',
 })

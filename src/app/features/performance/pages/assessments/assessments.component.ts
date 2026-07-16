@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { PerformanceService } from '../../../../core/services/performance.service';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { Assessment } from '../../../../core/models/performance.model';
 
 @Component({
@@ -21,6 +22,7 @@ export class AssessmentsComponent implements OnInit {
   private readonly svc   = inject(PerformanceService);
   readonly permissions   = inject(PermissionService);
   private readonly toast = inject(ToastService);
+  private readonly loc   = inject(LocalizationService);
 
   assessments = signal<Assessment[]>([]);
   loading     = signal(true);
@@ -110,6 +112,6 @@ export class AssessmentsComponent implements OnInit {
 
   fmt(iso: string | undefined): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return this.loc.formatDateOnly(iso);
   }
 }

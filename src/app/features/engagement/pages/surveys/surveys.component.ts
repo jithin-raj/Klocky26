@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiSelectComponent, UiDatePickerComponent } from '../../../../shared/components';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 
 type SurveyStatus = 'active' | 'draft' | 'closed';
 
@@ -22,7 +23,7 @@ interface Survey {
   selector: 'app-surveys',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent, OrgDateOnlyPipe],
   templateUrl: './surveys.component.html',
   styleUrl: './surveys.component.scss',
 })

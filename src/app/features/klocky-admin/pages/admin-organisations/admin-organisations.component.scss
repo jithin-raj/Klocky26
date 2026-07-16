@@ -100,6 +100,17 @@ $accent: #0d9488;
 .ao-feat-check.checked .ao-feat-check__box { background: var(--accent, #0d9488); border-color: var(--accent, #0d9488); }
 .ao-feat-check:not(.checked) .ao-feat-check__box svg { opacity: 0; }
 
+/* Backup-before-delete checkbox — projected into ui-confirm-danger's light modal */
+.ao-backup-check {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 12px; margin: 0 0 16px; border-radius: 9px;
+  border: 1.5px solid #e5e7eb; background: #f8fafc;
+  font-size: 13px; font-weight: 550; color: #334155; cursor: pointer;
+  transition: border-color .15s, background .15s;
+  input { width: 16px; height: 16px; accent-color: #dc2626; cursor: pointer; }
+  &.checked { border-color: #cbd5e1; background: #fff; }
+}
+
 /* Accent color swatch */
 .ao-accent-row { display: flex; align-items: center; gap: 10px; }
 .ao-accent-row ui-input { flex: 1; }

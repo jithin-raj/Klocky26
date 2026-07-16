@@ -20,6 +20,7 @@ import { PlatformAdminService } from '../../../../core/services/platform-admin.s
 export class AdminLoginComponent {
   readonly submitting = signal(false);
   readonly loginError = signal('');
+  readonly showPw = signal(false);
 
   form: FormGroup;
 

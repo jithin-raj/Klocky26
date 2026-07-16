@@ -1042,6 +1042,21 @@
           </ui-toggle>
 
           <ui-toggle [row]="true"
+            label="Auto-deduct absences"
+            hint="Unexcused working-day absences are deducted from the employee's default leave balance; once that's used up (or if there's no default leave), they're marked Loss of Pay (LOP)."
+            [disabled]="!hasLeaveAutomationFeature()"
+            [(ngModel)]="autoAbsenceDeductionEnabled"
+            (ngModelChange)="guardPremiumToggle('leave_automation', 'autoAbsenceDeductionEnabled', $event)">
+          </ui-toggle>
+          @if (!hasLeaveAutomationFeature()) {
+            <p class="op-upgrade-note">
+              <button type="button" class="op-upgrade-link" (click)="openLeaveAutomationUpgrade()">
+                Upgrade to Growth to enable
+              </button>
+            </p>
+          }
+
+          <ui-toggle [row]="true"
             label="Leave Encashment"
             hint="Allow employees to encash unused earned leave balance"
             [(ngModel)]="encashmentEnabled" (ngModelChange)="markDirty()">
@@ -1277,7 +1292,9 @@
           </span>
           <input class="su-input" formControlName="password"
                  [type]="stepUpShowPw() ? 'text' : 'password'"
-                 placeholder="Admin password" autocomplete="current-password" />
+                 placeholder="Admin password" autocomplete="current-password"
+                 spellcheck="false" autocapitalize="off" autocorrect="off"
+                 data-lpignore="true" data-1p-ignore data-bwignore="true" />
           <button class="su-eye" type="button" tabindex="-1"
                   (click)="stepUpShowPw.set(!stepUpShowPw())" aria-label="Show password">
             @if (stepUpShowPw()) {

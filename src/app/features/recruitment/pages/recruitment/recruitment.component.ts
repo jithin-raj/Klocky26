@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiSelectComponent } from '../../../../shared/components';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 
 type CandidateStage = 'applied' | 'screening' | 'interview' | 'offer' | 'hired' | 'rejected';
 
@@ -35,7 +36,7 @@ const CANDIDATES: Candidate[] = [
   selector: 'app-recruitment',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, OrgDateOnlyPipe],
   templateUrl: './recruitment.component.html',
   styleUrl: './recruitment.component.scss',
 })

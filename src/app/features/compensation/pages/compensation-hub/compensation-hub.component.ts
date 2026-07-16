@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PayrollService } from '../../../../core/services/payroll.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { EmployeeService } from '../../../../core/services/employee.service';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
@@ -10,6 +11,7 @@ import {
   UiSelectComponent, UiInputComponent, UiToggleComponent,
   UiDataGridComponent, GridColumn, GridAction,
   UiFormModalComponent, UiFormGridComponent, UiFormFieldComponent,
+  UiPaginationComponent, SelectOption,
 } from '../../../../shared/components';
 import {
   PayrollSettingsDto, PayGradeDto, PayGradeUpsertRequest, BonusDto, PayslipDto, PayslipRunResult,
@@ -42,7 +44,7 @@ interface BonusForm { userId: string; year: number; month: number; amount: numbe
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, FormsModule, UiSelectComponent, UiInputComponent, UiToggleComponent,
-    UiDataGridComponent,
+    UiDataGridComponent, UiPaginationComponent,
     UiFormModalComponent, UiFormGridComponent, UiFormFieldComponent,
   ],
   templateUrl: './compensation-hub.component.html',
@@ -54,6 +56,7 @@ export class CompensationHubComponent implements OnInit {
   private readonly permissions = inject(PermissionService);
   private readonly orgNav = inject(OrgNavigationService);
   private readonly toast = inject(ToastService);
+  private readonly loc   = inject(LocalizationService);
 
   readonly canEdit = computed(() => this.permissions.can('payroll', 2));
 
@@ -74,6 +77,32 @@ export class CompensationHubComponent implements OnInit {
     if (!q) return list;
     return list.filter(e => e.fullName.toLowerCase().includes(q) || (e.employeeCode ?? '').toLowerCase().includes(q));
   });
+
+  // ── Pagination (same client-side pattern as the Employee Listing page) ─────
+  employeePage     = signal(1);
+  employeePageSize = signal(10);
+  readonly employeePageSizeOptions: SelectOption[] = [10, 25, 50].map(n => ({ label: `${n} / page`, value: n }));
+  readonly employeeTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredEmployees().length / this.employeePageSize())));
+  readonly pagedEmployees = computed(() => {
+    const start = (this.employeePage() - 1) * this.employeePageSize();
+    return this.filteredEmployees().slice(start, start + this.employeePageSize());
+  });
+  readonly employeeStartResult = computed(() => (this.employeePage() - 1) * this.employeePageSize() + 1);
+  readonly employeeEndResult   = computed(() =>
+    Math.min(this.employeePage() * this.employeePageSize(), this.filteredEmployees().length));
+
+  setEmployeePage(p: number): void {
+    if (p >= 1 && p <= this.employeeTotalPages()) this.employeePage.set(p);
+  }
+  setEmployeePageSize(n: number): void {
+    this.employeePageSize.set(n);
+    this.employeePage.set(1);
+  }
+  setEmployeeSearch(v: string): void {
+    this.employeeSearch.set(v);
+    this.employeePage.set(1);
+  }
 
   // ── Grid column / action definitions (shared ui-data-grid) ─────────────────
   readonly employeeTrackBy = (e: EmployeeResponse) => e.employeeId;
@@ -133,8 +162,9 @@ export class CompensationHubComponent implements OnInit {
     },
   ];
 
+  /** All the columns this feeds (CTC bands, bonus amount, payslip totals) are org-wide money. */
   private num(v: number): string {
-    return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v ?? 0);
+    return this.loc.formatCurrency(v ?? 0);
   }
 
   ngOnInit(): void {

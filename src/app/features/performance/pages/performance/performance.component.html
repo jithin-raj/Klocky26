@@ -80,7 +80,7 @@
           </div>
           <div class="pf-goal-meta">
             <span class="pf-status pf-status--{{ g.status }}">{{ g.status === 'on_track' ? 'On Track' : g.status === 'at_risk' ? 'At Risk' : g.status | titlecase }}</span>
-            <span class="pf-due" [class.overdue]="g.status === 'behind'">{{ g.due | date:'MMM d, yyyy' }}</span>
+            <span class="pf-due" [class.overdue]="g.status === 'behind'">{{ g.due | orgDateOnly }}</span>
           </div>
         </div>
       }

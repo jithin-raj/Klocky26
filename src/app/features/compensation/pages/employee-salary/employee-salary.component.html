@@ -34,7 +34,7 @@
           </div>
           <div class="es-meta">
             Pay Grade: <strong>{{ current()!.payGradeName || '—' }}</strong> ·
-            Effective from <strong>{{ current()!.effectiveFrom | date:'MMM d, yyyy' }}</strong> ·
+            Effective from <strong>{{ current()!.effectiveFrom | orgDateOnly }}</strong> ·
             Reason: <strong>{{ current()!.reason }}</strong>
           </div>
 
@@ -66,7 +66,7 @@
             <tbody>
               @for (h of history(); track h.id) {
                 <tr [class.es-row--current]="h.isCurrent">
-                  <td>{{ h.effectiveFrom | date:'MMM d, yyyy' }} @if (h.isCurrent) { <span class="es-current-tag">Current</span> }</td>
+                  <td>{{ h.effectiveFrom | orgDateOnly }} @if (h.isCurrent) { <span class="es-current-tag">Current</span> }</td>
                   <td>{{ h.reason }}</td>
                   <td>{{ h.annualCtc | number }}</td>
                   <td>{{ h.monthlyNet | number }}</td>

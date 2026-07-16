@@ -22,6 +22,7 @@ import { catchError, finalize, switchMap } from 'rxjs/operators';
 import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
+import { UserAuthService } from '../../../../core/services/user-auth.service';
 import { OrgLogoService } from '../../../../core/services/org-logo.service';
 import { OfficeService } from '../../../../core/services/office.service';
 import { SubscriptionService } from '../../../../core/services/subscription.service';
@@ -142,6 +143,7 @@ export class OrgProfileComponent implements OnInit {
   private readonly orgThemeService = inject(OrgThemeService);
   private readonly appState        = inject(AppStateService);
   private readonly orgAuth         = inject(OrgAuthService);
+  private readonly userAuth        = inject(UserAuthService);
   private readonly officeSvc       = inject(OfficeService);
   private readonly logoSvc         = inject(OrgLogoService);
   private readonly subscription    = inject(SubscriptionService);
@@ -343,6 +345,8 @@ export class OrgProfileComponent implements OnInit {
     this.compOffEnabled           = s.compOffEnabled;
     this.compOffExpiryMonths      = s.compOffExpiryMonths ?? null;
     this.lopEnabled               = s.lopEnabled;
+    this.autoAbsenceDeductionEnabled = s.autoAbsenceDeductionEnabled;
+    this._lastLoadedAutoAbsenceDeductionEnabled = s.autoAbsenceDeductionEnabled;
     this.encashmentEnabled        = s.encashmentEnabled;
     this.earnedLeaveEnabled       = s.earnedLeaveEnabled ?? false;
     this.earnedLeaveDaysPerPeriod = s.earnedLeaveDaysPerPeriod ?? null;
@@ -508,6 +512,9 @@ export class OrgProfileComponent implements OnInit {
   compOffEnabled            = true;
   compOffExpiryMonths: number | null = null;
   lopEnabled                = true;
+  autoAbsenceDeductionEnabled = true;
+  /** Last value GET returned — reverted to on a 403 `feature_not_in_plan` save rejection. */
+  private _lastLoadedAutoAbsenceDeductionEnabled = true;
   encashmentEnabled         = false;
   earnedLeaveEnabled        = false;
   earnedLeaveDaysPerPeriod: number | null = null;
@@ -567,6 +574,20 @@ export class OrgProfileComponent implements OnInit {
   }
 
   /**
+   * `leave_automation` entitlement, read live from GET /api/org/subscription
+   * (features[]). Trial orgs have every feature. Drives the proactive
+   * disable + "Upgrade to Growth" note on the auto-absence-deduction toggle
+   * (the other leave_automation toggles only gate reactively, on click —
+   * see guardPremiumToggle — this one additionally disables up front per spec).
+   */
+  readonly hasLeaveAutomationFeature = computed(() =>
+    this.subscription.isTrial() || this.subscription.hasFeature('leave_automation'));
+
+  openLeaveAutomationUpgrade(): void {
+    this.upgradePrompt.open('leave_automation');
+  }
+
+  /**
    * Gate a premium feature toggle: the UI isn't hidden/disabled, but flipping it
    * ON while the org isn't subscribed for `feature` bounces it back off and opens
    * the subscribe/upgrade prompt. `field` is the component property bound to the
@@ -578,7 +599,7 @@ export class OrgProfileComponent implements OnInit {
    */
   guardPremiumToggle(
     feature: string,
-    field: 'geoFencingEnabled' | 'compOffEnabled' | 'lopEnabled' | 'earnedLeaveEnabled',
+    field: 'geoFencingEnabled' | 'compOffEnabled' | 'lopEnabled' | 'earnedLeaveEnabled' | 'autoAbsenceDeductionEnabled',
     enabled: boolean,
   ): void {
     if (enabled && !this.subscription.isTrial() && !this.subscription.hasFeature(feature)) {
@@ -1042,6 +1063,9 @@ export class OrgProfileComponent implements OnInit {
         this._loadOffices();
         this.isDirty.set(false);
         this.toast.success('Settings saved', 'Your organisation settings have been updated.');
+        // Refresh /me so LocalizationService (timezone/dateFormat/timeFormat/
+        // currency) picks up the new values app-wide without a re-login.
+        this.userAuth.getMe().subscribe({ error: () => { /* best-effort */ } });
       },
       error: (err) => {
         console.error('[OrgProfile] save error:', err);
@@ -1049,6 +1073,15 @@ export class OrgProfileComponent implements OnInit {
         // Server backstop: enabling a premium feature without a subscription
         // comes back as 403/409 { error } — surface it verbatim.
         const msg = err?.error?.error ?? err?.error?.message ?? 'Your settings could not be saved.';
+        // Auto-absence-deduction is entitlement-gated server-side too — a 403
+        // with this code means the whole save was rejected because this toggle
+        // was on without the plan for it. Revert it to the last-known-good
+        // value (not just false) so the rest of the form isn't second-guessed,
+        // and this is NOT a session/permission error — no redirect/logout.
+        if (err?.status === 403 && err?.error?.code === 'feature_not_in_plan') {
+          this.autoAbsenceDeductionEnabled = this._lastLoadedAutoAbsenceDeductionEnabled;
+          this.markDirty();
+        }
         this.toast.error('Could not save', msg);
       },
     });
@@ -1117,6 +1150,7 @@ export class OrgProfileComponent implements OnInit {
       compOffEnabled: this.compOffEnabled,
       compOffExpiryMonths: this.compOffExpiryMonths,
       lopEnabled: this.lopEnabled,
+      autoAbsenceDeductionEnabled: this.autoAbsenceDeductionEnabled,
       encashmentEnabled: this.encashmentEnabled,
       earnedLeaveEnabled: this.earnedLeaveEnabled,
       earnedLeaveDaysPerPeriod: this.earnedLeaveEnabled ? (this.earnedLeaveDaysPerPeriod ?? null) : null,

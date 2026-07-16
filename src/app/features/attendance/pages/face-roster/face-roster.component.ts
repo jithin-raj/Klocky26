@@ -5,6 +5,7 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FaceRosterService, EnrolledFace } from '../../../../core/services/face-roster.service';
+import { OrgDateTimePipe } from '../../../../shared/pipes/localization.pipes';
 import * as faceapi from '@vladmandic/face-api';
 
 type PageMode = 'list' | 'cam' | 'processing' | 'success' | 'error';
@@ -13,7 +14,7 @@ type PageMode = 'list' | 'cam' | 'processing' | 'success' | 'error';
   selector: 'app-face-roster',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OrgDateTimePipe],
   templateUrl: './face-roster.component.html',
   styleUrl: './face-roster.component.scss',
 })

@@ -1,12 +1,14 @@
 import {
   Component, Input, forwardRef, ChangeDetectionStrategy,
-  ChangeDetectorRef, HostListener, ElementRef, signal,
+  ChangeDetectorRef, HostListener, ElementRef, signal, computed, inject,
   OnDestroy, NgZone
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { LocalizationService } from '../../../core/services/localization.service';
 
-const HOURS   = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5); // 00 05 10 … 55
+const HOURS    = Array.from({ length: 24 }, (_, i) => i);
+const HOURS_12 = Array.from({ length: 12 }, (_, i) => i + 1); // 1..12
+const MINUTES  = Array.from({ length: 12 }, (_, i) => i * 5); // 00 05 10 … 55
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
@@ -42,7 +44,7 @@ function pad2(n: number): string {
              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
-        <span class="ui-trigger-text">{{ value || placeholder }}</span>
+        <span class="ui-trigger-text">{{ value ? displayText() : placeholder }}</span>
         <svg class="ui-chevron" [class.rotated]="isOpen()"
              width="13" height="13" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2.5"
@@ -54,18 +56,34 @@ function pad2(n: number): string {
       @if (isOpen()) {
         <div class="ui-tp-panel" [style]="panelStyle()">
           <div class="ui-tp-header">
-            <span class="ui-tp-cur">{{ pad2(selectedHour()) }}<span class="ui-tp-colon">:</span>{{ pad2(selectedMinute()) }}</span>
+            <span class="ui-tp-cur">{{ headerText() }}</span>
+            @if (is12h()) {
+              <div class="ui-tp-ampm">
+                <button type="button" [class.selected]="period() === 'AM'" (click)="pickPeriod('AM')">AM</button>
+                <button type="button" [class.selected]="period() === 'PM'" (click)="pickPeriod('PM')">PM</button>
+              </div>
+            }
           </div>
           <div class="ui-tp-body">
             <div class="ui-tp-section">
               <div class="ui-tp-col-label">HH</div>
               <div class="ui-tp-col ui-tp-hours">
-                @for (h of hours; track h) {
-                  <button type="button" class="ui-tp-cell"
-                          [class.selected]="selectedHour() === h"
-                          (click)="pickHour(h)">
-                    {{ pad2(h) }}
-                  </button>
+                @if (is12h()) {
+                  @for (h of hours12; track h) {
+                    <button type="button" class="ui-tp-cell"
+                            [class.selected]="displayHour12() === h"
+                            (click)="pickHour12(h)">
+                      {{ h }}
+                    </button>
+                  }
+                } @else {
+                  @for (h of hours; track h) {
+                    <button type="button" class="ui-tp-cell"
+                            [class.selected]="selectedHour() === h"
+                            (click)="pickHour(h)">
+                      {{ pad2(h) }}
+                    </button>
+                  }
                 }
               </div>
             </div>
@@ -136,7 +154,7 @@ function pad2(n: number): string {
     }
 
     .ui-tp-header {
-      display: flex; align-items: center; justify-content: center;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
       padding: 11px 0 9px;
       background: color-mix(in srgb, var(--accent, #4f46e5) 6%, #fff);
       border-bottom: 1.5px solid color-mix(in srgb, var(--accent, #4f46e5) 12%, #e2e8f0);
@@ -146,6 +164,17 @@ function pad2(n: number): string {
       font-variant-numeric: tabular-nums; letter-spacing: .04em;
     }
     .ui-tp-colon { opacity: 0.55; }
+
+    .ui-tp-ampm {
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .ui-tp-ampm button {
+      border: none; border-radius: 5px; padding: 2px 8px;
+      font-size: 10px; font-weight: 700; letter-spacing: .04em;
+      background: #fff; color: #94a3b8; cursor: pointer;
+      font-family: inherit; transition: background .1s, color .1s;
+    }
+    .ui-tp-ampm button.selected { background: var(--accent, #4f46e5); color: #fff; }
 
     /* ── Column labels + columns ── */
     .ui-tp-body {
@@ -205,15 +234,33 @@ export class UiTimePickerComponent implements ControlValueAccessor, OnDestroy {
   @Input() required = false;
   @Input() disabled = false;
 
+  private readonly loc = inject(LocalizationService);
+
   value = '';
   isOpen    = signal(false);
   panelStyle = signal<Record<string, string>>({});
+  /** Canonical 24h hour (0-23) — the source of truth regardless of display mode. */
   selectedHour   = signal(9);
   selectedMinute = signal(0);
 
-  readonly hours   = HOURS;
-  readonly minutes = MINUTES;
-  readonly pad2    = pad2;
+  readonly hours    = HOURS;
+  readonly hours12  = HOURS_12;
+  readonly minutes  = MINUTES;
+  readonly pad2     = pad2;
+
+  /** Org's configured time-of-day display preference. */
+  readonly is12h = computed(() => this.loc.timeFormat() === '12h');
+  readonly displayHour12 = computed(() => this.selectedHour() % 12 || 12);
+  readonly period = computed<'AM' | 'PM'>(() => (this.selectedHour() >= 12 ? 'PM' : 'AM'));
+  readonly headerText = computed(() =>
+    this.is12h()
+      ? `${pad2(this.displayHour12())}:${pad2(this.selectedMinute())}`
+      : `${pad2(this.selectedHour())}:${pad2(this.selectedMinute())}`);
+
+  /** Trigger button text — respects the org's 12h/24h preference; stored/emitted value stays 24h "HH:mm". */
+  displayText(): string {
+    return this.loc.formatTimeString(this.value);
+  }
 
   onChange  = (_: any) => {};
   onTouched = () => {};
@@ -304,6 +351,20 @@ export class UiTimePickerComponent implements ControlValueAccessor, OnDestroy {
 
   pickHour(h: number) {
     this.selectedHour.set(h);
+    this._emit();
+  }
+
+  /** 12h-mode hour tap — keeps the current AM/PM period, converts to the canonical 24h value. */
+  pickHour12(h12: number) {
+    const isPm = this.period() === 'PM';
+    this.selectedHour.set(isPm ? (h12 % 12) + 12 : h12 % 12);
+    this._emit();
+  }
+
+  /** AM/PM toggle — keeps the same hour-of-12, shifts the canonical 24h value across the noon boundary. */
+  pickPeriod(p: 'AM' | 'PM') {
+    const h12 = this.displayHour12();
+    this.selectedHour.set(p === 'PM' ? (h12 % 12) + 12 : h12 % 12);
     this._emit();
   }
 
