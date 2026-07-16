@@ -174,6 +174,10 @@ export class HeaderComponent implements OnDestroy {
     this.profileOpen.set(false);
     this.router.navigate([this.orgPrefix(), 'app', 'settings', 'org-profile']);
   }
+  goToLegal(): void {
+    this.profileOpen.set(false);
+    this.router.navigate([this.orgPrefix(), 'app', 'profile', 'legal']);
+  }
   async logout(): Promise<void> {
     this.profileOpen.set(false);
     await this.userAuth.logout();

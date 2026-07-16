@@ -4,6 +4,7 @@ import { ApiService }         from './api.service';
 import { AppStateService }    from './app-state.service';
 import { PermissionService }  from './permission.service';
 import { SubscriptionService } from './subscription.service';
+import { DpdpConsentService } from './dpdp-consent.service';
 import { RealtimeService }    from './realtime.service';
 import { MobileBridgeService } from './mobile-bridge.service';
 import { ApiResponse }        from '../models/api-response.model';
@@ -36,13 +37,19 @@ export class UserAuthService {
   private readonly appState = inject(AppStateService);
   private readonly permissions = inject(PermissionService);
   private readonly subscription = inject(SubscriptionService);
+  private readonly dpdpConsent = inject(DpdpConsentService);
   private readonly realtime = inject(RealtimeService);
   private readonly bridge   = inject(MobileBridgeService);
 
   /** POST /api/users/auth/login — persists tokens, does NOT fetch /me (call getMe() after). */
   login(payload: LoginRequest): Observable<ApiResponse<LoginResponse>> {
     return this.api.post<ApiResponse<LoginResponse>>('/users/auth/login', payload).pipe(
-      tap((res) => this.appState.setEmployeeSession(res.data)),
+      tap((res) => {
+        this.appState.setEmployeeSession(res.data);
+        // Legal-consent gate — must be current right after login, before the
+        // shell even mounts, so the blocking modal can appear immediately.
+        this.dpdpConsent.load();
+      }),
     );
   }
 
@@ -53,7 +60,13 @@ export class UserAuthService {
       refreshToken: this.appState.refreshToken() ?? '',
     };
     return this.api.post<ApiResponse<RefreshTokenResponse>>('/users/auth/refresh', payload).pipe(
-      tap((res) => this.appState.refreshEmployeeSession(res.data)),
+      tap((res) => {
+        this.appState.refreshEmployeeSession(res.data);
+        // A policy may have been published since the last check — re-verify
+        // on every silent refresh, not just at login (long-lived sessions
+        // shouldn't be able to skip a newly-required document indefinitely).
+        this.dpdpConsent.load();
+      }),
     );
   }
 
@@ -93,6 +106,7 @@ export class UserAuthService {
     this.realtime.disconnect();
     this.permissions.clear();
     this.subscription.clear();
+    this.dpdpConsent.clear();
     await this.appState.clearState();
   }
 }

@@ -4,11 +4,12 @@ import { RouterLink } from '@angular/router';
 import { AuthStateService } from '../../services/auth-state.service';
 import { UserAuthService } from '../../../../core/services/user-auth.service';
 import { SubscriptionService } from '../../../../core/services/subscription.service';
+import { PublicLegalDocumentModalComponent } from '../../../../shared/components/public-legal-document-modal/public-legal-document-modal.component';
 
 @Component({
   selector: 'klocky-email-step',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, PublicLegalDocumentModalComponent],
   templateUrl: './email-step.component.html',
   styleUrl: './email-step.component.scss',
 })

@@ -72,11 +72,15 @@ export class LocalizationService {
   }
 
   private applyDatePattern(year: string, month: string, day: string): string {
+    // Case-insensitive for year/day — orgs configure this as either
+    // "dd/MM/yyyy" or "DD/MM/YYYY" and both must resolve. Month stays
+    // case-SENSITIVE uppercase-only ("MM") so it never accidentally matches
+    // a lowercase "mm" that would mean minutes in a combined date-time pattern.
     return this.dateFormat()
-      .replace(/yyyy/g, year)
-      .replace(/yy/g, year.slice(-2))
+      .replace(/yyyy/gi, year)
+      .replace(/yy/gi, year.slice(-2))
       .replace(/MM/g, month)
-      .replace(/dd/g, day);
+      .replace(/dd/gi, day);
   }
 
   /** Renders a UTC instant as a time in the org's timezone + timeFormat. */

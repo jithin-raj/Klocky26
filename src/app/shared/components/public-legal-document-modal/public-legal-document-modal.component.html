@@ -1,0 +1,21 @@
+@if (isOpen()) {
+  <div class="pl-overlay" (click)="close()">
+    <div class="pl-card" (click)="$event.stopPropagation()">
+      <div class="pl-head">
+        <h2>{{ title() }}</h2>
+        <button type="button" class="pl-close" (click)="close()" aria-label="Close">✕</button>
+      </div>
+      <div class="pl-body">
+        @if (loading()) {
+          <div class="pl-state">Loading…</div>
+        } @else if (notAvailable()) {
+          <div class="pl-state">This document isn't available here yet — please check back soon.</div>
+        } @else if (error()) {
+          <div class="pl-state pl-state--error">{{ error() }}</div>
+        } @else {
+          <div class="pl-content" [innerHTML]="html()"></div>
+        }
+      </div>
+    </div>
+  </div>
+}

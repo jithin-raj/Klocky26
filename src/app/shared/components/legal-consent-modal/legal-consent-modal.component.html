@@ -1,0 +1,54 @@
+@if (!dismissed() && current(); as item) {
+  <div class="lc-overlay">
+    <div class="lc-card">
+      <div class="lc-head">
+        <div class="lc-head__text">
+          <span class="lc-head__eyebrow">Action required</span>
+          <h2>{{ document()?.title || item.title }}</h2>
+          @if (pending().length > 1) {
+            <span class="lc-head__step">{{ pending().length }} document{{ pending().length === 1 ? '' : 's' }} remaining</span>
+          }
+        </div>
+        <div class="lc-head__right">
+          @if (document()?.version) {
+            <span class="lc-version">v{{ document()!.version }}</span>
+          }
+          <button type="button" class="lc-later" (click)="dismiss()">Later</button>
+        </div>
+      </div>
+
+      <div class="lc-body">
+        @if (loadingDoc()) {
+          <div class="lc-state">Loading…</div>
+        } @else if (loadError()) {
+          <div class="lc-state lc-state--error">
+            {{ loadError() }}
+            <button type="button" class="lc-btn lc-btn--ghost" (click)="retry()">Retry</button>
+          </div>
+        } @else {
+          <div class="lc-scroll" #scrollEl (scroll)="onScroll($event)">
+            <div class="lc-content" [innerHTML]="documentHtml()"></div>
+          </div>
+          @if (!scrolledToBottom()) {
+            <div class="lc-scroll-hint">Scroll to the end to continue</div>
+          }
+        }
+      </div>
+
+      <div class="lc-footer">
+        <label class="lc-tick" [class.disabled]="!scrolledToBottom()">
+          <input type="checkbox" [checked]="ticked()" [disabled]="!scrolledToBottom()" (change)="toggleTick()" />
+          <span>I have read and agree to {{ document()?.title || item.title }}</span>
+        </label>
+
+        @if (acceptError()) {
+          <p class="lc-error">{{ acceptError() }}</p>
+        }
+
+        <button type="button" class="lc-btn lc-btn--primary" [disabled]="!ticked() || accepting()" (click)="accept()">
+          {{ accepting() ? 'Saving…' : 'Accept & continue' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
