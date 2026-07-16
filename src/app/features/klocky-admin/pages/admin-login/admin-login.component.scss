@@ -167,6 +167,24 @@
 
 .al-icon { color: rgba(255, 255, 255, .28); flex-shrink: 0; }
 
+.al-eye {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  color: rgba(255, 255, 255, .32);
+  cursor: pointer;
+  transition: color .15s;
+
+  &:hover { color: rgba(255, 255, 255, .7); }
+}
+
 .al-input {
   flex: 1;
   background: transparent;

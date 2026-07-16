@@ -21,7 +21,7 @@
       <span class="sh-shift-select-lbl">Assign Shift:</span>
       @for (s of shifts; track s.id) {
         <button class="sh-shift-pill" [class.active]="selectedShift() === s.id" [style.border-color]="s.color" [style.color]="s.color" (click)="selectedShift.set(s.id)">
-          {{ s.name }} {{ s.startTime }}–{{ s.endTime }}
+          {{ s.name }} {{ s.startTime | orgTimeString }}–{{ s.endTime | orgTimeString }}
         </button>
       }
       <button class="sh-shift-pill sh-shift-pill--clear" [class.active]="selectedShift() === ''" (click)="selectedShift.set('')">Clear</button>
@@ -56,7 +56,7 @@
                   @if (getShift(emp.id, d); as shift) {
                     <div class="sh-cell sh-cell--assigned" [style.background]="shift.color + '18'" [style.border-color]="shift.color" (click)="assignShift(emp.id, d, selectedShift())">
                       <span [style.color]="shift.color">{{ shift.name }}</span>
-                      <span class="sh-cell-time" [style.color]="shift.color">{{ shift.startTime }}</span>
+                      <span class="sh-cell-time" [style.color]="shift.color">{{ shift.startTime | orgTimeString }}</span>
                     </div>
                   } @else {
                     <div class="sh-cell sh-cell--empty" (click)="assignShift(emp.id, d, selectedShift())">
@@ -79,7 +79,7 @@
           <div class="sh-shift-card__header">
             <span class="sh-shift-badge" [style.background]="s.color + '18'" [style.color]="s.color">{{ s.name }}</span>
           </div>
-          <div class="sh-shift-time">{{ s.startTime }} → {{ s.endTime }}</div>
+          <div class="sh-shift-time">{{ s.startTime | orgTimeString }} → {{ s.endTime | orgTimeString }}</div>
           <div class="sh-shift-days">
             @for (d of [0,1,2,3,4,5,6]; track d) {
               <span class="sh-day-pill" [class.active]="s.daysOfWeek.includes(d)" [style.background]="s.daysOfWeek.includes(d) ? s.color : '#f1f5f9'" [style.color]="s.daysOfWeek.includes(d) ? '#fff' : '#94a3b8'">

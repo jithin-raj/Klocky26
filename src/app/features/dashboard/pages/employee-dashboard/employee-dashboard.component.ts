@@ -5,6 +5,7 @@ import { AttendanceStateService } from '../../../../core/services/attendance-sta
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { UiIconComponent, UiIconName } from '../../../../shared/components';
 import { IconClockInComponent, IconClockOutComponent } from '../../../../shared/icons';
+import { LocalizationService } from '../../../../core/services/localization.service';
 
 interface LeaveBalance {
   type: string;
@@ -64,6 +65,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
 
   readonly attendanceSvc = inject(AttendanceStateService);
   private  appState      = inject(AppStateService);
+  private  loc           = inject(LocalizationService);
 
   // Org-scoped route prefix for routerLink bindings
   orgPrefix = computed(() => `/${this.appState.orgUrlName() || 'default'}`);
@@ -181,7 +183,7 @@ export class EmployeeDashboardComponent implements OnDestroy {
   }
 
   formatTime(d: Date): string {
-    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return this.loc.formatTime(d);
   }
 
   ngOnDestroy() {

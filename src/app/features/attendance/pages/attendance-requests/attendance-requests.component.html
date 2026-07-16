@@ -281,7 +281,7 @@
                     </div>
                     <div class="ar-hist-mid">
                       <ui-icon name="calendar" [size]="12" class="ar-hist-icon"></ui-icon>
-                      <span class="ar-hist-dates">{{ r.fromDate | date:'MMM d' }} – {{ r.toDate | date:'MMM d, y' }}</span>
+                      <span class="ar-hist-dates">{{ r.fromDate | orgDateOnly }} – {{ r.toDate | orgDateOnly }}</span>
                       <span class="ar-hist-days">{{ r.days }} day{{ r.days === 1 ? '' : 's' }}</span>
                     </div>
                     @if (r.reason) {
@@ -323,7 +323,7 @@
                     </div>
                     <div class="ar-hist-mid">
                       <ui-icon name="calendar" [size]="12" class="ar-hist-icon"></ui-icon>
-                      <span class="ar-hist-dates">{{ r.date | date:'EEE, MMM d, y' }}</span>
+                      <span class="ar-hist-dates">{{ r.date | orgDateOnly }}</span>
                       @if (r.requestedClockIn) {
                         <span class="ar-hist-times">
                           <ui-icon name="clock" [size]="11" class="ar-hist-icon"></ui-icon>
@@ -372,7 +372,7 @@
                 <span class="ar-appr-avatar">{{ (r.userFullName || 'U')[0] }}</span>
                 <div class="ar-appr-info">
                   <span class="ar-appr-name">{{ r.userFullName }}</span>
-                  <span class="ar-appr-meta">{{ typeLabel(r.type) }} · {{ r.date | date:'MMM d, y' }}</span>
+                  <span class="ar-appr-meta">{{ typeLabel(r.type) }} · {{ r.date | orgDateOnly }}</span>
                 </div>
               </div>
               @if (r.requestedClockIn) {

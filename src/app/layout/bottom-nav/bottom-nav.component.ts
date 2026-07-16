@@ -109,6 +109,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
         { label: 'Add Staff',  icon: 'user-check' as UiIconName,    route: `${p}/app/employees/add`,               color: '#0ea5e9' },
         { label: 'Approvals',  icon: 'check-circle' as UiIconName,  route: `${p}/app/leaves`,                      color: '#10b981' },
         { label: 'Leave Cats', icon: 'award' as UiIconName,         route: `${p}/app/settings/leave-categories`,   color: '#f59e0b' },
+        { label: 'Billing',    icon: 'clipboard-check' as UiIconName, route: `${p}/app/billing`,                   color: '#eab308' },
       ] : []),
       ...(adminOnly ? [
         { label: 'Org Chart',  icon: 'sitemap' as UiIconName,  route: `${p}/app/employees/org-structure`,  color: '#3b82f6' },
@@ -127,7 +128,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
         { label: 'Apply Leave',        icon: 'calendar' as UiIconName, route: `${p}/app/leaves/my`,           color: '#f59e0b', desc: 'Submit a leave request' },
       ] : []),
       { label: 'Request Attendance',   icon: 'repeat',     route: `${p}/app/attendance/requests`, color: '#6366f1', desc: 'Regularize attendance' },
-      { label: 'Face Check-in',        icon: 'scan',       route: `${p}/app/attendance/face-scan`,color: '#14b8a6', desc: 'Clock in via face scan' },
       ...(isAdmin ? [
         { label: 'Add Employee',       icon: 'user-check' as UiIconName, route: `${p}/app/employees/add`,  color: '#0ea5e9', desc: 'Add a new team member' },
         { label: 'Leave Approvals',    icon: 'check-circle' as UiIconName, route: `${p}/app/leaves`,       color: '#10b981', desc: 'Review pending leave requests' },

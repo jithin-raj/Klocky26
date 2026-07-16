@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PerformanceService } from '../../../../core/services/performance.service';
 import { PermissionService } from '../../../../core/services/permission.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { PayBand, PayBandInput } from '../../../../core/models/performance.model';
 
@@ -21,6 +22,7 @@ export class PayScaleComponent implements OnInit {
   private readonly svc         = inject(PerformanceService);
   readonly permissions         = inject(PermissionService);
   private readonly toast       = inject(ToastService);
+  private readonly loc         = inject(LocalizationService);
 
   bands     = signal<PayBand[]>([]);
   loading   = signal(true);
@@ -89,8 +91,19 @@ export class PayScaleComponent implements OnInit {
   /** Track by index for ngFor on editable rows. */
   trackIdx(i: number): number { return i; }
 
-  fmt(n: number | undefined): string {
+  /**
+   * Each band can carry its own currency (multi-country orgs); fall back to
+   * the org's configured currency when the row doesn't specify one — never
+   * the generic grouped-digits-with-no-symbol display this used to fall back to.
+   */
+  fmt(n: number | undefined, currency?: string | null): string {
     if (n == null) return '—';
-    return n.toLocaleString('en-IN');
+    try {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency', currency: currency || this.loc.currency(), maximumFractionDigits: 0,
+      }).format(n);
+    } catch {
+      return n.toLocaleString('en-IN');
+    }
   }
 }

@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { DocumentService } from '../../../../core/services/document.service';
 import { PermissionService } from '../../../../core/services/permission.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import {
   Document,
@@ -48,6 +49,7 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   private readonly permSvc = inject(PermissionService);
   private readonly toast = inject(ToastService);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly loc = inject(LocalizationService);
 
   documents = signal<Document[]>([]);
   loading = signal(true);
@@ -247,10 +249,6 @@ export class DocumentsComponent implements OnInit, OnDestroy {
   }
 
   formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+    return this.loc.formatDate(dateStr);
   }
 }

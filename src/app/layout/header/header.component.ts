@@ -9,6 +9,7 @@ import { AppStateService } from '../../core/services/app-state.service';
 import { UserAuthService } from '../../core/services/user-auth.service';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { LocalizationService } from '../../core/services/localization.service';
 import { AppNotification, NotificationType } from '../../core/models/notification.model';
 import { UserRole } from '../../core/models/user.model';
 
@@ -33,6 +34,7 @@ export class HeaderComponent implements OnDestroy {
   private readonly appState = inject(AppStateService);
   private readonly userAuth = inject(UserAuthService);
   private readonly orgTheme = inject(OrgThemeService);
+  private readonly loc = inject(LocalizationService);
 
   // Expose signals as shorthand aliases for the template
   get isClockedIn()  { return this.attendance.isClockedIn; }
@@ -160,7 +162,7 @@ export class HeaderComponent implements OnDestroy {
     if (h < 24) return `${h}h`;
     const d = Math.floor(h / 24);
     if (d < 7) return `${d}d`;
-    return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return this.loc.formatDate(iso);
   }
 
   // ── Profile menu actions ─────────────────────────────────────────

@@ -14,6 +14,7 @@ import {
   PayGradeDto, BonusDto,
 } from '../../../../core/models/payroll.model';
 import { EmployeeResponse } from '../../../employees/models/employee-api.model';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 
 interface ComponentRow extends SalaryComponentInput {
   _key: number;
@@ -23,7 +24,7 @@ interface ComponentRow extends SalaryComponentInput {
   selector: 'app-employee-salary',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent, OrgDateOnlyPipe],
   templateUrl: './employee-salary.component.html',
   styleUrl: './employee-salary.component.scss',
 })

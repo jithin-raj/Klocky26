@@ -57,9 +57,9 @@
           <tr *ngFor="let b of bands()">
             <td class="td-grade">{{ b.grade }}</td>
             <td>{{ b.title || '—' }}</td>
-            <td class="td-num">{{ fmt(b.minSalary) }}</td>
-            <td class="td-num">{{ fmt(b.midSalary) }}</td>
-            <td class="td-num">{{ fmt(b.maxSalary) }}</td>
+            <td class="td-num">{{ fmt(b.minSalary, b.currency) }}</td>
+            <td class="td-num">{{ fmt(b.midSalary, b.currency) }}</td>
+            <td class="td-num">{{ fmt(b.maxSalary, b.currency) }}</td>
             <td>{{ b.currency || '—' }}</td>
             <td class="td-center">{{ b.sortOrder }}</td>
           </tr>

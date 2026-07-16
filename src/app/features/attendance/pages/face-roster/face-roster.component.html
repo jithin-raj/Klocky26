@@ -36,7 +36,7 @@
             <div class="fr-card-info">
               <strong class="fr-card-name">{{ face.name }}</strong>
               <span class="fr-card-id">{{ face.id }}</span>
-              <span class="fr-card-date">Enrolled {{ face.enrolledAt | date:'d MMM y, HH:mm' }}</span>
+              <span class="fr-card-date">Enrolled {{ face.enrolledAt | orgDateTime }}</span>
             </div>
             <button class="fr-remove-btn" (click)="removeFace(face)" title="Remove">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>

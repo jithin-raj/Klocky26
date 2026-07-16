@@ -20,7 +20,7 @@
           <span class="status-dot" [style.background]="statusColor()"></span>
           {{ statusLabel() }}
         </span>
-        <span class="status-date">{{ ov.date | date:'EEEE, d MMMM yyyy' }}</span>
+        <span class="status-date">{{ ov.date | orgDateOnly }}</span>
       </div>
 
       <div class="punch-row">
@@ -92,8 +92,8 @@
               <td>
                 <span class="badge badge-status">{{ req.status }}</span>
               </td>
-              <td>{{ req.from | date:'d MMM yyyy' }}</td>
-              <td>{{ req.to | date:'d MMM yyyy' }}</td>
+              <td>{{ req.from | orgDateOnly }}</td>
+              <td>{{ req.to | orgDateOnly }}</td>
             </tr>
           </tbody>
         </table>
@@ -116,7 +116,7 @@
               <span class="event-title">{{ ev.title }}</span>
               <span class="event-meta" *ngIf="ev.employeeName">{{ ev.employeeName }}</span>
             </div>
-            <span class="event-date">{{ ev.date | date:'d MMM yyyy' }}</span>
+            <span class="event-date">{{ ev.date | orgDateOnly }}</span>
           </div>
         </div>
       </ng-container>

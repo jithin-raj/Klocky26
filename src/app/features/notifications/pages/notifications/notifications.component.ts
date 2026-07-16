@@ -9,6 +9,7 @@ import { PermissionService } from '../../../../core/services/permission.service'
 import { EmployeeService } from '../../../../core/services/employee.service';
 import { DepartmentService } from '../../../../core/services/department.service';
 import { OrgRoleService } from '../../../../core/services/org-role.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { AppNotification, NotificationType, NotificationAudience } from '../../../../core/models/notification.model';
 import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
@@ -29,6 +30,7 @@ export class NotificationsComponent implements OnInit {
   private readonly departmentSvc = inject(DepartmentService);
   private readonly orgRoleSvc    = inject(OrgRoleService);
   private readonly toast         = inject(ToastService);
+  private readonly loc           = inject(LocalizationService);
 
   // Send needs add/edit on the notifications key (level 2); admins always pass.
   readonly canSend = computed(() => this.permissions.can('notifications', 2));
@@ -230,6 +232,6 @@ export class NotificationsComponent implements OnInit {
   when(iso: string): string {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
-    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return this.loc.formatDateTime(d);
   }
 }

@@ -5,12 +5,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../../../core/services/task.service';
 import { TaskCategory, TaskHistoryItem } from '../../../../core/models/task.model';
+import { OrgDatePipe } from '../../../../shared/pipes/localization.pipes';
 
 @Component({
   selector: 'app-task-history',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OrgDatePipe],
   templateUrl: './task-history.component.html',
   styleUrl: './task-history.component.scss',
 })

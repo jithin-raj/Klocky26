@@ -65,7 +65,7 @@
               <td data-label="Status">
                 <span class="wt-badge" [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
               </td>
-              <td data-label="Due Date">{{ item.dueDate ? (item.dueDate | date:'MMM d, yyyy') : '—' }}</td>
+              <td data-label="Due Date">{{ item.dueDate ? (item.dueDate | orgDateOnly) : '—' }}</td>
               <td class="wt-col-actions" data-label="Actions">
                 <div class="wt-row-actions">
                   @if (item.actions.includes('complete')) {

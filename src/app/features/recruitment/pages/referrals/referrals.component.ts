@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { RecruitmentService } from '../../../../core/services/recruitment.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { Referral } from '../../../../core/models/recruitment.model';
 
 @Component({
@@ -19,6 +20,7 @@ export class ReferralsComponent implements OnInit {
 
   private readonly svc   = inject(RecruitmentService);
   private readonly toast = inject(ToastService);
+  private readonly loc   = inject(LocalizationService);
 
   referrals = signal<Referral[]>([]);
   loading   = signal(true);
@@ -35,7 +37,7 @@ export class ReferralsComponent implements OnInit {
 
   formatDate(iso?: string): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' });
+    return this.loc.formatDateOnly(iso);
   }
 
   statusClass(s?: string): string {

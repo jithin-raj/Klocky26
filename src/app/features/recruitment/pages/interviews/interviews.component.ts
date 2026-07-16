@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RecruitmentService } from '../../../../core/services/recruitment.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { Interview, InterviewFeedback } from '../../../../core/models/recruitment.model';
 
 @Component({
@@ -19,6 +20,7 @@ export class InterviewsComponent implements OnInit {
 
   private readonly svc   = inject(RecruitmentService);
   private readonly toast = inject(ToastService);
+  private readonly loc   = inject(LocalizationService);
 
   interviews  = signal<Interview[]>([]);
   loading     = signal(true);
@@ -79,9 +81,7 @@ export class InterviewsComponent implements OnInit {
   }
 
   formatDate(iso: string): string {
-    return new Date(iso).toLocaleString(undefined, {
-      dateStyle: 'medium', timeStyle: 'short',
-    });
+    return this.loc.formatDateTime(iso);
   }
 
   modeLabel(m: string): string {

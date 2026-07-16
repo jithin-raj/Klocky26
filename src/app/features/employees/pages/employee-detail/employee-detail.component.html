@@ -70,7 +70,7 @@
         <div class="ed-field-row"><span>Email</span><span>{{ emp.email }}</span></div>
         <div class="ed-field-row"><span>Phone</span><span>{{ emp.phone || '—' }}</span></div>
         <div class="ed-field-row"><span>Location</span><span>{{ emp.overrideOfficeName || '—' }}</span></div>
-        <div class="ed-field-row"><span>Joined</span><span>{{ emp.dateOfJoining ? (emp.dateOfJoining | date:'MMMM d, yyyy') : '—' }}</span></div>
+        <div class="ed-field-row"><span>Joined</span><span>{{ emp.dateOfJoining ? (emp.dateOfJoining | orgDateOnly) : '—' }}</span></div>
       </div>
       <div class="ed-card">
         <h3>Work Information</h3>
@@ -99,7 +99,7 @@
         <tbody>
           @for (a of mockAttendance; track a.date) {
             <tr>
-              <td>{{ a.date | date:'MMM d, yyyy' }}</td>
+              <td>{{ a.date | orgDateOnly }}</td>
               <td>{{ a.checkIn }}</td>
               <td>{{ a.checkOut }}</td>
               <td>{{ a.hours > 0 ? a.hours + ' hrs' : '–' }}</td>
@@ -121,8 +121,8 @@
           @for (l of mockLeaves; track l.from) {
             <tr>
               <td>{{ l.type }}</td>
-              <td>{{ l.from | date:'MMM d, yyyy' }}</td>
-              <td>{{ l.to | date:'MMM d, yyyy' }}</td>
+              <td>{{ l.from | orgDateOnly }}</td>
+              <td>{{ l.to | orgDateOnly }}</td>
               <td>{{ l.days }}</td>
               <td><span class="ed-leave-badge ed-leave-badge--{{ l.status }}">{{ l.status | titlecase }}</span></td>
             </tr>
@@ -148,7 +148,7 @@
               </span>
             </div>
             <div class="ed-goal__bar"><div class="ed-goal__fill" [style.width.%]="g.progress" [class]="'fill--' + g.status"></div></div>
-            <div class="ed-goal__meta">{{ g.progress }}% · Due {{ g.due | date:'MMM d, yyyy' }}</div>
+            <div class="ed-goal__meta">{{ g.progress }}% · Due {{ g.due | orgDateOnly }}</div>
           </div>
         }
       </div>

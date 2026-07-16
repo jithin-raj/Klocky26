@@ -15,6 +15,7 @@ import {
 } from '../../../../shared/components';
 import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
 import { EmployeeResponse } from '../../models/employee-api.model';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 
 const AVATAR_COLORS = [
   '#6366f1','#ec4899','#f59e0b','#22c55e','#14b8a6','#8b5cf6','#ef4444','#0ea5e9',
@@ -38,7 +39,7 @@ function colorFor(seed: string): string {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule, TempPasswordDialogComponent, UiConfirmDangerComponent,
+    CommonModule, TempPasswordDialogComponent, UiConfirmDangerComponent, OrgDateOnlyPipe,
   ],
   templateUrl: './employee-detail.component.html',
   styleUrl: './employee-detail.component.scss',

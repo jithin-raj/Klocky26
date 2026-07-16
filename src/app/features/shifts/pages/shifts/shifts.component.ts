@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MOCK_EMPLOYEES } from '../../../employees/models/employee.model';
+import { OrgTimeStringPipe } from '../../../../shared/pipes/localization.pipes';
 
 interface Shift {
   id: string;
@@ -45,7 +46,7 @@ function getWeekDates(base: Date): Date[] {
   selector: 'app-shifts',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OrgTimeStringPipe],
   templateUrl: './shifts.component.html',
   styleUrl: './shifts.component.scss',
 })

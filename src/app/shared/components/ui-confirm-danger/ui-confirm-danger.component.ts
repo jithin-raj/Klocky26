@@ -34,6 +34,8 @@ import { UiModalComponent } from '../ui-modal/ui-modal.component';
           <input class="cd-input" [(ngModel)]="typed" [placeholder]="confirmWord" autocomplete="off" />
         }
 
+        <ng-content></ng-content>
+
         <div class="cd-actions">
           <button type="button" class="cd-btn cd-btn--ghost" [disabled]="busy" (click)="onCancel()">Cancel</button>
           <button type="button" class="cd-btn cd-btn--danger" [disabled]="busy || !canConfirm" (click)="onConfirm()">

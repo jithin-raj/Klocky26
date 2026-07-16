@@ -331,12 +331,22 @@
   <ui-confirm-danger
     [open]="!!hardDeleteTarget()"
     title="Delete organisation permanently"
-    [message]="'A backup ZIP downloads to your device first, then ' + (hardDeleteTarget()?.companyName || 'this organisation') + ', its tenant database and all payment records are permanently removed. This cannot be undone.'"
+    [message]="hardDeleteMessage()"
     [confirmWord]="hardDeleteTarget()?.orgSlug || ''"
-    confirmLabel="Back up & delete"
+    [confirmLabel]="hardDeleteConfirmLabel()"
     [busy]="hardDeleting()"
     (confirm)="doHardDelete()"
     (cancel)="cancelHardDelete()"
-  ></ui-confirm-danger>
+  >
+    <label class="ao-backup-check" [class.checked]="hardDeleteWithBackup()">
+      <input
+        type="checkbox"
+        [checked]="hardDeleteWithBackup()"
+        [disabled]="hardDeleting()"
+        (change)="hardDeleteWithBackup.set($any($event.target).checked)"
+      />
+      Download a backup ZIP before deleting
+    </label>
+  </ui-confirm-danger>
 
 </div>

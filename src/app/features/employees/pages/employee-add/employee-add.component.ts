@@ -117,7 +117,10 @@ export class EmployeeAddComponent implements OnInit {
    * org hierarchy, ORG-WIDE (not just the employee's department: a CEO/VP may
    * not belong to any department). Convention: lower hierarchyLevel = more
    * senior, so a manager's level must be strictly LOWER than the employee's
-   * chosen org role. Listed most-senior-first.
+   * chosen org role — EXCEPT at the org's top level (e.g. L1), where nobody
+   * is strictly senior; there, peers at that same top level are listed too
+   * (co-founders/board members reporting to one another), otherwise an L1
+   * employee could never be assigned any manager at all. Listed most-senior-first.
    */
   readonly managerOptions = computed(() => {
     const f = this.form();
@@ -125,10 +128,16 @@ export class EmployeeAddComponent implements OnInit {
     // Only org-role holders (people in the hierarchy) can be reporting managers.
     let pool = this.managers().filter(m => m.employeeId !== selfId && m.isActive && m.orgRoleId != null);
 
-    // Strictly more senior (lower level) than the employee's selected role.
+    // Strictly more senior (lower level) than the employee's selected role —
+    // unless that role IS the org's top level, where same-level peers count too.
     const selectedRole = this.orgRoles().find(r => r.id === f.orgRoleId);
     if (selectedRole) {
-      pool = pool.filter(m => (m.orgRoleHierarchyLevel ?? Infinity) < selectedRole.hierarchyLevel);
+      const topLevel = Math.min(...this.orgRoles().map(r => r.hierarchyLevel));
+      const isTopLevel = selectedRole.hierarchyLevel === topLevel;
+      pool = pool.filter(m => {
+        const lvl = m.orgRoleHierarchyLevel ?? Infinity;
+        return isTopLevel ? lvl <= selectedRole.hierarchyLevel : lvl < selectedRole.hierarchyLevel;
+      });
     }
 
     // Most senior first (lowest level), then name.

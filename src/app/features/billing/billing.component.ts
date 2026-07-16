@@ -11,6 +11,7 @@ import { AppStateService } from '../../core/services/app-state.service';
 import { OrgNavigationService } from '../../core/services/org-navigation.service';
 import { ToastService } from '../../shared/components/ui-toast/toast.service';
 import { ModalService } from '../../shared/components/ui-modal/modal.service';
+import { LocalizationService } from '../../core/services/localization.service';
 import { UiToggleComponent } from '../../shared/components/ui-toggle/ui-toggle.component';
 import {
   PlanDto, AddonDto, BillingCycle, CreatePaymentOrderRequest, CreatePaymentOrderResponse,
@@ -18,12 +19,13 @@ import {
   CreateSubscriptionResponse,
 } from '../../core/models/subscription.model';
 import { loadRazorpay, createRazorpay, RazorpaySubscriptionHandlerResponse, KLOCK_LOGO_URL } from '../../core/utils/razorpay.util';
+import { OrgDateOnlyPipe } from '../../shared/pipes/localization.pipes';
 
 @Component({
   selector: 'app-billing',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiToggleComponent],
+  imports: [CommonModule, FormsModule, UiToggleComponent, OrgDateOnlyPipe],
   templateUrl: './billing.component.html',
   styleUrl: './billing.component.scss',
 })
@@ -33,6 +35,7 @@ export class BillingComponent implements OnInit {
   private readonly orgNav = inject(OrgNavigationService);
   private readonly toast = inject(ToastService);
   private readonly modal = inject(ModalService);
+  private readonly loc = inject(LocalizationService);
 
   // ── Live subscription state (source of truth) ─────────────────────────────
   readonly sub = this.subscription.state;
@@ -187,17 +190,27 @@ export class BillingComponent implements OnInit {
   setCycle(c: BillingCycle): void { this.billingCycle.set(c); }
   selectPlan(code: string): void {
     this.selectedPlan.set(code);
-    // Drop any selected add-ons whose feature the new plan already bundles.
     const planFeatures = new Set((this.plans().find(p => p.code === code)?.features ?? []).map(f => f.toLowerCase()));
-    if (planFeatures.size) {
-      this.selectedAddons.update((set) => {
-        const next = new Set(set);
-        for (const a of this.addons()) {
-          if (planFeatures.has((a.feature ?? '').toLowerCase())) next.delete(a.code);
+    // Features actually active on the org right now (e.g. a geofencing add-on
+    // already paid for) — used below to restore, not just drop, selections.
+    const activeFeatures = new Set((this.sub()?.features ?? []).map(f => f.toLowerCase()));
+    const isCurrentPlan = code === this.sub()?.plan;
+
+    this.selectedAddons.update((set) => {
+      const next = new Set(set);
+      for (const a of this.addons()) {
+        const feature = (a.feature ?? '').toLowerCase();
+        if (planFeatures.has(feature)) {
+          // Bundled by the newly-picked plan — buying the add-on would be redundant.
+          next.delete(a.code);
+        } else if (isCurrentPlan && activeFeatures.has(feature)) {
+          // Back on the org's actual current plan — restore add-ons that are
+          // genuinely active, even if browsing other plans dropped them.
+          next.add(a.code);
         }
-        return next;
-      });
-    }
+      }
+      return next;
+    });
   }
 
   toggleAddon(code: string): void {
@@ -276,6 +289,44 @@ export class BillingComponent implements OnInit {
   });
 
   readonly planFits = computed(() => this.seatShortfall() === 0 && this.adminShortfall() === 0);
+
+  // ── Checkout CTA — only actionable when the selection actually differs from
+  // what the org already pays for, or when a manual renewal is due. Merely
+  // having an active plan with the current plan still selected shouldn't
+  // invite a "Renew / Change plan" click — there's nothing to change yet.
+  /** True if the picker differs from the org's current plan/seats/add-ons. */
+  readonly hasPendingChange = computed(() => {
+    const s = this.sub();
+    if (this.selectedPlan() !== s?.plan) return true;
+    if (this.extraSeats() > 0) return true;
+    const activeFeatures = new Set((s?.features ?? []).map(f => f.toLowerCase()));
+    for (const code of this.selectedAddons()) {
+      const addon = this.addons().find(a => a.code === code);
+      if (addon && !activeFeatures.has((addon.feature ?? '').toLowerCase())) return true;
+    }
+    return false;
+  });
+  /** Renewal window even with no changes selected — only matters if auto-renew won't cover it. */
+  readonly nearExpiry = computed(() => {
+    const d = this.sub()?.daysLeft;
+    return d != null && d <= 14;
+  });
+  readonly canCheckout = computed(() => {
+    if (!this.selectedPlan() || this.paying() || !this.planFits()) return false;
+    const s = this.sub();
+    if (!s || s.status !== 'active') return true;
+    if (this.hasPendingChange()) return true;
+    return this.nearExpiry() && !s.autoRenewEnabled;
+  });
+  readonly checkoutLabel = computed(() => {
+    if (this.paying()) return 'Starting…';
+    const s = this.sub();
+    if (!s || s.status !== 'active') return 'Subscribe';
+    if (this.selectedPlan() !== s.plan) return 'Change Plan';
+    if (this.hasPendingChange()) return 'Update Plan';
+    if (this.nearExpiry() && !s.autoRenewEnabled) return 'Renew Now';
+    return 'Current Plan';
+  });
 
   /** True when a plan can't even hold current employees at 0 extra seats (card badge). */
   planTooSmall(p: PlanDto): boolean {
@@ -371,7 +422,7 @@ export class BillingComponent implements OnInit {
   // ── Razorpay checkout ─────────────────────────────────────────────────────
   async pay(): Promise<void> {
     const planCode = this.selectedPlan();
-    if (!planCode || this.paying() || !this.planFits()) return;
+    if (!planCode || !this.canCheckout()) return;
     this.paying.set(true);
 
     const req: CreatePaymentOrderRequest = {
@@ -566,7 +617,7 @@ export class BillingComponent implements OnInit {
   private async confirmAndCancelAutoRenew(): Promise<void> {
     const expiresAt = this.sub()?.subscriptionExpiresAt;
     const when = expiresAt
-      ? new Date(expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+      ? this.loc.formatDateOnly(expiresAt)
       : 'the end of your current period';
 
     const ok = await this.modal.confirm({

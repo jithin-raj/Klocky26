@@ -92,6 +92,15 @@ export interface EmployeeUser {
   geofenceEnabled: boolean;
   /** Single resolved flag — true when either a geofence applies or org capture is on. Gate all location logic on this. */
   locationRequiredOnClockIn: boolean;
+
+  // ── Org-wide localisation (same values the admin configures in Org Settings) ──
+  /** IANA tz e.g. "Asia/Kolkata" — never null, defaults to "UTC" server-side. */
+  timezone: string;
+  /** e.g. "dd/MM/yyyy" — may be null. */
+  dateFormat: string | null;
+  timeFormat: '12h' | '24h' | null;
+  /** ISO code e.g. "INR" — may be null. */
+  currency: string | null;
 }
 
 /** PUT /api/users/auth/me request — every field optional */

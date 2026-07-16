@@ -14,6 +14,7 @@ import {
   CreateWorkTaskRequest, UpdateWorkTaskRequest,
 } from '../../../../core/models/task.model';
 import { EmployeeHierarchyNode } from '../../../employees/models/employee-api.model';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 
 interface AssigneeOption { label: string; value: string; }
 
@@ -21,7 +22,7 @@ interface AssigneeOption { label: string; value: string; }
   selector: 'app-work-tasks',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent, UiIconComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiDatePickerComponent, UiIconComponent, OrgDateOnlyPipe],
   templateUrl: './work-tasks.component.html',
   styleUrl: './work-tasks.component.scss',
 })

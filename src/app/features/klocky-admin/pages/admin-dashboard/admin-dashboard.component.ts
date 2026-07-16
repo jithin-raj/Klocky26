@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PlatformAdminService } from '../../../../core/services/platform-admin.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { PlatformOrgListItem } from '../../../../core/models/platform-auth.model';
 import { UiSelectComponent } from '../../../../shared/components';
 
@@ -14,6 +15,7 @@ import { UiSelectComponent } from '../../../../shared/components';
 })
 export class AdminDashboardComponent implements OnInit {
   private readonly platformAdmin = inject(PlatformAdminService);
+  private readonly loc = inject(LocalizationService);
 
   readonly orgs    = signal<PlatformOrgListItem[]>([]);
   readonly loading = signal(false);
@@ -80,7 +82,7 @@ export class AdminDashboardComponent implements OnInit {
   // ── Helpers ───────────────────────────────────────────────────
   formatDate(iso: string | null): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    return this.loc.formatDate(iso);
   }
 
   onSearch(event: Event): void {

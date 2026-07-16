@@ -38,9 +38,9 @@
                 <span>{{ s.daysLeft }} day{{ s.daysLeft === 1 ? '' : 's' }} left</span>
               }
               @if (s.subscriptionExpiresAt) {
-                <span>· Renews {{ s.subscriptionExpiresAt | date:'MMM d, yyyy' }}</span>
+                <span>· Renews {{ s.subscriptionExpiresAt | orgDateOnly }}</span>
               } @else if (s.trialEndsAt) {
-                <span>· Trial ends {{ s.trialEndsAt | date:'MMM d, yyyy' }}</span>
+                <span>· Trial ends {{ s.trialEndsAt | orgDateOnly }}</span>
               }
             </div>
 
@@ -55,7 +55,7 @@
                     <span class="bl-autorenew__hint">
                       @if (s.status === 'active' && autoRenewDisplay()) {
                         We'll charge {{ fmt(summaryTotal()) }} automatically
-                        @if (s.subscriptionExpiresAt) { on {{ s.subscriptionExpiresAt | date:'MMM d, yyyy' }}. } @else { each cycle. }
+                        @if (s.subscriptionExpiresAt) { on {{ s.subscriptionExpiresAt | orgDateOnly }}. } @else { each cycle. }
                       } @else if (s.status === 'active') {
                         Off — renew manually before your plan expires.
                       } @else if (autoRenewBusy()) {
@@ -274,8 +274,14 @@
             </div>
           }
 
-          <button class="bl-btn bl-btn--primary bl-btn--block" [disabled]="!selectedPlan() || paying() || !planFits()" (click)="pay()">
-            {{ paying() ? 'Starting…' : (sub()?.status === 'active' ? 'Renew / Change plan' : 'Subscribe') }}
+          @if (sub()?.status === 'active' && !hasPendingChange() && !(nearExpiry() && !sub()?.autoRenewEnabled)) {
+            <p class="bl-summary__note bl-summary__note--current">
+              You're on this plan already — pick a different plan, add-on, or extra seats to make a change.
+            </p>
+          }
+
+          <button class="bl-btn bl-btn--primary bl-btn--block" [disabled]="!canCheckout()" (click)="pay()">
+            {{ checkoutLabel() }}
           </button>
         </div>
       </aside>

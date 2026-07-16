@@ -33,7 +33,7 @@
                   </div>
                 </div>
                 <div class="rc-cand__email">{{ c.email }}</div>
-                <div class="rc-cand__date">Applied {{ c.appliedDate | date:'MMM d' }}</div>
+                <div class="rc-cand__date">Applied {{ c.appliedDate | orgDateOnly }}</div>
                 <div class="rc-cand__moves">
                   @for (s of stages; track s) {
                     @if (s !== stage && s !== 'rejected') {
@@ -69,7 +69,7 @@
           </div>
           <div class="rc-job__stats">
             <span>{{ j.applicants }} applicants</span>
-            <span>Opened {{ j.openedDate | date:'MMM d, yyyy' }}</span>
+            <span>Opened {{ j.openedDate | orgDateOnly }}</span>
           </div>
           <div class="rc-job__actions">
             <button class="rc-btn rc-btn--ghost rc-btn--sm" (click)="selectedJob.set(j.id); activeTab.set('pipeline')">View Pipeline</button>

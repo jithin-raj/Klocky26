@@ -9,12 +9,14 @@ import { AppStateService } from '../../../../core/services/app-state.service';
 import { TimeOverview, UpcomingEventItem } from '../../../../core/models/time-management.model';
 import { TeamAttendanceItem } from '../../../../core/models/attendance.model';
 import { UiLoaderComponent } from '../../../../shared/components/ui-loader/ui-loader.component';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 
 @Component({
   selector: 'app-time-overview',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiLoaderComponent],
+  imports: [CommonModule, FormsModule, UiLoaderComponent, OrgDateOnlyPipe],
   templateUrl: './overview.component.html',
   styleUrl: './overview.component.scss',
 })
@@ -22,6 +24,7 @@ export class TimeOverviewComponent implements OnInit {
   private readonly svc            = inject(TimeManagementService);
   private readonly attendanceSvc  = inject(AttendanceStateService);
   private readonly appState       = inject(AppStateService);
+  private readonly loc            = inject(LocalizationService);
 
   overview    = signal<TimeOverview | null>(null);
   events      = signal<UpcomingEventItem[]>([]);
@@ -113,7 +116,7 @@ export class TimeOverviewComponent implements OnInit {
   formatClockIn(item: TeamAttendanceItem): string {
     const t = item.today?.clockInTime;
     if (!t) return '—';
-    return new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return this.loc.formatTime(t);
   }
 
   trackById(_: number, item: TeamAttendanceItem): string {

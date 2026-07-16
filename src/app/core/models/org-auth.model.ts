@@ -290,6 +290,14 @@ export interface TenantSettings {
   compOffEnabled: boolean;
   compOffExpiryMonths: number | null;
   lopEnabled: boolean;
+  /**
+   * `leave_automation` feature (Growth/Enterprise only — see subscription
+   * `features`). Unexcused working-day absences are deducted from the
+   * employee's default leave balance; once that's exhausted (or there's no
+   * default leave), they're marked Loss of Pay. Defaults to true server-side
+   * the moment an org first subscribes to a plan that includes it.
+   */
+  autoAbsenceDeductionEnabled: boolean;
   encashmentEnabled: boolean;
   earnedLeaveEnabled: boolean;
   earnedLeaveDaysPerPeriod: number | null;

@@ -9,6 +9,7 @@ import { UiSelectComponent, UiIconComponent } from '../../../../shared/component
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { LeaveService } from '../../../../core/services/leave.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 import {
   Holiday, LeaveBalance, LeaveRecord, LeaveTypeOption,
 } from '../../../../core/models/leave.model';
@@ -22,7 +23,7 @@ const BAR_MAX_H   = 52;
   selector: 'app-my-leaves',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent, OrgDateOnlyPipe],
   templateUrl: './my-leaves.component.html',
   styleUrl:    './my-leaves.component.scss',
 })

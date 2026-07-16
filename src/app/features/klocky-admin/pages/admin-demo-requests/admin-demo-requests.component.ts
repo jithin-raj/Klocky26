@@ -1,7 +1,8 @@
-import { Component, ChangeDetectionStrategy, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DemoRequest } from '../../models/demo-request.model';
 import { UiSelectComponent } from '../../../../shared/components';
+import { LocalizationService } from '../../../../core/services/localization.service';
 
 const MOCK_REQUESTS: DemoRequest[] = [
   { id: '1',  fullName: 'Priya Sharma',      workEmail: 'priya@teksolve.in',      phone: '+91 98700 11222', companyName: 'TekSolve India',       teamSize: '51 – 200',   message: 'Looking for geo-fenced attendance with payroll export.',              submittedAt: '2026-04-27T09:14:00Z', status: 'new'       },
@@ -29,6 +30,8 @@ const STATUS_ORDER: DemoStatus[] = ['new', 'contacted', 'scheduled', 'completed'
   styleUrl: './admin-demo-requests.component.scss',
 })
 export class AdminDemoRequestsComponent {
+  private readonly loc = inject(LocalizationService);
+
   readonly requests = signal<DemoRequest[]>(MOCK_REQUESTS);
 
   readonly search       = signal('');
@@ -85,10 +88,10 @@ export class AdminDemoRequestsComponent {
   }
 
   formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    return this.loc.formatDate(iso);
   }
 
   formatTime(iso: string): string {
-    return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return this.loc.formatTime(iso);
   }
 }

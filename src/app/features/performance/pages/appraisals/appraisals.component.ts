@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PerformanceService } from '../../../../core/services/performance.service';
 import { PermissionService } from '../../../../core/services/permission.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { Appraisal } from '../../../../core/models/performance.model';
 
 @Component({
@@ -19,6 +20,7 @@ export class AppraisalsComponent implements OnInit {
 
   private readonly svc         = inject(PerformanceService);
   readonly permissions         = inject(PermissionService);
+  private readonly loc         = inject(LocalizationService);
 
   appraisals = signal<Appraisal[]>([]);
   loading    = signal(true);
@@ -64,6 +66,6 @@ export class AppraisalsComponent implements OnInit {
 
   fmt(iso: string | undefined): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return this.loc.formatDateOnly(iso);
   }
 }

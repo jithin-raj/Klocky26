@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RecruitmentService } from '../../../../core/services/recruitment.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 import { JobPosting } from '../../../../core/models/recruitment.model';
 
 type TypeFilter = 'all' | 'full_time' | 'part_time' | 'contract';
@@ -21,6 +22,7 @@ export class JobsComponent implements OnInit {
 
   private readonly svc   = inject(RecruitmentService);
   private readonly toast = inject(ToastService);
+  private readonly loc   = inject(LocalizationService);
 
   private all = signal<JobPosting[]>([]);
   loading     = signal(true);
@@ -56,6 +58,6 @@ export class JobsComponent implements OnInit {
 
   formatDate(iso?: string): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' });
+    return this.loc.formatDateOnly(iso);
   }
 }

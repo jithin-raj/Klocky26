@@ -146,7 +146,7 @@
               </div>
               <div class="lv-hol-info">
                 <span class="lv-hol-name">{{ h.name }}</span>
-                <span class="lv-hol-dow">{{ h.date | date:'EEEE, MMMM d, y' }}</span>
+                <span class="lv-hol-dow">{{ h.date | orgDateOnly }}</span>
               </div>
               <div class="lv-hol-right">
                 @if (h.type) {
@@ -205,7 +205,7 @@
                   <span class="lv-hst lv-hst--{{ r.status }}">{{ r.status | titlecase }}</span>
                 </div>
                 <div class="lv-hist-mid">
-                  <span class="lv-hist-dates">{{ r.fromDate | date:'MMM d' }} – {{ r.toDate | date:'MMM d, y' }}</span>
+                  <span class="lv-hist-dates">{{ r.fromDate | orgDateOnly }} – {{ r.toDate | orgDateOnly }}</span>
                   <span class="lv-hist-days">{{ r.days }} day{{ r.days === 1 ? '' : 's' }}</span>
                 </div>
                 @if (r.reason) {

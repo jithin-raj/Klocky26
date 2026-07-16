@@ -49,7 +49,7 @@
             <div class="sv-progress-fill" [style.width.%]="responseRate(s)"></div>
           </div>
           <div class="sv-card__footer">
-            @if (s.dueDate) { <span class="sv-due">Due {{ s.dueDate | date:'MMM d, yyyy' }}</span> }
+            @if (s.dueDate) { <span class="sv-due">Due {{ s.dueDate | orgDateOnly }}</span> }
             <div class="sv-card__actions">
               <button class="sv-btn sv-btn--ghost sv-btn--sm">View</button>
               @if (s.status === 'draft') { <button class="sv-btn sv-btn--primary sv-btn--sm">Launch</button> }

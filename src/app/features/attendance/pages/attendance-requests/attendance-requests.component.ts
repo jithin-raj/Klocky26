@@ -13,6 +13,8 @@ import { AttendanceRequestService } from '../../../../core/services/attendance-r
 import { OfficeService } from '../../../../core/services/office.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { LeaveService } from '../../../../core/services/leave.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 import {
   AttendanceRequestResponse,
   AttendanceRequestType,
@@ -32,7 +34,7 @@ export type HubType   = 'leave' | 'missed_punch' | 'wfh' | 'on_duty' | 'correcti
   selector: 'app-attendance-requests',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent, UiDatePickerComponent, UiTimePickerComponent],
+  imports: [CommonModule, FormsModule, UiSelectComponent, UiIconComponent, UiDatePickerComponent, UiTimePickerComponent, OrgDateOnlyPipe],
   templateUrl: './attendance-requests.component.html',
   styleUrl: './attendance-requests.component.scss',
 })
@@ -44,6 +46,7 @@ export class AttendanceRequestsComponent implements OnInit {
   private readonly appState = inject(AppStateService);
   private readonly toast    = inject(ToastService);
   private readonly route    = inject(ActivatedRoute);
+  private readonly loc      = inject(LocalizationService);
 
   readonly todayIso = new Date().toISOString().slice(0, 10);
 
@@ -474,7 +477,7 @@ export class AttendanceRequestsComponent implements OnInit {
       return `${hr}:${String(m).padStart(2, '0')} ${ampm}`;
     }
     try {
-      return new Date(raw).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      return this.loc.formatTime(raw);
     } catch {
       return raw;
     }
