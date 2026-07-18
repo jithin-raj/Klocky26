@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { ApiResponse, Paged } from '../models/api-response.model';
+import { asArray } from '../utils/api-list.util';
 import {
   ApplyLeaveRequest,
   Holiday,
@@ -55,17 +56,23 @@ export class LeaveService {
 
   types(): Observable<LeaveTypeOption[]> {
     return this.api.get<ApiResponse<LeaveTypeOption[]>>('/leave-requests/types')
-      .pipe(map(res => res.data ?? []));
+      .pipe(map(res => asArray<LeaveTypeOption>(res.data as any)));
   }
 
   balances(): Observable<LeaveBalance[]> {
     return this.api.get<ApiResponse<LeaveBalance[]>>('/leave-requests/balances')
-      .pipe(map(res => res.data ?? []));
+      .pipe(map(res => asArray<LeaveBalance>(res.data as any)));
   }
 
+  /**
+   * /leave-requests/holidays has shown the same double-nested
+   * { data: { data: [...] } } envelope as /documents, /tasks/pending,
+   * /tasks/work and /dpdp/documents/consent-status on this backend —
+   * asArray() normalizes either shape defensively.
+   */
   holidays(): Observable<Holiday[]> {
     return this.api.get<ApiResponse<Holiday[]>>('/leave-requests/holidays')
-      .pipe(map(res => res.data ?? []));
+      .pipe(map(res => asArray<Holiday>(res.data as any)));
   }
 
   /**

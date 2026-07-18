@@ -5,6 +5,7 @@ import { AppStateService }    from './app-state.service';
 import { PermissionService }  from './permission.service';
 import { SubscriptionService } from './subscription.service';
 import { DpdpConsentService } from './dpdp-consent.service';
+import { AiService } from './ai.service';
 import { RealtimeService }    from './realtime.service';
 import { MobileBridgeService } from './mobile-bridge.service';
 import { ApiResponse }        from '../models/api-response.model';
@@ -38,6 +39,7 @@ export class UserAuthService {
   private readonly permissions = inject(PermissionService);
   private readonly subscription = inject(SubscriptionService);
   private readonly dpdpConsent = inject(DpdpConsentService);
+  private readonly ai = inject(AiService);
   private readonly realtime = inject(RealtimeService);
   private readonly bridge   = inject(MobileBridgeService);
 
@@ -107,6 +109,7 @@ export class UserAuthService {
     this.permissions.clear();
     this.subscription.clear();
     this.dpdpConsent.clear();
+    this.ai.clear();
     await this.appState.clearState();
   }
 }

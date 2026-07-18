@@ -11,8 +11,10 @@ import {
   AccessLevel,
   PermissionFeature,
   PermissionEntry,
-  ENFORCED_PERMISSION_KEYS,
+  COMING_SOON_PERMISSION_KEYS,
+  PERMISSION_MODULE_ORDER,
 } from '../../../../core/models/permission.model';
+import { ModalService } from '../../../../shared/components/ui-modal/modal.service';
 import { OrgRole } from '../../../../core/models/org-role.model';
 import { Department } from '../../../../core/models/department.model';
 import { EmployeeResponse } from '../../models/employee-api.model';
@@ -22,9 +24,11 @@ type Axis = 'role' | 'department' | 'employee';
 
 interface ModuleGroup {
   module: string;
-  enforced: boolean;
   features: PermissionFeature[];
 }
+
+const COMING_SOON_KEYS = COMING_SOON_PERMISSION_KEYS as readonly string[];
+const MODULE_ORDER = PERMISSION_MODULE_ORDER as readonly string[];
 
 interface AccessChoice { label: string; value: AccessLevel; }
 
@@ -49,6 +53,7 @@ export class PermissionsComponent implements OnInit {
   private departmentService = inject(DepartmentService);
   private employeeService = inject(EmployeeService);
   private toast = inject(ToastService);
+  private modal = inject(ModalService);
 
   readonly accessLevelChoices = ACCESS_LEVEL_CHOICES;
 
@@ -71,14 +76,22 @@ export class PermissionsComponent implements OnInit {
       list.push(feature);
       byModule.set(feature.module, list);
     }
-    const enforcedKeys = ENFORCED_PERMISSION_KEYS as readonly string[];
-    return Array.from(byModule.entries()).map(([module, features]) => ({
-      module,
-      // A module is "live" when every feature in it is enforced server-side.
-      enforced: features.every(f => enforcedKeys.includes(f.key)),
-      features,
-    }));
+    // Explicit module order per the spec; anything unrecognized (a brand-new
+    // module the catalog added before this list was updated) sorts after —
+    // still visible, just not mis-positioned among the known ones.
+    return Array.from(byModule.entries())
+      .map(([module, features]) => ({ module, features }))
+      .sort((a, b) => {
+        const ia = MODULE_ORDER.indexOf(a.module);
+        const ib = MODULE_ORDER.indexOf(b.module);
+        return (ia === -1 ? MODULE_ORDER.length : ia) - (ib === -1 ? MODULE_ORDER.length : ib);
+      });
   });
+
+  /** True for the small set of features with no screen built yet (spec: "hide or grey"). */
+  isComingSoon(featureKey: string): boolean {
+    return COMING_SOON_KEYS.includes(featureKey);
+  }
 
   // ── Axis + subject selection ────────────────────────────────
   axis = signal<Axis>('role');
@@ -319,9 +332,26 @@ export class PermissionsComponent implements OnInit {
 
   // ── Save ──────────────────────────────────────────────────────
 
-  save(): void {
+  async save(): Promise<void> {
     const id = this.selectedSubjectId();
     if (!id || this.saving()) return;
+
+    // Self-lockout guard: lowering a non-admin role's own "permissions" level
+    // below 3 could strand whoever holds that role outside the editor
+    // (admins bypass the matrix server-side, so the built-in Admin role —
+    // already read-only here — is never at risk). We can't always tell
+    // whether the role being edited is the *current* user's own role, so
+    // this warns on every non-admin role edit that drops it below 3 rather
+    // than risk a silent lockout.
+    if (this.axis() === 'role' && !this.isSubjectReadOnly() && this.levelFor('permissions') < 3) {
+      const ok = await this.modal.confirm({
+        title: 'Reduce access to Roles & Permissions?',
+        message: 'Anyone holding this role will have less than Full access to this editor. If that includes you, you could lock yourself out of managing permissions. Continue?',
+        confirmLabel: 'Save anyway',
+        variant: 'danger',
+      });
+      if (!ok) return;
+    }
 
     const levels = this.accessLevels();
     const entries = this.catalog().map(feature => ({

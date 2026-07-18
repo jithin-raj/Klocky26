@@ -1,0 +1,137 @@
+@if (locked()) {
+  <div class="ar-card ar-card--locked">
+    <div class="ar-locked">
+      <div class="ar-locked__icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l1.9 5.8L20 9.5l-5.8 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.7L12 2z"/>
+        </svg>
+      </div>
+      <div class="ar-locked__text">
+        <strong>AI insights</strong>
+        <span>Upgrade to Enterprise or add the AI add-on to unlock this report.</span>
+      </div>
+      <button type="button" class="ar-btn ar-btn--primary" (click)="goToBilling()">Upgrade</button>
+    </div>
+  </div>
+} @else if (available()) {
+  <div class="ar-card">
+    <div class="ar-head">
+      <div class="ar-head__title">
+        <span class="ar-badge">AI</span>
+        <h3>{{ title() || 'AI overview' }}</h3>
+      </div>
+      <div class="ar-head__actions">
+        @if (generatedAt() && !loading()) {
+          <span class="ar-updated">{{ updatedLabel() }}</span>
+        }
+        <button type="button" class="ar-icon-btn" [disabled]="loading()" (click)="regenerate()" aria-label="Regenerate" title="Regenerate">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.ar-spin]="loading()">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    @if (loading() && !narrativeRaw()) {
+      <div class="ar-state">
+        <div class="ar-skeleton"></div>
+        <div class="ar-skeleton ar-skeleton--sm"></div>
+        <div class="ar-skeleton ar-skeleton--sm"></div>
+      </div>
+    } @else if (error()) {
+      <div class="ar-state ar-state--error">
+        {{ error() }}
+        <button type="button" class="ar-btn ar-btn--ghost" (click)="regenerate()">Retry</button>
+      </div>
+    } @else {
+      <div class="ar-narrative ar-markdown" [innerHTML]="narrativeHtml()"></div>
+
+      @if (hasAnyMetrics()) {
+        <div class="ar-metrics">
+          <!-- Today / this month proportion breakdown -->
+          @if (todayBreakdown().length) {
+            <div class="ar-metric-block">
+              <h4>Today</h4>
+              <div class="ar-prop-bar">
+                @for (r of todayBreakdown(); track r.label) {
+                  <div class="ar-prop-seg" [style.width.%]="(r.value / todayTotal()) * 100" [style.background]="r.color" [title]="r.label + ': ' + r.value"></div>
+                }
+              </div>
+              <div class="ar-prop-legend">
+                @for (r of todayBreakdown(); track r.label) {
+                  <span class="ar-legend-item"><span class="ar-legend-dot" [style.background]="r.color"></span>{{ r.label }} ({{ r.value }})</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (monthBreakdown().length) {
+            <div class="ar-metric-block">
+              <h4>This month</h4>
+              <div class="ar-prop-bar">
+                @for (r of monthBreakdown(); track r.label) {
+                  <div class="ar-prop-seg" [style.width.%]="(r.value / monthTotal()) * 100" [style.background]="r.color" [title]="r.label + ': ' + r.value"></div>
+                }
+              </div>
+              <div class="ar-prop-legend">
+                @for (r of monthBreakdown(); track r.label) {
+                  <span class="ar-legend-item"><span class="ar-legend-dot" [style.background]="r.color"></span>{{ r.label }} ({{ r.value }})</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Top absentees bar list -->
+          @if (topAbsentees().length) {
+            <div class="ar-metric-block">
+              <h4>Most absent this cycle</h4>
+              @for (r of topAbsentees(); track r.name) {
+                <div class="ar-bar-row">
+                  <span class="ar-bar-lbl">{{ r.name }}</span>
+                  <div class="ar-bar-track"><div class="ar-bar-fill" [style.width.%]="r.pct"></div></div>
+                  <span class="ar-bar-val">{{ r.value }}d</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Leave balances -->
+          @if (leaveBalances().length) {
+            <div class="ar-metric-block">
+              <h4>Leave balances</h4>
+              @for (b of leaveBalances(); track b.label) {
+                <div class="ar-bar-row">
+                  <span class="ar-bar-lbl">{{ b.label }}</span>
+                  <div class="ar-bar-track">
+                    <div class="ar-bar-fill" [style.width.%]="b.total ? (b.used / b.total) * 100 : 50"></div>
+                  </div>
+                  <span class="ar-bar-val">{{ b.used }}{{ b.total != null ? ' / ' + b.total : '' }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Key-stat chip rows -->
+          @for (chips of [headcountChips(), cycleChips(), pendingChips(), selfPendingChips()]; track $index) {
+            @if (chips.length) {
+              <div class="ar-chip-row">
+                @for (c of chips; track c.label) {
+                  <div class="ar-chip">
+                    <span class="ar-chip__value">{{ c.value }}</span>
+                    <span class="ar-chip__label">{{ c.label }}</span>
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <div class="ar-footer">
+        <button type="button" class="ar-copy" (click)="copy()">{{ copied() ? 'Copied' : 'Copy summary' }}</button>
+        <span class="ar-grounded-note">Grounded on your live data</span>
+      </div>
+    }
+  </div>
+}

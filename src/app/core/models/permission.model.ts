@@ -20,15 +20,18 @@ export interface PermissionFeature {
 }
 
 /**
- * Resource keys whose access level is enforced server-side. The backend now
- * uses one key per resource (level = access: 0 none · 1 view · 2 add/edit ·
- * 3 full+delete); enforcement applies a per-action minimum to the same key.
- * Anything outside this set is UI-only ("coming soon").
+ * Feature keys with no screen built yet — per the live catalog's own
+ * defaultLevel:0 "not built" annotations. Deliberately a small denylist
+ * (not a big allowlist of "built" keys) so it doesn't silently drift stale
+ * every time a new feature ships — it only needs updating when a feature
+ * genuinely has no UI at all yet.
  */
-export const ENFORCED_PERMISSION_KEYS = [
-  'employees', 'payroll', 'departments', 'offices', 'geofencing', 'org_settings',
-  'roles', 'permissions', 'attendance', 'shifts', 'leaves', 'performance',
-  'analytics', 'recruitment', 'notifications', 'tasks',
+export const COMING_SOON_PERMISSION_KEYS = ['shifts', 'compensation'] as const;
+
+/** Display order for permission-catalog modules (angular-implementation-spec.md). */
+export const PERMISSION_MODULE_ORDER = [
+  'Employees', 'Attendance', 'Leaves', 'Tasks', 'Performance', 'Payroll',
+  'Compensation', 'Organization', 'Analytics', 'Recruitment', 'Notifications', 'Administration',
 ] as const;
 
 // ── GET /api/permissions/me (§1) ──────────────────────────────────────────────

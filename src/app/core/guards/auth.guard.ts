@@ -1,9 +1,10 @@
 import { inject }          from '@angular/core';
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { Observable, of }  from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, switchMap } from 'rxjs/operators';
 import { AppStateService } from '../services/app-state.service';
 import { OrgAuthService }  from '../services/org-auth.service';
+import { UserAuthService } from '../services/user-auth.service';
 import { isValidOrgUrlNameFormat } from '../utils/org-slug.util';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,24 +36,17 @@ import { isValidOrgUrlNameFormat } from '../utils/org-slug.util';
 //  - Wrong/invalid org urlName → /404 (unauthorized access to different organization)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const authGuard: CanActivateFn = (route, state): boolean | UrlTree | Observable<boolean | UrlTree> => {
-  const appState = inject(AppStateService);
-  const orgAuth  = inject(OrgAuthService);
-  const router   = inject(Router);
-
-  if (!appState.isAuthenticated()) {
-    // Not authenticated - redirect to login with return URL
-    return router.createUrlTree(['/login'], {
-      queryParams: { returnUrl: state.url },
-    });
-  }
-
+function checkOrgUrlName(
+  route: Parameters<CanActivateFn>[0],
+  router: Router,
+  orgAuth: OrgAuthService,
+): Observable<boolean | UrlTree> {
   const urlOrgUrlName = route.paramMap.get('orgUrlName') || route.parent?.paramMap.get('orgUrlName');
 
   // Format check first — rejects garbage/manually-edited URLs immediately,
   // no network round-trip needed for input that can't possibly be a real urlName.
   if (!urlOrgUrlName || !isValidOrgUrlNameFormat(urlOrgUrlName)) {
-    return router.createUrlTree(['/404']);
+    return of(router.createUrlTree(['/404']));
   }
 
   return orgAuth.validateUrlName(urlOrgUrlName).pipe(
@@ -64,4 +58,32 @@ export const authGuard: CanActivateFn = (route, state): boolean | UrlTree | Obse
       return of(true);
     }),
   );
+}
+
+export const authGuard: CanActivateFn = (route, state): boolean | UrlTree | Observable<boolean | UrlTree> => {
+  const appState = inject(AppStateService);
+  const orgAuth  = inject(OrgAuthService);
+  const userAuth = inject(UserAuthService);
+  const router   = inject(Router);
+
+  if (!appState.isAuthenticated()) {
+    // The access token (short-lived) is gone/expired, but the refresh token
+    // is good for 7 days — a closed tab or overnight gap shouldn't force a
+    // real re-login. Try the silent refresh before giving up; only bounce
+    // to /login if that also fails (refresh token itself expired/invalid).
+    if (appState.refreshToken()) {
+      return userAuth.refreshToken().pipe(
+        switchMap(() => checkOrgUrlName(route, router, orgAuth)),
+        catchError(() => {
+          appState.clearSession();
+          return of(router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } }));
+        }),
+      );
+    }
+    return router.createUrlTree(['/login'], {
+      queryParams: { returnUrl: state.url },
+    });
+  }
+
+  return checkOrgUrlName(route, router, orgAuth);
 };

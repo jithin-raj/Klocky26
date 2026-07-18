@@ -175,6 +175,18 @@ export class SidebarComponent {
         { label: 'Assessments', route: 'app/performance/assessments', icon: 'clipboard-check' },
       ]
     },
+    // AI Assistant — permission-gated (not shown by default to everyone);
+    // admins bypass the matrix, anyone else needs 'ai_insights' explicitly
+    // granted via the permission matrix.
+    {
+      id: 'ai',
+      label: 'AI Assistant',
+      icon: 'sparkles',
+      expanded: false,
+      items: [
+        { label: 'AI Assistant', route: 'app/ai', icon: 'sparkles', exact: true, permKey: 'ai_insights', permLevel: 1 },
+      ]
+    },
     // §10 — Organisation
     {
       id: 'organisation',

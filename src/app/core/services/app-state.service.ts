@@ -179,11 +179,32 @@ export class AppStateService {
 
   /**
    * Clears all state (employee + org-admin) and removes the localStorage entry.
-   * Call on logout.
+   * Call on MANUAL logout only — this is the one path that should make the
+   * user re-identify their org from scratch. For an automatic/forced logout
+   * (both tokens expired or invalid), use clearSession() instead.
    */
   async clearState(): Promise<void> {
     this._state.set({ ...DEFAULT_APP_STATE });
     try { localStorage.removeItem(STATE_KEY); } catch { /* ignore */ }
+  }
+
+  /**
+   * Clears only the auth session (tokens + expiry) — keeps `user`/`orgSlug`/
+   * `orgUrlName` so the login screen can skip straight to the credentials
+   * step instead of re-asking "which org do you work for." Used when the
+   * refresh token itself has expired/been rejected (e.g. after the full
+   * 7-day window) — the user still typed their org in recently, no need to
+   * make them do it again just because their session lapsed.
+   */
+  async clearSession(): Promise<void> {
+    await this._persist({
+      ...this._state(),
+      accessToken: null,
+      refreshToken: null,
+      expiresAt: null,
+      orgAdminToken: null,
+      orgAdminTokenExpiresAt: null,
+    });
   }
 
   // ── Convenience getters (sync — for interceptors / guards) ────────────────
