@@ -1,0 +1,107 @@
+<div class="aa-page">
+
+  <div class="aa-header">
+    <div class="aa-header__title">
+      <span class="aa-badge">AI</span>
+      <div>
+        <h1>AI Assistant</h1>
+        <p>Ask questions or review AI-generated insights — grounded on your live data.</p>
+      </div>
+    </div>
+  </div>
+
+  @if (locked()) {
+    <div class="aa-locked">
+      <div class="aa-locked__icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l1.9 5.8L20 9.5l-5.8 1.9L12 17l-1.9-5.6L4 9.5l6.1-1.7L12 2z"/>
+        </svg>
+      </div>
+      <h2>AI insights aren't included in your plan</h2>
+      <p>Upgrade to Enterprise or add the AI add-on to unlock the assistant and insight reports.</p>
+      <button type="button" class="aa-btn aa-btn--primary" (click)="goToBilling()">Upgrade</button>
+    </div>
+  } @else if (available()) {
+    <div class="aa-grid">
+
+      <!-- Chat panel -->
+      <div class="aa-chat">
+        <div class="aa-chat__head">
+          <span>Chat</span>
+          @if (lastScope()) {
+            <span class="aa-scope-chip">{{ lastScope() === 'organisation' ? 'Organisation' : 'You' }}</span>
+          }
+        </div>
+
+        <div class="aa-chat__body" #scrollEl>
+          @if (!hasMessages()) {
+            <div class="aa-empty">
+              <p>Ask me anything about {{ isAdminOrHr() ? "your organisation's" : 'your' }} HR data.</p>
+              <div class="aa-suggestions">
+                @for (s of suggestions(); track s) {
+                  <button type="button" class="aa-suggestion-chip" (click)="useSuggestion(s)">{{ s }}</button>
+                }
+              </div>
+            </div>
+          }
+
+          @for (m of messages(); track $index) {
+            <div class="aa-bubble" [class.aa-bubble--user]="m.role === 'user'" [class.aa-bubble--assistant]="m.role === 'assistant'">
+              @if (m.role === 'assistant') {
+                <div class="aa-bubble__content aa-markdown" [innerHTML]="m.html"></div>
+                <button type="button" class="aa-copy" (click)="copy($index, m.content)">
+                  {{ copiedIndex() === $index ? 'Copied' : 'Copy' }}
+                </button>
+              } @else {
+                <div class="aa-bubble__content">{{ m.content }}</div>
+              }
+            </div>
+          }
+
+          @if (sending()) {
+            <div class="aa-bubble aa-bubble--assistant aa-bubble--typing">
+              <span class="aa-typing-dot"></span><span class="aa-typing-dot"></span><span class="aa-typing-dot"></span>
+            </div>
+          }
+
+          @if (sendError()) {
+            <div class="aa-error">{{ sendError() }}</div>
+          }
+        </div>
+
+        <div class="aa-chat__footer">
+          <div class="aa-input-row">
+            <input
+              type="text"
+              placeholder="Ask about attendance, leave, tasks…"
+              [ngModel]="input()"
+              (ngModelChange)="input.set($event)"
+              (keydown.enter)="send()"
+              [disabled]="sending()"
+            />
+            <button type="button" class="aa-send" [disabled]="!input().trim() || sending()" (click)="send()" aria-label="Send">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+          <p class="aa-grounded-note">Grounded on your live data — not model guesses.</p>
+        </div>
+      </div>
+
+      <!-- Insight reports -->
+      <div class="aa-reports">
+        @for (r of reportTypes; track r.type) {
+          <app-ai-report-card [type]="r.type"></app-ai-report-card>
+        }
+      </div>
+
+    </div>
+  } @else {
+    <div class="aa-locked">
+      <h2>AI assistant isn't available yet</h2>
+      <p>Your organisation's deployment doesn't have AI configured. Check back later.</p>
+    </div>
+  }
+
+</div>

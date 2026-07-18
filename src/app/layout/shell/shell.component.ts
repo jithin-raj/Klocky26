@@ -10,6 +10,7 @@ import { UiModalOutletComponent, UiLoaderComponent } from '../../shared/componen
 import { TrialBannerComponent } from '../trial-banner/trial-banner.component';
 import { LegalConsentModalComponent } from '../../shared/components/legal-consent-modal/legal-consent-modal.component';
 import { DpdpConsentService } from '../../core/services/dpdp-consent.service';
+import { AiService } from '../../core/services/ai.service';
 import { Subscription, filter, take } from 'rxjs';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
@@ -54,6 +55,9 @@ export class ShellComponent implements OnInit, OnDestroy {
   /** Legal-consent gate — LegalConsentModalComponent renders itself when this is true. */
   private readonly dpdpConsent = inject(DpdpConsentService);
   readonly needsLegalConsent = this.dpdpConsent.needsAcceptance;
+
+  /** Loaded once here so the dedicated AI screen (app/ai) doesn't need its own fetch on mount. */
+  private readonly ai = inject(AiService);
 
   // Human-facing org name — prefer the real displayName from GET /me (§3.3).
   // Only fall back to guessing one from the URL slug before /me has loaded
@@ -134,6 +138,10 @@ export class ShellComponent implements OnInit, OnDestroy {
     // Legal-consent gate — re-check on every shell mount (hard refresh / deep
     // link never goes through login()'s or refreshToken()'s own load() calls).
     this.dpdpConsent.load();
+
+    // AI status — cached for the session once loaded; every report card/chat
+    // widget mount reads AiService's signals instead of re-fetching.
+    this.ai.loadStatus();
 
     // On a hard refresh / deep link the login flow's load() never ran — resolve
     // the permission map so the sidebar and *hasPermission gating are correct.

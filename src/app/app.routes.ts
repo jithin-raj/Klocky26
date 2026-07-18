@@ -137,6 +137,15 @@ export const routes: Routes = [
           import('./features/analytics/analytics.routes').then((m) => m.analyticsRoutes),
       },
       {
+        path: 'ai',
+        // Permission-gated, not role-gated — admins bypass the matrix (§11 in
+        // permission.service.ts); anyone else needs 'ai_insights' explicitly
+        // granted via the permission matrix (Departments & Roles / per-employee).
+        canActivate: [permissionGuard('ai_insights', 1)],
+        loadComponent: () =>
+          import('./features/ai/pages/ai-assistant/ai-assistant.component').then((m) => m.AiAssistantComponent),
+      },
+      {
         path: 'engagement',
         loadChildren: () =>
           import('./features/engagement/engagement.routes').then((m) => m.engagementRoutes),

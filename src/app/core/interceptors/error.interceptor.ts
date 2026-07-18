@@ -13,7 +13,7 @@ import { AUTH_SCOPE }                           from '../http/auth-scope.context
 //
 //  401 Unauthorized (AUTH_SCOPE 'user' only)
 //    → Attempt a silent employee-token refresh (one retry)
-//    → If refresh fails, clear state and redirect to /login
+//    → If refresh fails, clear the session (keep org identity) and redirect to /login
 //    → For 'org'/'platform' scope, the step-up session simply expired — there
 //      is no refresh token for those, so the error just propagates and the
 //      caller re-prompts for a password.
@@ -70,9 +70,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             return next(retryReq);
           }),
           catchError((refreshError) => {
-            // Refresh also failed — force logout
+            // Refresh also failed (refresh token itself expired/invalid) —
+            // force logout, but keep org identity so /login can skip the
+            // "which org" step. Only a manual logout wipes that.
             isRefreshing = false;
-            return from(appState.clearState()).pipe(
+            return from(appState.clearSession()).pipe(
               switchMap(() => {
                 router.navigate(['/login']);
                 return throwError(() => refreshError);

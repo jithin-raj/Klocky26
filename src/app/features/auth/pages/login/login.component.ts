@@ -311,6 +311,24 @@ export class LoginComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Org identity survives an automatic session-expiry (see
+    // AppStateService.clearSession()) — only a manual logout wipes it. If
+    // it's still around, skip straight to the credentials step instead of
+    // re-asking "which org do you work for" every time the 7-day refresh
+    // token finally lapses.
+    const urlName = this.appState.orgUrlName();
+    const orgSlug = this.appState.orgSlug();
+    const user = this.appState.user();
+    if (urlName && orgSlug) {
+      this.authState.setOrg(urlName, user?.companyName || user?.displayName, orgSlug);
+      if (user?.accentColor) {
+        this.orgTheme.apply(this.orgTheme.generateThemeFromColor(user.accentColor));
+      } else {
+        this.orgTheme.reset();
+      }
+      this.step = 'credentials';
+      return;
+    }
     this.orgTheme.reset();
   }
 

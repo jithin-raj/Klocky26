@@ -298,6 +298,10 @@
   transition: background 0.1s;
   &:hover { background: #f8fafc; }
 }
+.pm-grid-row--soon {
+  opacity: .55;
+  &:hover { background: none; }
+}
 
 .pm-grid tbody td {
   padding: 11px 14px;
@@ -307,6 +311,7 @@
 .pm-grid tbody tr:last-child td { border-bottom: none; }
 
 .pm-feature-label { font-weight: 500; color: #1e293b; font-size: 13.5px; }
+.pm-feature-hint { display: block; font-size: 11px; color: #94a3b8; margin-top: 2px; }
 
 .pm-radio-wrap {
   display: flex;
