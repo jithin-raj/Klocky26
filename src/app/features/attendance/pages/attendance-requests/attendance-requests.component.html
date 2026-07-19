@@ -190,9 +190,11 @@
                     [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)">
                   </ui-datepicker>
                 } @else {
-                  <!-- Missed punch / Correction: today or past only -->
+                  <!-- Missed punch / Correction: within [cutoff, today]; days with an existing request disabled -->
                   <ui-datepicker
                     [maxDate]="todayIso"
+                    [minDate]="regCutoffDate()"
+                    [disabledDates]="requestedDates()"
                     [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)">
                   </ui-datepicker>
                 }

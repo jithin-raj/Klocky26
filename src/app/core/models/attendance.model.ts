@@ -107,7 +107,10 @@ export interface TeamAttendanceItem {
 /** Per-day status as returned by the calendar endpoint (richer than the live record's). */
 export type CalendarDayStatus =
   | 'present' | 'half_day' | 'absent' | 'leave'
-  | 'comp_off' | 'holiday' | 'weekend' | 'upcoming';
+  | 'comp_off' | 'holiday' | 'weekend' | 'overtime' | 'upcoming';
+
+/** Request lifecycle state for a day (regularisation or leave). null = no request. */
+export type CalendarRequestStatus = 'pending' | 'approved' | 'rejected' | null;
 
 /** One day in the monthly calendar response. */
 export interface CalendarDay {
@@ -132,6 +135,14 @@ export interface CalendarDay {
   isPaidLeave: boolean | null;
   /** Server-chosen hex colour for this status. */
   color: string;
+  /** Regularisation request lifecycle for this day (null when none). */
+  regularizationStatus?: CalendarRequestStatus;
+  /** Leave request lifecycle for this day (null when none). */
+  leaveRequestStatus?: CalendarRequestStatus;
+  /** A live leave/regularisation already exists for this day → don't offer a new request. */
+  hasRequest?: boolean;
+  /** The day's cycle is closed → no new requests allowed. */
+  isLocked?: boolean;
 }
 
 /** Per-month roll-up returned alongside the days. */
@@ -154,4 +165,8 @@ export interface CalendarResponse {
   days: CalendarDay[];
   summary: CalendarSummary;
   legend: { status: CalendarDayStatus; label: string; color: string }[];
+  /** Latest selectable date (YYYY-MM-DD) — no requests allowed for future days beyond this. */
+  today?: string;
+  /** Earliest still-open date (YYYY-MM-DD); older cycles are locked. null = no lower bound. */
+  regularizationCutoffDate?: string | null;
 }

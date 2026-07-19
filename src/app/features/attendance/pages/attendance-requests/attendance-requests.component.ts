@@ -10,6 +10,7 @@ import { UiDatePickerComponent } from '../../../../shared/components/ui-datepick
 import { UiTimePickerComponent } from '../../../../shared/components/ui-timepicker/ui-timepicker.component';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { AttendanceRequestService } from '../../../../core/services/attendance-request.service';
+import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
 import { OfficeService } from '../../../../core/services/office.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { LeaveService } from '../../../../core/services/leave.service';
@@ -43,12 +44,18 @@ export class AttendanceRequestsComponent implements OnInit {
   private readonly svc      = inject(AttendanceRequestService);
   private readonly leaveSvc = inject(LeaveService);
   private readonly officeSvc= inject(OfficeService);
+  private readonly attendanceState = inject(AttendanceStateService);
   private readonly appState = inject(AppStateService);
   private readonly toast    = inject(ToastService);
   private readonly route    = inject(ActivatedRoute);
   private readonly loc      = inject(LocalizationService);
 
   readonly todayIso = new Date().toISOString().slice(0, 10);
+
+  /** Regularisation window from the calendar contract: earliest still-open date (null = no lower bound). */
+  regCutoffDate = signal<string>('');
+  /** Days that already have a live leave/regularisation request — disabled in the date picker. */
+  requestedDates = signal<string[]>([]);
 
   // ── Hub type definitions ──────────────────────────────────────────────
   readonly hubTypes: { value: HubType; label: string; icon: string; desc: string }[] = [
@@ -194,6 +201,7 @@ export class AttendanceRequestsComponent implements OnInit {
   ngOnInit() {
     this.loadLeaveData();
     this.loadOffices();
+    this.loadRegularisationWindow();
     if (this.canApprove) this.loadPending();
 
     this.route.queryParams.subscribe(params => {
@@ -214,6 +222,42 @@ export class AttendanceRequestsComponent implements OnInit {
         this.clockOut.set('18:30');
       }
     });
+  }
+
+  /**
+   * Pull the calendar contract for the current + previous month to learn the
+   * regularisation window (regularizationCutoffDate) and which days already
+   * carry a request (hasRequest) — so the date picker can pre-empt the 409s
+   * the server would otherwise return.
+   */
+  private loadRegularisationWindow() {
+    const now = new Date();
+    const months = [
+      { y: now.getFullYear(), m: now.getMonth() + 1 },
+      { y: now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(), m: now.getMonth() === 0 ? 12 : now.getMonth() },
+    ];
+    const requested = new Set<string>();
+    let cutoff = '';
+    let pending = months.length;
+    for (const { y, m } of months) {
+      this.attendanceState.getCalendar(y, m).subscribe({
+        next: (res) => {
+          const data = res?.data;
+          if (data) {
+            if (data.regularizationCutoffDate) {
+              // Earliest cutoff across the fetched months wins as the lower bound.
+              cutoff = cutoff && cutoff < data.regularizationCutoffDate ? cutoff : data.regularizationCutoffDate;
+            }
+            for (const d of data.days ?? []) if (d.hasRequest) requested.add(d.date);
+          }
+          if (--pending === 0) {
+            this.regCutoffDate.set(cutoff);
+            this.requestedDates.set([...requested]);
+          }
+        },
+        error: () => { if (--pending === 0) { this.regCutoffDate.set(cutoff); this.requestedDates.set([...requested]); } },
+      });
+    }
   }
 
   private loadLeaveData() {
@@ -330,10 +374,20 @@ export class AttendanceRequestsComponent implements OnInit {
         this.toast.success('Leave applied', 'Your request has been submitted.');
         this.resetForm();
         this.historyFetched.set(false);
+        this.loadRegularisationWindow();
       },
       error: err => {
         this.submitting.set(false);
-        this.toast.error('Could not apply', err?.error?.message ?? 'Please try again.');
+        const status = err?.status;
+        const msg = err?.error?.message ?? err?.error?.error;
+        if (status === 409) {
+          this.toast.error('Request not allowed', msg ?? 'A request already exists for these dates, or the period is closed.');
+          this.loadRegularisationWindow();
+        } else if (status === 403) {
+          this.toast.error('Not permitted', msg ?? 'You do not have permission for this action.');
+        } else {
+          this.toast.error('Could not apply', msg ?? 'Please try again.');
+        }
       },
     });
   }
@@ -383,10 +437,21 @@ export class AttendanceRequestsComponent implements OnInit {
         this.toast.success('Request submitted', 'Your attendance request is awaiting approval.');
         this.resetForm();
         this.historyFetched.set(false);
+        this.loadRegularisationWindow(); // this date now has a live request → disable it going forward
       },
       error: err => {
         this.submitting.set(false);
-        this.toast.error('Could not submit', err?.error?.message ?? 'Please try again.');
+        const status = err?.status;
+        const msg = err?.error?.message ?? err?.error?.error;
+        if (status === 409) {
+          // Duplicate/locked — server already enforces; surface its message and re-sync the window.
+          this.toast.error('Request not allowed', msg ?? 'A request already exists for this day, or the period is closed.');
+          this.loadRegularisationWindow();
+        } else if (status === 403) {
+          this.toast.error('Not permitted', msg ?? 'You do not have permission for this action.');
+        } else {
+          this.toast.error('Could not submit', msg ?? 'Please try again.');
+        }
       },
     });
   }

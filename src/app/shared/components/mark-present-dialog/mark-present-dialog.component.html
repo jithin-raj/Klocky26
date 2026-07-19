@@ -1,0 +1,135 @@
+@if (state(); as s) {
+  <div class="mp-overlay" (click)="cancel()">
+    <div class="mp-card" (click)="$event.stopPropagation()">
+
+      <div class="mp-head">
+        <div class="mp-head__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div class="mp-head__text">
+          <h2>Mark present</h2>
+          <p>
+            @if (phase() === 'results') {
+              {{ results().length }} {{ results().length === 1 ? 'day' : 'days' }} processed
+            } @else {
+              {{ workingItems().length }} {{ workingItems().length === 1 ? 'day selected' : 'days selected' }}
+            }
+          </p>
+        </div>
+        <button type="button" class="mp-close" (click)="cancel()" aria-label="Close" [disabled]="phase() === 'submitting'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- ── Form phase ─────────────────────────────────────────────── -->
+      @if (phase() === 'form') {
+        <div class="mp-body">
+          <div class="mp-chips">
+            @for (item of workingItems(); track item.userId + item.date) {
+              <div class="mp-chip">
+                <span class="mp-chip__avatar">{{ item.userName.charAt(0) }}</span>
+                <span class="mp-chip__text">
+                  <span class="mp-chip__name">{{ item.userName }}</span>
+                  <span class="mp-chip__date">{{ item.date | orgDateOnly }}</span>
+                </span>
+                @if (workingItems().length > 1) {
+                  <button type="button" class="mp-chip__remove" (click)="removeItem(item)" aria-label="Remove">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <p class="mp-hint">Leave the times blank to use standard office hours{{ isBulk() ? ' — applied to every selected day' : '' }}.</p>
+
+          <div class="mp-time-row">
+            <ui-timepicker label="Clock in (optional)" [ngModel]="clockIn()" (ngModelChange)="clockIn.set($event)"></ui-timepicker>
+            <ui-timepicker label="Clock out (optional)" [ngModel]="clockOut()" (ngModelChange)="clockOut.set($event)"></ui-timepicker>
+          </div>
+
+          <ui-textarea
+            label="Note (optional)"
+            placeholder="Reason for marking this present…"
+            [rows]="3"
+            [ngModel]="note()"
+            (ngModelChange)="note.set($event)"
+          ></ui-textarea>
+
+          @if (formError()) {
+            <p class="mp-error">{{ formError() }}</p>
+          }
+        </div>
+
+        <div class="mp-footer">
+          <button type="button" class="mp-btn mp-btn--ghost" (click)="cancel()">Cancel</button>
+          <button type="button" class="mp-btn mp-btn--primary" (click)="submit()">
+            {{ isBulk() ? 'Mark ' + workingItems().length + ' present' : 'Confirm' }}
+          </button>
+        </div>
+      }
+
+      <!-- ── Submitting phase ───────────────────────────────────────── -->
+      @if (phase() === 'submitting') {
+        <div class="mp-body mp-body--center">
+          <div class="mp-spinner"></div>
+          <p class="mp-submitting-text">
+            Marking {{ workingItems().length }} {{ workingItems().length === 1 ? 'day' : 'days' }} present…
+          </p>
+        </div>
+      }
+
+      <!-- ── Results phase ──────────────────────────────────────────── -->
+      @if (phase() === 'results') {
+        <div class="mp-body">
+          <div class="mp-summary">
+            <div class="mp-summary__stat mp-summary__stat--ok">
+              <span class="mp-summary__num">{{ succeeded().length }}</span>
+              <span class="mp-summary__lbl">Succeeded</span>
+            </div>
+            @if (failed().length > 0) {
+              <div class="mp-summary__stat mp-summary__stat--fail">
+                <span class="mp-summary__num">{{ failed().length }}</span>
+                <span class="mp-summary__lbl">Failed</span>
+              </div>
+            }
+          </div>
+
+          <div class="mp-results-list">
+            @for (r of results(); track r.userId + r.date) {
+              <div class="mp-result-row" [class.mp-result-row--fail]="!r.success">
+                <span class="mp-result-icon">
+                  @if (r.success) {
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  } @else {
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  }
+                </span>
+                <div class="mp-result-text">
+                  <span class="mp-result-date">{{ r.date | orgDateOnly }}</span>
+                  <span class="mp-result-msg">{{ r.message }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="mp-footer">
+          @if (failed().length > 0) {
+            <button type="button" class="mp-btn mp-btn--ghost" (click)="done()">Done</button>
+            <button type="button" class="mp-btn mp-btn--retry" (click)="retryFailed()">Retry {{ failed().length }} failed</button>
+          } @else {
+            <button type="button" class="mp-btn mp-btn--primary" (click)="done()">Done</button>
+          }
+        </div>
+      }
+
+    </div>
+  </div>
+}

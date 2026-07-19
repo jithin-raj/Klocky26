@@ -358,6 +358,8 @@ export class UiDatePickerComponent implements ControlValueAccessor, OnDestroy {
   @Input() minDate = '';
   /** ISO date string (yyyy-MM-dd) — dates after this are disabled */
   @Input() maxDate = '';
+  /** Specific ISO dates (yyyy-MM-dd) to disable individually, e.g. days that already have a request. */
+  @Input() disabledDates: string[] = [];
 
   @HostBinding('class.dark') get isDark() { return this.dark; }
 
@@ -530,6 +532,7 @@ export class UiDatePickerComponent implements ControlValueAccessor, OnDestroy {
   isDateDisabled(iso: string): boolean {
     if (this.minDate && iso < this.minDate) return true;
     if (this.maxDate && iso > this.maxDate) return true;
+    if (this.disabledDates.length && this.disabledDates.includes(iso)) return true;
     return false;
   }
 

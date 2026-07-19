@@ -93,21 +93,49 @@
   <!-- Tab: Attendance -->
   @if (activeTab() === 'attendance') {
     <div class="ed-card">
-      <h3>Recent Attendance</h3>
-      <table class="ed-table">
-        <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Status</th></tr></thead>
-        <tbody>
-          @for (a of mockAttendance; track a.date) {
+      <div class="ed-att-head">
+        <h3>Recent Attendance</h3>
+        @if (selectedDates().size > 0) {
+          <button type="button" class="ed-mark-present-bulk-btn" [disabled]="markPresentBusy()" (click)="markPresentSelected()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Mark {{ selectedDates().size }} present
+          </button>
+        }
+      </div>
+      @if (attendanceLoading()) {
+        <p class="ed-att-loading">Loading…</p>
+      } @else if (!attendanceRows().length) {
+        <p class="ed-att-loading">No attendance records for this month yet.</p>
+      } @else {
+        <table class="ed-table">
+          <thead>
             <tr>
-              <td>{{ a.date | orgDateOnly }}</td>
-              <td>{{ a.checkIn }}</td>
-              <td>{{ a.checkOut }}</td>
-              <td>{{ a.hours > 0 ? a.hours + ' hrs' : '–' }}</td>
-              <td><span class="ed-att-badge ed-att-badge--{{ a.status }}">{{ a.status | titlecase }}</span></td>
+              <th class="ed-att-check">
+                @if (eligibleDates().length > 0) {
+                  <input type="checkbox" [checked]="allEligibleSelected()" (change)="toggleSelectAllEligible()" aria-label="Select all" />
+                }
+              </th>
+              <th>Date</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Status</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (a of attendanceRows(); track a.date) {
+              <tr [class.ed-row--selected]="isDateSelected(a.date)">
+                <td class="ed-att-check">
+                  @if (canMarkPresentRow(a)) {
+                    <input type="checkbox" [checked]="isDateSelected(a.date)" (change)="toggleDate(a.date)" [attr.aria-label]="'Select ' + a.date" />
+                  }
+                </td>
+                <td>{{ a.date | orgDateOnly }}</td>
+                <td>{{ a.checkIn }}</td>
+                <td>{{ a.checkOut }}</td>
+                <td>{{ a.hours > 0 ? a.hours + ' hrs' : '–' }}</td>
+                <td><span class="ed-att-badge ed-att-badge--{{ a.status }}">{{ a.status | titlecase }}</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
     </div>
   }
 

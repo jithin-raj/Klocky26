@@ -6,6 +6,8 @@ import { FormsModule } from '@angular/forms';
 import { UiSelectComponent } from '../../../../shared/components';
 import { LeaveService } from '../../../../core/services/leave.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { OrgDateOnlyPipe, OrgDatePipe } from '../../../../shared/pipes/localization.pipes';
 import { LeaveApprovalStage, LeaveRequestView } from '../../../../core/models/leave.model';
 
@@ -21,12 +23,18 @@ export class LeaveApprovalsComponent implements OnInit {
 
   private readonly leaveSvc = inject(LeaveService);
   private readonly appState = inject(AppStateService);
+  private readonly permissions = inject(PermissionService);
+  private readonly toast = inject(ToastService);
 
   /** Approvals are manager/HR-only; gate the call so employees don't 403 → /404. */
   private readonly canApprove = (() => {
     const u = this.appState.user();
     return !!(u?.isManager || u?.isHr || u?.isAdmin);
   })();
+
+  /** "Process absences now" needs leaves full access (level 3). */
+  readonly canProcessAbsences = computed(() => this.permissions.can('leaves', 3));
+  processingAbsences = signal(false);
 
   // Manager/HR queue — GET /leave-requests/pending-approval returns only what the
   // caller can act on at the current stage.
@@ -73,6 +81,30 @@ export class LeaveApprovalsComponent implements OnInit {
     this.leaveSvc.pendingApproval().subscribe({
       next: (rows) => { this.all.set(rows); this.loading.set(false); },
       error: () => { this.loadError.set('Failed to load leave requests.'); this.loading.set(false); },
+    });
+  }
+
+  /** On-demand run of the auto-absence-deduction sweep — shows the server's message verbatim. */
+  processAbsences() {
+    if (this.processingAbsences()) return;
+    this.processingAbsences.set(true);
+    this.leaveSvc.processAbsences(7).subscribe({
+      next: (res) => {
+        this.processingAbsences.set(false);
+        // The message explains any no-op (disabled / nothing to charge / no balance).
+        if (res.daysCharged > 0) {
+          this.toast.success('Absences processed', res.message);
+        } else {
+          this.toast.info('Absences processed', res.message);
+        }
+      },
+      error: (err) => {
+        this.processingAbsences.set(false);
+        const status = err?.status;
+        const msg = err?.error?.message ?? err?.error?.error;
+        if (status === 403) this.toast.error('Not permitted', msg ?? 'You need full leave access for this action.');
+        else this.toast.error('Could not process absences', msg ?? 'Please try again.');
+      },
     });
   }
 

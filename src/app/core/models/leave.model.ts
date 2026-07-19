@@ -2,6 +2,18 @@ export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type LeaveApprovalStage = 'manager' | 'hr' | 'completed';
 export type HalfDaySession = 'first_half' | 'second_half';
 
+/** POST /api/leaves/process-absences response — the on-demand absence-deduction sweep. */
+export interface ProcessAbsencesResult {
+  /** Whether auto-absence-deduction is enabled for the org. */
+  enabled: boolean;
+  /** Whether there's a default leave / LOP target to charge against. */
+  hasChargeTarget: boolean;
+  /** How many absent days were actually charged this run. */
+  daysCharged: number;
+  /** Human-readable explanation — show verbatim (explains any no-op). */
+  message: string;
+}
+
 export interface Holiday {
   id: string;
   name: string;

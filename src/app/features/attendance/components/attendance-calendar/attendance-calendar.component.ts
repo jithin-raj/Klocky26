@@ -17,9 +17,12 @@ import { Subscription } from 'rxjs';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { RealtimeService } from '../../../../core/services/realtime.service';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { MarkPresentDialogService } from '../../../../shared/components/mark-present-dialog/mark-present-dialog.service';
 import {
   AttendanceRecordResponse,
   CalendarDayStatus,
+  CalendarRequestStatus,
   CalendarResponse,
 } from '../../../../core/models/attendance.model';
 
@@ -69,6 +72,21 @@ export interface DayCell {
   holidayName?: string;
   /** Server-provided hex color, takes precedence over STATUS_META */
   color?: string;
+  // ── Request lifecycle (from the calendar response) ──
+  regularizationStatus?: CalendarRequestStatus;
+  leaveRequestStatus?: CalendarRequestStatus;
+  /** A live leave/regularisation already exists → don't offer a new request. */
+  hasRequest?: boolean;
+  /** Cycle closed → no new requests allowed. */
+  isLocked?: boolean;
+}
+
+/** Request-lifecycle metadata per day, kept separate from the status record so it applies to every day (incl. no-record days). */
+interface DayMeta {
+  regularizationStatus?: CalendarRequestStatus;
+  leaveRequestStatus?: CalendarRequestStatus;
+  hasRequest?: boolean;
+  isLocked?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -115,7 +133,15 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   private readonly realtime   = inject(RealtimeService);
   private readonly router     = inject(Router);
   private readonly appState   = inject(AppStateService);
+  private readonly permissions = inject(PermissionService);
+  private readonly markPresentDialog = inject(MarkPresentDialogService);
   private _liveSub?: Subscription;
+
+  /** attendance permission level >= 2, or admin (PermissionService short-circuits admins to true). */
+  readonly canMarkPresent = computed(() => this.permissions.can('attendance', 2));
+
+  /** Name of whoever this calendar is showing — from the calendar response itself (self or the viewed employee). */
+  private readonly _targetUserName = signal('');
 
   /** Optional — admin/HR view another employee's calendar; omit for the caller's own. */
   @Input() set userId(val: string | undefined) { this._userId.set(val); }
@@ -170,8 +196,10 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   /** Fold a CalendarResponse into the record/holiday maps the grid renders from. */
   private _ingest(res: CalendarResponse | null | undefined): void {
     if (!res) return;
+    this._targetUserName.set(res.userFullName ?? '');
     const records: Record<string, AttendanceRecord> = {};
     const holidays: Record<string, string> = {};
+    const meta: Record<string, DayMeta> = {};
     const weekendDates = new Set<string>();
     const dates: string[] = [];
     for (const day of res.days) {
@@ -193,11 +221,22 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
         };
       }
       if (day.holidayName) holidays[day.date] = day.holidayName;
+      if (day.regularizationStatus || day.leaveRequestStatus || day.hasRequest || day.isLocked) {
+        meta[day.date] = {
+          regularizationStatus: day.regularizationStatus ?? null,
+          leaveRequestStatus: day.leaveRequestStatus ?? null,
+          hasRequest: !!day.hasRequest,
+          isLocked: !!day.isLocked,
+        };
+      }
     }
     this._cycleDates.set(dates);
     this._weekendDates.set(weekendDates);
     this._recordMap.set(records);
     this._holidayMap.set(holidays);
+    this._dayMetaMap.set(meta);
+    this._serverToday.set(res.today ?? null);
+    this._cutoffDate.set(res.regularizationCutoffDate ?? null);
   }
 
   /** Patch a single day in-place when SignalR reports it (current open cycle only). */
@@ -268,6 +307,12 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   private readonly _cycleDates = signal<string[]>([]);
   /** Dates the API flags as weekends (isWeekend) — the org's real week-off days, not a hardcoded Sat/Sun. */
   private readonly _weekendDates = signal<Set<string>>(new Set());
+  /** Per-day request lifecycle (regularisation/leave status, hasRequest, isLocked) keyed by ISO date. */
+  private readonly _dayMetaMap = signal<Record<string, DayMeta>>({});
+  /** Response root: max selectable date for a request (no future beyond this). */
+  private readonly _serverToday = signal<string | null>(null);
+  /** Response root: earliest still-open date; older cycles are locked. null = no lower bound. */
+  private readonly _cutoffDate = signal<string | null>(null);
 
   /** Currently "active" cell on mobile (tap to magnify) and for the detail modal */
   activeCell: DayCell | null = null;
@@ -291,6 +336,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     const isoDates = this._cycleDates();
     const map  = this._recordMap();
     const hmap = this._holidayMap();
+    const metaMap = this._dayMetaMap();
 
     // Fall back to standard month when the API hasn't responded yet
     const dates: Date[] = isoDates.length > 0
@@ -320,7 +366,15 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       const hours = rec?.hours;
       const required = this._requiredFor(status, rec);
       const hoursMet = hours !== undefined ? hours >= required : true;
-      cells.push({ date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet, requiredHours: required, holidayName, color: rec?.color });
+      const meta = metaMap[key];
+      cells.push({
+        date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet,
+        requiredHours: required, holidayName, color: rec?.color,
+        regularizationStatus: meta?.regularizationStatus ?? null,
+        leaveRequestStatus: meta?.leaveRequestStatus ?? null,
+        hasRequest: meta?.hasRequest ?? false,
+        isLocked: meta?.isLocked ?? false,
+      });
     }
 
     const weeks: (DayCell | null)[][] = [];
@@ -502,14 +556,40 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
-   * Whether this cell can be regularized — only for absent/leave/no-record days
-   * and half-days. A full 'present' day (including overtime) needs no correction,
-   * and holidays/comp-off/weekends/future days are never regularizable.
+   * Whether this day is a *candidate* for regularisation by status alone —
+   * absent/leave/no-record/half days. Holidays/comp-off/weekends/future are never.
+   * Does NOT consider whether a request already exists or the cycle is locked —
+   * those are `regularizeBlockedReason()` so the button can still show, disabled,
+   * with an explanatory tooltip.
    */
-  canRegularize(cell: DayCell): boolean {
+  private isRegularizableStatus(cell: DayCell): boolean {
     if (cell.isFuture || cell.isOff || cell.status === 'holiday' || cell.status === 'comp_off') return false;
-    if (cell.status === null || cell.status === 'absent' || cell.status === 'leave') return true;
-    return cell.status === 'half';
+    return cell.status === null || cell.status === 'absent' || cell.status === 'leave' || cell.status === 'half';
+  }
+
+  /** Show the regularize CTA at all for this day. */
+  canRegularize(cell: DayCell): boolean {
+    return this.isRegularizableStatus(cell);
+  }
+
+  /** Non-null when regularisation is a candidate but blocked (existing request / locked cycle) → disable + tooltip. */
+  regularizeBlockedReason(cell: DayCell): string | null {
+    if (!this.isRegularizableStatus(cell)) return null;
+    if (cell.isLocked) return 'This period is closed';
+    if (cell.hasRequest) return 'A request already exists for this day';
+    if (this._serverToday() && this._dateKey(cell.date) > this._serverToday()!) return 'Future dates can\'t be regularised';
+    if (this._cutoffDate() && this._dateKey(cell.date) < this._cutoffDate()!) return 'Older cycles are locked';
+    return null;
+  }
+
+  /** A short status chip for the day's request lifecycle (regularisation/leave), or null. */
+  requestBadge(cell: DayCell): { label: string; kind: 'pending' | 'approved' | 'rejected' } | null {
+    if (cell.regularizationStatus === 'pending') return { label: 'Attendance requested', kind: 'pending' };
+    if (cell.regularizationStatus === 'approved') return { label: 'Regularised (Present)', kind: 'approved' };
+    if (cell.regularizationStatus === 'rejected') return { label: 'Regularisation rejected', kind: 'rejected' };
+    if (cell.leaveRequestStatus === 'pending') return { label: 'Leave requested', kind: 'pending' };
+    if (cell.leaveRequestStatus === 'rejected') return { label: 'Leave rejected', kind: 'rejected' };
+    return null;
   }
 
   /** Text shown in the regularize hint area */
@@ -523,12 +603,100 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   /** Navigate to the attendance requests page with this date pre-selected */
   regularize(cell: DayCell): void {
+    if (this.regularizeBlockedReason(cell)) return; // guarded — button is disabled, but be safe
     const org = this.appState.orgUrlName() || 'default';
     const date = this._cellDateKey(cell);
     this.closeDetail();
     this.router.navigate([`/${org}/app/attendance/requests`], {
       queryParams: { type: 'missed_punch', date, fromCalendar: '1' },
     });
+  }
+
+  /**
+   * Admin/HR direct override — only absent/half/no-record days (never leave,
+   * which has its own withdrawal flow, or holiday/comp-off/off/future days).
+   * A locked cycle would 409 server-side, so it's excluded here too.
+   */
+  canMarkPresentDay(cell: DayCell): boolean {
+    if (!this.canMarkPresent()) return false;
+    if (cell.isLocked) return false;
+    if (cell.isFuture || cell.isOff || cell.status === 'holiday' || cell.status === 'comp_off' || cell.status === 'leave') return false;
+    return cell.status === null || cell.status === 'absent' || cell.status === 'half';
+  }
+
+  async markPresent(cell: DayCell): Promise<void> {
+    const userId = this._userId() ?? this.appState.user()?.userId;
+    if (!userId) return;
+    const date = this._cellDateKey(cell);
+    const userName = this._targetUserName() || this.appState.user()?.fullName || 'this employee';
+
+    const results = await this.markPresentDialog.open({ items: [{ userId, userName, date }] });
+    if (!results?.some(r => r.success)) return;
+
+    this.closeDetail();
+    this._refreshMonth();
+  }
+
+  // ── Multi-select (bulk mark present) ───────────────────────────────────────
+
+  selectMode = signal(false);
+  selectedDates = signal<Set<string>>(new Set());
+
+  toggleSelectMode(): void {
+    if (this.selectMode()) {
+      this.selectMode.set(false);
+      this.selectedDates.set(new Set());
+    } else {
+      this.closeDetail();
+      this.selectMode.set(true);
+    }
+  }
+
+  clearSelection(): void {
+    this.selectedDates.set(new Set());
+  }
+
+  isDateSelected(cell: DayCell): boolean {
+    return this.selectedDates().has(this._cellDateKey(cell));
+  }
+
+  /** In select mode, tapping an eligible cell toggles it instead of opening the detail modal. */
+  onCellClick(cell: DayCell): void {
+    if (!this.selectMode()) {
+      this.openDetail(cell);
+      return;
+    }
+    if (!this.canMarkPresentDay(cell)) return;
+    const key = this._cellDateKey(cell);
+    this.selectedDates.update(set => {
+      const next = new Set(set);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
+  async markPresentSelected(): Promise<void> {
+    const userId = this._userId() ?? this.appState.user()?.userId;
+    const dates = Array.from(this.selectedDates());
+    if (!userId || !dates.length) return;
+    const userName = this._targetUserName() || this.appState.user()?.fullName || 'this employee';
+
+    const results = await this.markPresentDialog.open({
+      items: dates.map(date => ({ userId, userName, date })),
+    });
+    if (!results) return;
+
+    const succeededDates = new Set(results.filter(r => r.success).map(r => r.date));
+    if (succeededDates.size) this._refreshMonth();
+    // Keep only the failures selected so they're easy to retry/find; exit select mode once everything's cleared.
+    const remaining = new Set([...this.selectedDates()].filter(d => !succeededDates.has(d)));
+    this.selectedDates.set(remaining);
+    if (!remaining.size) this.selectMode.set(false);
+  }
+
+  private _refreshMonth(): void {
+    const { year, month } = this._ym();
+    this._fetchMonth(year, month, this._userId());
   }
 
   /** YYYY-MM-DD string for a cell's date */

@@ -16,6 +16,7 @@ import {
   MyLeavesResponse,
   OnLeaveEntry,
   OnLeaveQuery,
+  ProcessAbsencesResult,
   toLeaveView,
 } from '../models/leave.model';
 
@@ -111,6 +112,18 @@ export class LeaveService {
 
   create(payload: ApplyLeaveRequest): Observable<LeaveRecord> {
     return this.apply(payload);
+  }
+
+  /**
+   * POST /api/leaves/process-absences — on-demand run of the auto-absence
+   * deduction sweep (normally a background job). Requires leaves permission
+   * level 3. The `message` explains any no-op (disabled / nothing to charge /
+   * no balance) and is meant to be shown verbatim.
+   */
+  processAbsences(lookbackDays = 7): Observable<ProcessAbsencesResult> {
+    return this.api.post<ApiResponse<ProcessAbsencesResult>>(
+      `/leaves/process-absences?lookbackDays=${lookbackDays}`, {}
+    ).pipe(map(res => res.data));
   }
 
   private _list(data: LeaveRequestResponse[] | Paged<LeaveRequestResponse> | null | undefined): LeaveRequestView[] {
