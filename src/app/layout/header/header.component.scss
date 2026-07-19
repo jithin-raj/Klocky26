@@ -620,12 +620,16 @@
 }
 
 @media (max-width: 768px) {
-  /* On mobile the bottom nav handles navigation — hide hamburger, clock-in, profile */
-  .hamburger { display: none; }
-  .punch-section { display: none; }
+  /* In the RN app the bottom nav is the entire mobile navigation system (it
+     has its own apps grid, quick actions and profile access), so the header's
+     hamburger/clock-in/profile stay hidden there. A browser at this width has
+     no bottom nav at all, so it needs the hamburger to reach the sidebar
+     drawer — the sidebar's own toggle was never reachable any other way. */
+  .header:not(.is-native-mobile) .hamburger { display: flex; }
+  .header.is-native-mobile .punch-section { display: none; }
   /* Hide the v-sep before profile and the profile avatar itself */
-  .right > .v-sep:last-of-type { display: none; }
-  .menu-wrap:last-child { display: none; }
+  .header.is-native-mobile .right > .v-sep:last-of-type { display: none; }
+  .header.is-native-mobile .menu-wrap:last-child { display: none; }
   /* Compact search */
   .search-wrap { max-width: 180px; }
 }
