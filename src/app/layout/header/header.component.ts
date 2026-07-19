@@ -27,6 +27,8 @@ export class HeaderComponent implements OnDestroy {
   @Input() orgLogoUrl = '';
   @Input() orgLogoFallbackUrl = '';
   @Input() orgAccentColor = '';
+  /** True only inside the real RN app wrapper — a narrow browser window still needs the hamburger/clock-in/profile controls, only the RN app has the bottom nav to cover them. */
+  @Input() isNativeMobile = false;
 
   readonly attendance = inject(AttendanceStateService);
   readonly notifications = inject(NotificationService);

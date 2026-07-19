@@ -11,7 +11,7 @@
   <div class="main">
     <klocky-trial-banner></klocky-trial-banner>
 
-    <klocky-header (toggleSidebar)="toggleSidebar()" [orgName]="orgName()" [orgLogoUrl]="orgLogoUrl" [orgLogoFallbackUrl]="orgLogoFallbackUrl" [orgAccentColor]="orgAccentColor"></klocky-header>
+    <klocky-header (toggleSidebar)="toggleSidebar()" [orgName]="orgName()" [orgLogoUrl]="orgLogoUrl" [orgLogoFallbackUrl]="orgLogoFallbackUrl" [orgAccentColor]="orgAccentColor" [isNativeMobile]="isMobile"></klocky-header>
 
     <div class="content" #contentEl>
       @if (routeLoading()) {
