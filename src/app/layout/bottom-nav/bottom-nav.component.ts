@@ -108,7 +108,6 @@ export class BottomNavComponent implements OnInit, OnDestroy {
         { label: 'Employees',  icon: 'users' as UiIconName,         route: `${p}/app/employees`,                    color: '#64748b' },
         { label: 'Add Staff',  icon: 'user-check' as UiIconName,    route: `${p}/app/employees/add`,               color: '#0ea5e9' },
         { label: 'Approvals',  icon: 'check-circle' as UiIconName,  route: `${p}/app/leaves`,                      color: '#10b981' },
-        { label: 'Leave Cats', icon: 'award' as UiIconName,         route: `${p}/app/settings/leave-categories`,   color: '#f59e0b' },
         { label: 'Billing',    icon: 'clipboard-check' as UiIconName, route: `${p}/app/billing`,                   color: '#eab308' },
       ] : []),
       ...(adminOnly ? [

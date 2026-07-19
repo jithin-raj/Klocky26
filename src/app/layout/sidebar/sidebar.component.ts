@@ -101,7 +101,6 @@ export class SidebarComponent {
         { label: 'Regularization', route: 'app/attendance/requests', icon: 'repeat', roles: NON_ADMIN_ROLES },
         { label: 'My Leave', route: 'app/leaves/my', icon: 'calendar', roles: NON_ADMIN_ROLES },
         { label: 'Leave Approvals', route: 'app/leaves', icon: 'check-circle', exact: true, roles: MANAGEMENT_ROLES },
-        { label: 'Face Scan', route: 'app/attendance/face-scan', icon: 'scan', roles: NON_ADMIN_ROLES },
       ]
     },
     // §3 — Task Box (not yet built)
@@ -196,7 +195,6 @@ export class SidebarComponent {
       items: [
         { label: 'Org Settings', route: 'app/settings', icon: 'settings', roles: ADMIN_HR_ROLES },
         { label: 'Billing & Plans', route: 'app/billing', icon: 'briefcase', roles: ADMIN_HR_ROLES },
-        { label: 'Leave Categories', route: 'app/settings/leave-categories', icon: 'calendar', roles: ADMIN_HR_ROLES },
         { label: 'Documents', route: 'app/organisation/documents', icon: 'layers' },
         { label: 'Shifts & Roster', route: 'app/shifts', icon: 'repeat', roles: MANAGEMENT_ROLES },
         { label: 'Geo-fencing', route: 'app/attendance/geofence', icon: 'map-pin', roles: ADMIN_ONLY_ROLES },

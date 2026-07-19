@@ -15,6 +15,7 @@ import {
   UiDataGridComponent, GridColumnTemplateDirective, GridColumn, UiPaginationComponent,
 } from '../../../../shared/components';
 import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
+import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
 
 type Tab = 'departments' | 'roles';
 
@@ -204,9 +205,19 @@ export class OrgStructureComponent implements OnInit {
     this.showAddDepartment.set(false);
   }
 
+  readonly nameError = NAME_VALIDATION_MESSAGE;
+
+  get departmentNameInvalid(): boolean {
+    return !!this.newDepartmentName().trim() && !isValidName(this.newDepartmentName());
+  }
+
+  get roleNameInvalid(): boolean {
+    return !!this.newRoleName().trim() && !isValidName(this.newRoleName());
+  }
+
   submitAddDepartment(): void {
     const name = this.newDepartmentName().trim();
-    if (!name || this.savingDepartment()) return;
+    if (!name || this.savingDepartment() || !isValidName(name)) return;
     this.savingDepartment.set(true);
 
     const editId = this.editingDeptId();
@@ -281,7 +292,7 @@ export class OrgStructureComponent implements OnInit {
 
   submitAddRole(): void {
     const name = this.newRoleName().trim();
-    if (!name || this.savingRole()) return;
+    if (!name || this.savingRole() || !isValidName(name)) return;
     this.savingRole.set(true);
 
     const payload = {

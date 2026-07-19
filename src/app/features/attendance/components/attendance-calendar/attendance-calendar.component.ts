@@ -608,7 +608,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     const date = this._cellDateKey(cell);
     this.closeDetail();
     this.router.navigate([`/${org}/app/attendance/requests`], {
-      queryParams: { type: 'missed_punch', date, fromCalendar: '1' },
+      queryParams: { type: 'missed_punch', date, fromCalendar: '1', returnUrl: `/${org}/app/attendance` },
     });
   }
 

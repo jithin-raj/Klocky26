@@ -18,6 +18,7 @@
             [value]="referredName()"
             (input)="referredName.set($any($event.target).value)"
             required />
+          @if (nameInvalid) { <p class="form-error">{{ nameError }}</p> }
         </div>
 
         <!-- Email -->

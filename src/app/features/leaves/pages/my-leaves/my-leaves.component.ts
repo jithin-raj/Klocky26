@@ -152,16 +152,20 @@ export class MyLeavesComponent implements OnInit {
   // Navigate to the unified request hub, optionally pre-selecting a leave type
   openApplyFor(typeId: string) {
     this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
-      queryParams: { type: 'leave', leaveTypeId: typeId },
+      queryParams: { type: 'leave', leaveTypeId: typeId, returnUrl: `${this.orgPrefix()}/app/leaves/my`},
     });
   }
 
   navigateToApply() {
-    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests']);
+    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
+      queryParams: { returnUrl: `${this.orgPrefix()}/app/leaves/my`},
+    });
   }
 
   goToRegularisation() {
-    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests']);
+    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
+      queryParams: { returnUrl: `${this.orgPrefix()}/app/leaves/my`},
+    });
   }
 
   cancel(id: string) {
@@ -203,7 +207,7 @@ export class MyLeavesComponent implements OnInit {
 
   takeOptionalHoliday(h: Holiday) {
     this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
-      queryParams: { type: 'leave', date: h.date },
+      queryParams: { type: 'leave', date: h.date, returnUrl: `${this.orgPrefix()}/app/leaves/my` },
     });
   }
 

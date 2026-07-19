@@ -4,6 +4,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { UiSelectComponent } from '../../../../shared/components/ui-select/ui-select.component';
 import { OptionsService } from '../../../../core/services/options.service';
+import { COUNTRY_DEFAULT_CURRENCY } from '../../../../core/config/form-options.const';
+import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
 
 export interface OrgSetupData {
   orgName: string;
@@ -70,15 +72,38 @@ export class OrgSetupTabComponent implements OnInit {
     });
   }
 
-  /** When a country is chosen, auto-select its default timezone (still editable). */
+  /** When a country is chosen, auto-select its default timezone and currency (still editable). */
   onCountryChange(): void {
     const tz = this.optionsSvc.defaultTimezoneForCountry(this.country);
     if (tz) this.timezone = tz;
+
+    // No server-provided country→currency mapping (extra on 'country' options
+    // is the timezone only) — fall back to the same client-side best-effort
+    // map used at registration, matched by the country's display label so it
+    // doesn't depend on guessing the server's country code format. Only
+    // applied if that currency actually exists in the loaded catalogue.
+    const countryLabel = this.optionsSvc.labelFor('country', this.country);
+    const defaultCurrency = COUNTRY_DEFAULT_CURRENCY[countryLabel];
+    if (defaultCurrency && this.optionsSvc.get('currency').some(o => o.code === defaultCurrency)) {
+      this.currency = defaultCurrency;
+    }
+
     this.emit();
+  }
+
+  readonly nameError = NAME_VALIDATION_MESSAGE;
+
+  get orgNameInvalid(): boolean {
+    return !!this.orgName.trim() && !isValidName(this.orgName);
+  }
+
+  get displayNameInvalid(): boolean {
+    return !!this.displayName.trim() && !isValidName(this.displayName);
   }
 
   get isValid(): boolean {
     return !!(this.orgName.trim() && this.displayName.trim() &&
+              isValidName(this.orgName) && isValidName(this.displayName) &&
               this.industry && this.companySize && this.country && this.timezone &&
               this.currency && this.dateFormat && this.timeFormat && this.agreed);
   }

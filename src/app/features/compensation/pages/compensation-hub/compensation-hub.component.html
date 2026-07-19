@@ -254,7 +254,7 @@
   (cancel)="closeGradeEditor()"
 >
   <ui-form-grid [columns]="2">
-    <ui-form-field label="Name" [required]="true">
+    <ui-form-field label="Name" [required]="true" [error]="gradeNameInvalid ? nameError : ''">
       <ui-input [(ngModel)]="gradeForm.name" placeholder="e.g. Senior Engineer"></ui-input>
     </ui-form-field>
     <ui-form-field label="Code">
@@ -293,7 +293,7 @@
   <ui-form-field label="Amount" [required]="true">
     <ui-input type="number" [(ngModel)]="bonusForm.amount"></ui-input>
   </ui-form-field>
-  <ui-form-field label="Label">
+  <ui-form-field label="Label" [error]="bonusLabelInvalid ? nameError : ''">
     <ui-input [(ngModel)]="bonusForm.label" placeholder="e.g. Diwali Bonus"></ui-input>
   </ui-form-field>
   <ui-form-field label="Notes">

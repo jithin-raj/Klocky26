@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RecruitmentService } from '../../../../core/services/recruitment.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
 
 @Component({
   selector: 'app-refer',
@@ -25,8 +26,14 @@ export class ReferComponent {
   message       = signal('');
   submitting    = signal(false);
 
+  readonly nameError = NAME_VALIDATION_MESSAGE;
+
+  get nameInvalid(): boolean {
+    return !!this.referredName().trim() && !isValidName(this.referredName());
+  }
+
   get canSubmit(): boolean {
-    return !!this.referredName().trim() && !!this.referredEmail().trim() && !this.submitting();
+    return !!this.referredName().trim() && !!this.referredEmail().trim() && !this.nameInvalid && !this.submitting();
   }
 
   submit() {

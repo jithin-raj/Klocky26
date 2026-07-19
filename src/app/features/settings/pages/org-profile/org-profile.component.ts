@@ -29,6 +29,7 @@ import { SubscriptionService } from '../../../../core/services/subscription.serv
 import { OptionsService } from '../../../../core/services/options.service';
 import { UpgradePromptService } from '../../../../shared/components/upgrade-prompt/upgrade-prompt.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
 import { Office as OfficeRecord } from '../../../../core/models/office.model';
 import {
   TenantSettings,
@@ -651,11 +652,13 @@ export class OrgProfileComponent implements OnInit {
     this.logoSvc.uploadLogo(file).subscribe({
       next: (res) => {
         this.logoUploading.set(false);
+        // Persist the raw (non-cache-busted) URL — it's what gets saved to tenant settings.
         this._loadedLogoUrl = res.logoUrl;
-        // Replace the blob URL with the real server URL (cache-busted)
-        this.logoPreview.set(res.logoUrl);
-        // Patch the in-memory user so sidebar/header update immediately
-        this.appState.patchUserLogo(res.logoUrl);
+        // Replace the blob URL with the cache-busted display URL so it always shows the
+        // new image immediately, even if the raw URL is unchanged from before.
+        this.logoPreview.set(res.displayUrl);
+        // Patch the in-memory user so sidebar/header update immediately, same reasoning.
+        this.appState.patchUserLogo(res.displayUrl);
         this.toast.success('Logo uploaded', 'Your organisation logo has been updated.');
       },
       error: (err) => {
@@ -991,6 +994,17 @@ export class OrgProfileComponent implements OnInit {
    * have one (or it expired), collect the admin password once before saving.
    */
   save(): void {
+    const invalidField = [
+      { label: 'Company name', value: this.companyName },
+      { label: 'Legal name', value: this.legalName },
+      { label: 'HR contact name', value: this.hrContactName },
+      ...this.offices.map((o, i) => ({ label: `Office name (#${i + 1})`, value: o.name })),
+      ...(this.holidays ?? []).map((h, i) => ({ label: `Holiday name (#${i + 1})`, value: h.name })),
+    ].find(f => f.value?.trim() && !isValidName(f.value));
+    if (invalidField) {
+      this.toast.error('Could not save', `${invalidField.label}: ${NAME_VALIDATION_MESSAGE}`);
+      return;
+    }
     if (!this.appState.isOrgAdminAuthenticated()) {
       console.warn('[OrgProfile] org admin token missing/expired — opening step-up dialog');
       this._pendingAction = 'save';

@@ -15,7 +15,7 @@
     <label class="ob-label" for="org-name">
       Organisation Name <span class="ob-required">*</span>
     </label>
-    <div class="ob-input-wrap">
+    <div class="ob-input-wrap" [class.ob-input-error]="orgNameInvalid">
       <svg class="ob-input-icon" width="16" height="16" viewBox="0 0 24 24"
            fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round">
@@ -27,6 +27,7 @@
              [(ngModel)]="orgName" name="orgName"
              (ngModelChange)="emit()" />
     </div>
+    @if (orgNameInvalid) { <p class="ob-error-msg">{{ nameError }}</p> }
   </div>
 
   <!-- Display Name -->
@@ -34,7 +35,7 @@
     <label class="ob-label" for="display-name">
       Display Name <span class="ob-required">*</span>
     </label>
-    <div class="ob-input-wrap">
+    <div class="ob-input-wrap" [class.ob-input-error]="displayNameInvalid">
       <svg class="ob-input-icon" width="16" height="16" viewBox="0 0 24 24"
            fill="none" stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round">
@@ -46,7 +47,11 @@
              [(ngModel)]="displayName" name="displayName"
              (ngModelChange)="emit()" />
     </div>
-    <p class="ob-hint">Short name shown in the interface and URL slug.</p>
+    @if (displayNameInvalid) {
+      <p class="ob-error-msg">{{ nameError }}</p>
+    } @else {
+      <p class="ob-hint">Short name shown in the interface and URL slug.</p>
+    }
   </div>
 
   <!-- Email Domain -->
