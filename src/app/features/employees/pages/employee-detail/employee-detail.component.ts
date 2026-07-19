@@ -16,6 +16,18 @@ import {
 import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
 import { EmployeeResponse } from '../../models/employee-api.model';
 import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
+import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import { MarkPresentDialogService } from '../../../../shared/components/mark-present-dialog/mark-present-dialog.service';
+import { CalendarDayStatus } from '../../../../core/models/attendance.model';
+
+interface AttendanceRow {
+  date: string;
+  checkIn: string;
+  checkOut: string;
+  hours: number;
+  status: CalendarDayStatus;
+}
 
 const AVATAR_COLORS = [
   '#6366f1','#ec4899','#f59e0b','#22c55e','#14b8a6','#8b5cf6','#ef4444','#0ea5e9',
@@ -52,6 +64,9 @@ export class EmployeeDetailComponent implements OnInit {
   private modal = inject(ModalService);
   private toast = inject(ToastService);
   private permissions = inject(PermissionService);
+  private attendanceSvc = inject(AttendanceStateService);
+  private loc = inject(LocalizationService);
+  private markPresentDialog = inject(MarkPresentDialogService);
 
   employee = signal<EmployeeResponse | null>(null);
   loading  = signal(true);
@@ -84,13 +99,94 @@ export class EmployeeDetailComponent implements OnInit {
   hardDeleteOpen = signal(false);
   hardDeleting = signal(false);
 
-  readonly mockAttendance = [
-    { date: '2026-04-28', checkIn: '09:02', checkOut: '18:15', hours: 9.2, status: 'present' },
-    { date: '2026-04-27', checkIn: '09:18', checkOut: '18:05', hours: 8.8, status: 'present' },
-    { date: '2026-04-26', checkIn: '–', checkOut: '–', hours: 0, status: 'absent' },
-    { date: '2026-04-25', checkIn: '08:55', checkOut: '17:50', hours: 8.9, status: 'present' },
-    { date: '2026-04-24', checkIn: '09:10', checkOut: '13:00', hours: 3.8, status: 'half_day' },
-  ];
+  attendanceRows = signal<AttendanceRow[]>([]);
+  attendanceLoading = signal(false);
+  private attendanceLoadedFor: string | null = null;
+
+  /** attendance permission level >= 2, or admin. */
+  readonly canMarkPresent = computed(() => this.permissions.can('attendance', 2));
+  markPresentBusy = signal(false);
+  selectedDates = signal<Set<string>>(new Set());
+  readonly eligibleDates = computed(() => this.attendanceRows().filter(r => this.canMarkPresentRow(r)).map(r => r.date));
+  readonly allEligibleSelected = computed(() => {
+    const eligible = this.eligibleDates();
+    return eligible.length > 0 && eligible.every(d => this.selectedDates().has(d));
+  });
+
+  private loadAttendance(): void {
+    const id = this.employee()?.employeeId;
+    if (!id || this.attendanceLoadedFor === id) return;
+    this.attendanceLoadedFor = id;
+    this.selectedDates.set(new Set());
+    this.attendanceLoading.set(true);
+    const now = new Date();
+    this.attendanceSvc.getCalendar(now.getFullYear(), now.getMonth() + 1, id).subscribe({
+      next: (res) => {
+        const days = res.data?.days ?? [];
+        this.attendanceRows.set(
+          days
+            .filter(d => !d.isUpcoming && !d.isWeekend && d.status !== 'holiday')
+            .map(d => ({
+              date: d.date,
+              checkIn: d.clockInTime ? this.loc.formatTime(d.clockInTime) : '–',
+              checkOut: d.clockOutTime ? this.loc.formatTime(d.clockOutTime) : '–',
+              hours: d.hoursWorked ?? d.presentHours ?? 0,
+              status: d.status,
+            }))
+            .sort((a, b) => b.date.localeCompare(a.date))
+            .slice(0, 10),
+        );
+        this.attendanceLoading.set(false);
+      },
+      error: () => {
+        this.attendanceLoading.set(false);
+        this.attendanceLoadedFor = null;
+      },
+    });
+  }
+
+  /** Only absent/half/no-record days — never leave/comp-off/holiday. */
+  canMarkPresentRow(row: AttendanceRow): boolean {
+    return this.canMarkPresent() && (row.status === 'absent' || row.status === 'half_day');
+  }
+
+  isDateSelected(date: string): boolean {
+    return this.selectedDates().has(date);
+  }
+
+  toggleDate(date: string): void {
+    this.selectedDates.update(set => {
+      const next = new Set(set);
+      next.has(date) ? next.delete(date) : next.add(date);
+      return next;
+    });
+  }
+
+  toggleSelectAllEligible(): void {
+    const eligible = this.eligibleDates();
+    this.selectedDates.set(this.allEligibleSelected() ? new Set() : new Set(eligible));
+  }
+
+  async markPresentSelected(): Promise<void> {
+    const emp = this.employee();
+    const dates = Array.from(this.selectedDates());
+    if (!emp || !dates.length || this.markPresentBusy()) return;
+    this.markPresentBusy.set(true);
+    try {
+      const results = await this.markPresentDialog.open({
+        items: dates.map(date => ({ userId: emp.employeeId, userName: emp.fullName, date })),
+      });
+      if (results?.some(r => r.success)) {
+        this.attendanceLoadedFor = null;
+        this.loadAttendance();
+      }
+      // Drop only the dates that actually succeeded — keep failures selected so they're easy to find again.
+      const succeededDates = new Set((results ?? []).filter(r => r.success).map(r => r.date));
+      this.selectedDates.update(set => new Set([...set].filter(d => !succeededDates.has(d))));
+    } finally {
+      this.markPresentBusy.set(false);
+    }
+  }
 
   readonly mockLeaves = [
     { type: 'Casual Leave', from: '2026-03-15', to: '2026-03-16', days: 2, status: 'approved' },
@@ -127,7 +223,10 @@ export class EmployeeDetailComponent implements OnInit {
 
   goBack()  { this.orgNav.navigate(['app', 'employees']); }
   editEmp() { this.orgNav.navigate(['app', 'employees', this.employee()?.employeeId ?? '', 'edit']); }
-  setTab(t: 'overview' | 'attendance' | 'leaves' | 'performance') { this.activeTab.set(t); }
+  setTab(t: 'overview' | 'attendance' | 'leaves' | 'performance') {
+    this.activeTab.set(t);
+    if (t === 'attendance') this.loadAttendance();
+  }
 
   activateEmployee() {
     const id = this.employee()?.employeeId;

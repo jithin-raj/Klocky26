@@ -43,7 +43,21 @@
 .ed-att-badge, .ed-leave-badge { display: inline-flex; padding: 2px 8px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
 .ed-att-badge--present { background: #dcfce7; color: #16a34a; }
 .ed-att-badge--absent { background: #fee2e2; color: #dc2626; }
-.ed-att-badge--half-day { background: #fef9c3; color: #b45309; }
+.ed-att-badge--half_day { background: #fef9c3; color: #b45309; }
+.ed-att-loading { padding: 16px 4px; font-size: 13px; color: #94a3b8; }
+.ed-att-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; }
+.ed-att-check { width: 34px; text-align: center; input[type="checkbox"] { width: 15px; height: 15px; accent-color: #16a34a; cursor: pointer; } }
+.ed-row--selected { background: #f0fdf4; }
+.ed-mark-present-bulk-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: none; border-radius: 8px; padding: 6px 12px;
+  font-size: 12px; font-weight: 650; font-family: inherit; cursor: pointer;
+  background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff;
+  white-space: nowrap;
+  transition: opacity .15s;
+  &:hover:not(:disabled) { opacity: .9; }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
 .ed-leave-badge--approved { background: #dcfce7; color: #16a34a; }
 .ed-leave-badge--pending { background: #fef9c3; color: #b45309; }
 .ed-leave-badge--rejected { background: #fee2e2; color: #dc2626; }

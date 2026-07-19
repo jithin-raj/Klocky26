@@ -7,6 +7,10 @@ import {
   AttendanceRequestDecision,
   AttendanceRequestResponse,
   CreateAttendanceRequest,
+  MarkPresentRequest,
+  MarkPresentResponse,
+  MarkPresentBulkRequest,
+  MarkPresentBulkResponse,
 } from '../models/attendance-request.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -49,6 +53,23 @@ export class AttendanceRequestService {
   /** POST /api/attendance-requests/{id}/cancel — withdraw own pending request. */
   cancel(id: string): Observable<AttendanceRequestResponse> {
     return this.api.post<ApiResponse<AttendanceRequestResponse>>(`/attendance-requests/${id}/cancel`, {})
+      .pipe(map(res => res.data));
+  }
+
+  /**
+   * POST /api/attendance-requests/mark-present — admin/HR direct override, no
+   * approval chain. On success the day flips to present in
+   * GET /api/attendance/calendar and the employee's leave/LOP balance is
+   * auto-restored server-side.
+   */
+  markPresent(payload: MarkPresentRequest): Observable<MarkPresentResponse> {
+    return this.api.post<ApiResponse<MarkPresentResponse>>('/attendance-requests/mark-present', payload)
+      .pipe(map(res => res.data));
+  }
+
+  /** POST /api/attendance-requests/mark-present/bulk — up to 500 items; partial failure is normal, not an error. */
+  markPresentBulk(payload: MarkPresentBulkRequest): Observable<MarkPresentBulkResponse> {
+    return this.api.post<ApiResponse<MarkPresentBulkResponse>>('/attendance-requests/mark-present/bulk', payload)
       .pipe(map(res => res.data));
   }
 

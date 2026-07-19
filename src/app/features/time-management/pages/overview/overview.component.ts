@@ -11,6 +11,8 @@ import { TeamAttendanceItem } from '../../../../core/models/attendance.model';
 import { UiLoaderComponent } from '../../../../shared/components/ui-loader/ui-loader.component';
 import { LocalizationService } from '../../../../core/services/localization.service';
 import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
+import { PermissionService } from '../../../../core/services/permission.service';
+import { MarkPresentDialogService } from '../../../../shared/components/mark-present-dialog/mark-present-dialog.service';
 
 @Component({
   selector: 'app-time-overview',
@@ -25,6 +27,13 @@ export class TimeOverviewComponent implements OnInit {
   private readonly attendanceSvc  = inject(AttendanceStateService);
   private readonly appState       = inject(AppStateService);
   private readonly loc            = inject(LocalizationService);
+  private readonly permissions    = inject(PermissionService);
+  private readonly markPresentDialog = inject(MarkPresentDialogService);
+
+  /** attendance permission level >= 2, or admin. */
+  readonly canMarkPresent = computed(() => this.permissions.can('attendance', 2));
+  markPresentBusy = signal(false);
+  selectedUserIds = signal<Set<string>>(new Set());
 
   overview    = signal<TimeOverview | null>(null);
   events      = signal<UpcomingEventItem[]>([]);
@@ -117,6 +126,47 @@ export class TimeOverviewComponent implements OnInit {
     const t = item.today?.clockInTime;
     if (!t) return '—';
     return this.loc.formatTime(t);
+  }
+
+  isUserSelected(userId: string): boolean {
+    return this.selectedUserIds().has(userId);
+  }
+
+  toggleUserSelected(userId: string): void {
+    this.selectedUserIds.update(set => {
+      const next = new Set(set);
+      next.has(userId) ? next.delete(userId) : next.add(userId);
+      return next;
+    });
+  }
+
+  clearSelection(): void {
+    this.selectedUserIds.set(new Set());
+  }
+
+  async markPresentSelected(): Promise<void> {
+    const ids = this.selectedUserIds();
+    const items = this.absentEmployees().filter(e => ids.has(e.userId));
+    if (!items.length || this.markPresentBusy()) return;
+
+    this.markPresentBusy.set(true);
+    try {
+      const results = await this.markPresentDialog.open({
+        items: items.map(e => ({
+          userId: e.userId,
+          userName: e.fullName,
+          date: e.today?.date || this.loc.todayDateStr(),
+        })),
+      });
+      if (!results) return;
+
+      const succeededIds = new Set(results.filter(r => r.success).map(r => r.userId));
+      if (succeededIds.size) this._loadTeam();
+      // Keep failures selected so they're easy to retry.
+      this.selectedUserIds.set(new Set([...ids].filter(id => !succeededIds.has(id))));
+    } finally {
+      this.markPresentBusy.set(false);
+    }
   }
 
   trackById(_: number, item: TeamAttendanceItem): string {

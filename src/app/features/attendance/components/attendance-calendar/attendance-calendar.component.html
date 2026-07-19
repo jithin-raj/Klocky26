@@ -44,6 +44,18 @@
             </svg>
           </button>
         </div>
+
+        @if (canMarkPresent() && viewMode() === 'calendar') {
+          <button class="select-mode-btn" [class.active]="selectMode()" (click)="toggleSelectMode()">
+            @if (selectMode()) {
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Cancel
+            } @else {
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Select
+            }
+          </button>
+        }
       </div>
     </div>
 
@@ -122,12 +134,29 @@
                 [class.is-past]="cell.isPast && !cell.isOff && !cell.status"
                 [class.has-status]="!!cell.status && cell.status !== 'off'"
                 [class.active]="activeCell === cell"
+                [class.selectable]="selectMode() && canMarkPresentDay(cell)"
+                [class.selected]="selectMode() && isDateSelected(cell)"
+                [class.select-dimmed]="selectMode() && !canMarkPresentDay(cell)"
                 [style.--s-color]="cellColor(cell)"
                 [style.--s-bg]="cellBg(cell)"
                 [title]="cellTitle(cell)"
-                (click)="openDetail(cell)"
+                (click)="onCellClick(cell)"
               >
+                @if (selectMode() && canMarkPresentDay(cell)) {
+                  <span class="cell-check" [class.cell-check--on]="isDateSelected(cell)">
+                    @if (isDateSelected(cell)) {
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    }
+                  </span>
+                }
                 <span class="day-num">{{ cell.day }}</span>
+
+                @if (!selectMode() && requestBadge(cell); as rb) {
+                  <span class="req-flag" [class.req-flag--pending]="rb.kind === 'pending'"
+                        [class.req-flag--approved]="rb.kind === 'approved'"
+                        [class.req-flag--rejected]="rb.kind === 'rejected'"
+                        [attr.data-tooltip]="rb.label" [title]="rb.label"></span>
+                }
 
                 @if (cell.holidayName) {
                   <span class="holiday-tag" [attr.data-tooltip]="cell.holidayName">
@@ -171,6 +200,18 @@
           </span>
         }
       </div>
+
+      <!-- Bulk select action bar -->
+      @if (selectMode()) {
+        <div class="select-bar">
+          <span class="select-bar__count">{{ selectedDates().size }} selected</span>
+          <button type="button" class="select-bar__clear" [disabled]="!selectedDates().size" (click)="clearSelection()">Clear</button>
+          <button type="button" class="select-bar__confirm" [disabled]="!selectedDates().size" (click)="markPresentSelected()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Mark present
+          </button>
+        </div>
+      }
     }
 
     <!-- ── LIST VIEW ──────────────────────────────────────────────── -->
@@ -282,6 +323,15 @@
       } @else {
         <span class="cdm-status-badge cdm-status-badge--none">No record</span>
       }
+
+      @if (requestBadge(cell); as rb) {
+        <span class="cdm-req-badge"
+              [class.cdm-req-badge--pending]="rb.kind === 'pending'"
+              [class.cdm-req-badge--approved]="rb.kind === 'approved'"
+              [class.cdm-req-badge--rejected]="rb.kind === 'rejected'">
+          {{ rb.label }}
+        </span>
+      }
     </div>
 
     <!-- Hours logged stat card -->
@@ -325,16 +375,33 @@
       </div>
     }
 
-    <!-- Regularize CTA -->
-    @if (canRegularize(cell)) {
+    <!-- Regularize CTA / Mark present (admin/HR) -->
+    @if (canRegularize(cell) || canMarkPresentDay(cell)) {
       <div class="cdm-footer">
-        <p class="cdm-footer-hint">{{ regularizeHint(cell) }}</p>
-        <button class="cdm-regularize-btn" (click)="regularize(cell)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/>
-          </svg>
-          Regularize this day
-        </button>
+        @if (canRegularize(cell)) {
+          <p class="cdm-footer-hint">{{ regularizeBlockedReason(cell) || regularizeHint(cell) }}</p>
+        }
+        <div class="cdm-footer-actions">
+          @if (canRegularize(cell)) {
+            <button class="cdm-regularize-btn"
+                    [disabled]="!!regularizeBlockedReason(cell)"
+                    [title]="regularizeBlockedReason(cell) || ''"
+                    (click)="regularize(cell)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/>
+              </svg>
+              Regularize this day
+            </button>
+          }
+          @if (canMarkPresentDay(cell)) {
+            <button class="cdm-mark-present-btn" (click)="markPresent(cell)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Mark present
+            </button>
+          }
+        </div>
       </div>
     }
   </div>

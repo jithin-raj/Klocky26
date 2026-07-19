@@ -121,6 +121,42 @@ export class LocalizationService {
     return `${this.formatDate(date)} ${this.formatTime(date)}`;
   }
 
+  /**
+   * The reverse of `formatDate`/`formatTime` — given a wall-clock date +
+   * time as entered by the user (assumed to be in the org's own timezone,
+   * e.g. picked via a time picker for "clock in at 9am office time"),
+   * returns the equivalent UTC ISO instant to send to the server.
+   */
+  toUtcIso(dateStr: string, timeStr: string): string {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const [hh, mm] = timeStr.split(':').map(Number);
+    // Reference instant (treating the wall time as if it were UTC) — only
+    // used to look up what the zone's offset is on that date (handles DST).
+    const guessUtc = new Date(Date.UTC(y, (m || 1) - 1, d || 1, hh || 0, mm || 0));
+    const offsetMinutes = this._offsetMinutes(this.timezone(), guessUtc);
+    return new Date(guessUtc.getTime() - offsetMinutes * 60000).toISOString();
+  }
+
+  /** Today's calendar date (YYYY-MM-DD) as it currently is in the org's timezone. */
+  todayDateStr(): string {
+    const { year, month, day } = this.zonedParts(new Date(), this.timezone());
+    return `${year}-${month}-${day}`;
+  }
+
+  /** Minutes a timezone is ahead of UTC at the given instant (negative if behind). */
+  private _offsetMinutes(timeZone: string, at: Date): number {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset' }).formatToParts(at);
+      const raw = parts.find(p => p.type === 'timeZoneName')?.value ?? 'GMT+0';
+      const match = raw.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+      if (!match) return 0;
+      const sign = match[1] === '-' ? -1 : 1;
+      return sign * (parseInt(match[2], 10) * 60 + (match[3] ? parseInt(match[3], 10) : 0));
+    } catch {
+      return 0;
+    }
+  }
+
   /** Formats a money amount using the org's currency code. */
   formatCurrency(amount: number, opts?: { maximumFractionDigits?: number }): string {
     const code = this.currency();
