@@ -17,6 +17,7 @@ import {
   PayrollSettingsDto, PayGradeDto, PayGradeUpsertRequest, BonusDto, PayslipDto, PayslipRunResult,
 } from '../../../../core/models/payroll.model';
 import { EmployeeResponse } from '../../../employees/models/employee-api.model';
+import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
 
 const AVATAR_COLORS = ['#6366f1','#ec4899','#f59e0b','#22c55e','#14b8a6','#8b5cf6','#ef4444','#0ea5e9'];
 function initialsOf(name: string): string {
@@ -239,8 +240,19 @@ export class CompensationHubComponent implements OnInit {
   }
   closeGradeEditor(): void { this.gradeEditorOpen.set(false); }
 
+  readonly nameError = NAME_VALIDATION_MESSAGE;
+
+  get gradeNameInvalid(): boolean {
+    return !!this.gradeForm.name.trim() && !isValidName(this.gradeForm.name);
+  }
+
+  get bonusLabelInvalid(): boolean {
+    return !!this.bonusForm.label.trim() && !isValidName(this.bonusForm.label);
+  }
+
   get gradeValid(): boolean {
-    return !!this.gradeForm.name.trim() && this.gradeForm.minCtc <= this.gradeForm.midCtc && this.gradeForm.midCtc <= this.gradeForm.maxCtc;
+    return !!this.gradeForm.name.trim() && !this.gradeNameInvalid &&
+      this.gradeForm.minCtc <= this.gradeForm.midCtc && this.gradeForm.midCtc <= this.gradeForm.maxCtc;
   }
 
   saveGrade(): void {
@@ -298,7 +310,8 @@ export class CompensationHubComponent implements OnInit {
   closeBonusEditor(): void { this.bonusEditorOpen.set(false); }
 
   get bonusValid(): boolean {
-    return !!this.bonusForm.userId && this.bonusForm.amount > 0 && this.bonusForm.year > 0 && this.bonusForm.month >= 1 && this.bonusForm.month <= 12;
+    return !!this.bonusForm.userId && this.bonusForm.amount > 0 && this.bonusForm.year > 0 &&
+      this.bonusForm.month >= 1 && this.bonusForm.month <= 12 && !this.bonusLabelInvalid;
   }
 
   saveBonus(): void {

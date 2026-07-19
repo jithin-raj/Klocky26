@@ -23,6 +23,7 @@ import { AttendanceStateService } from '../../core/services/attendance-state.ser
 import { NotificationService } from '../../core/services/notification.service';
 import { LoadingService } from '../../core/services/loading.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
+import { MobileBridgeService } from '../../core/services/mobile-bridge.service';
 
 @Component({
   selector: 'klocky-shell',
@@ -93,6 +94,15 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   private readonly logoSvc = inject(OrgLogoService);
+
+  /**
+   * The app-style bottom nav is for the real React-Native wrapper only
+   * (window.__IS_MOBILE__) — a narrow *browser* window (including on a phone)
+   * gets the same desktop sidebar layout, just responsively scaled, not the
+   * native-app bottom-nav experience.
+   */
+  private readonly mobileBridge = inject(MobileBridgeService);
+  readonly isMobile = this.mobileBridge.isMobile;
 
   constructor(
     private router: Router,

@@ -162,7 +162,7 @@
           </ui-form-field>
         </ui-form-grid>
         <ui-form-grid [columns]="2">
-          <ui-form-field label="Emergency contact name">
+          <ui-form-field label="Emergency contact name" [error]="errors()['emergencyContactName']">
             <ui-input placeholder="Full name" [ngModel]="form().emergencyContactName" (ngModelChange)="patch('emergencyContactName', $event)" name="ecName" />
           </ui-form-field>
           <ui-form-field label="Emergency contact phone">

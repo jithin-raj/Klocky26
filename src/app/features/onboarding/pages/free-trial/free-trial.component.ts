@@ -10,6 +10,7 @@ import { OrgThemeService } from '../../../../core/services/org-theme.service';
 import { OrgAuthService } from '../../../../core/services/org-auth.service';
 import { OptionsService } from '../../../../core/services/options.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
+import { SendOtpResponse } from '../../../../core/models/org-auth.model';
 
 export type TrialStep = 'email' | 'otp' | 'setup' | 'done';
 
@@ -43,6 +44,8 @@ export class FreeTrialComponent implements OnInit {
 
   /** Single-use token from verify-otp (4h validity), needed by the final register call */
   private verificationToken = '';
+  /** send-otp response — seeds the OTP step's expiry/resend countdowns. */
+  sendOtpResult: SendOtpResponse | null = null;
 
   ngOnInit(): void {
     this.orgTheme.reset();
@@ -60,8 +63,9 @@ export class FreeTrialComponent implements OnInit {
     this.authState.setEmail(data.email);
 
     this.orgAuth.sendOtp({ organisationName: data.orgName, email: data.email }).subscribe({
-      next: () => {
+      next: (res) => {
         this.emailStepSubmitting.set(false);
+        this.sendOtpResult = res.data;
         this.step.set('otp');
       },
       error: (err) => {

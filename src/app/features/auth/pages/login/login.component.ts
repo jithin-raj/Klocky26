@@ -44,7 +44,7 @@ type LoginStep = 'org' | 'credentials' | 'loading';
     </klocky-auth-shell>
 
     <!-- Non-dismissible: the temp/old password was just exposed in plaintext, close the window now. -->
-    <ui-modal [open]="mustChangePassword()" [closeOnBackdrop]="false" size="sm">
+    <ui-modal [open]="mustChangePassword()" [closeOnBackdrop]="false" size="md">
       <div class="pwm">
         <div class="pwm-badge">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -174,24 +174,24 @@ type LoginStep = 'org' | 'credentials' | 'loading';
     }
 
     /* ── Password-change modal — modern, org-branded (uses --accent set by OrgThemeService) ── */
-    .pwm { padding: 30px 30px 30px; text-align: center; }
+    .pwm { padding: 26px 32px 28px; text-align: center; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
     .pwm-badge {
-      width: 58px; height: 58px; margin: 0 auto 18px;
+      width: 50px; height: 50px; margin: 0 auto 14px;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 18px; color: #fff;
+      border-radius: 16px; color: #fff;
       background: linear-gradient(140deg, var(--accent, #0d9488), color-mix(in srgb, var(--accent, #0d9488) 62%, #000));
       box-shadow: 0 10px 24px -6px color-mix(in srgb, var(--accent, #0d9488) 55%, transparent),
                   inset 0 1px 0 rgba(255,255,255,.28);
     }
-    .pwm-title { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0 0 7px; letter-spacing: -0.4px; }
-    .pwm-sub { font-size: 13.5px; color: #64748b; margin: 0 0 24px; line-height: 1.55; }
+    .pwm-title { font-size: 19px; font-weight: 800; color: #0f172a; margin: 0 0 6px; letter-spacing: -0.4px; }
+    .pwm-sub { font-size: 13px; color: #64748b; margin: 0 0 18px; line-height: 1.5; }
 
-    .pwm-form { display: flex; flex-direction: column; gap: 14px; }
-    .pwm-field { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+    .pwm-form { display: flex; flex-direction: column; gap: 11px; }
+    .pwm-field { display: flex; flex-direction: column; gap: 5px; text-align: left; }
     .pwm-field label { font-size: 12.5px; font-weight: 650; color: #334155; }
     .pwm-input-wrap { position: relative; display: flex; align-items: center; }
     .pwm-input {
-      padding: 12px 42px 12px 14px; border: 1.5px solid #e6eaf1; border-radius: 12px;
+      padding: 10px 42px 10px 14px; border: 1.5px solid #e6eaf1; border-radius: 12px;
       font-size: 14px; color: #1e293b; outline: none; width: 100%; box-sizing: border-box;
       background: #fbfcfe;
       transition: border-color .15s, box-shadow .15s, background .15s;
@@ -225,8 +225,8 @@ type LoginStep = 'org' | 'credentials' | 'loading';
 
     /* Requirement chips */
     .pwm-reqs {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px;
-      margin: 4px 0 4px; text-align: left;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px;
+      margin: 2px 0 2px; text-align: left;
     }
     .pwm-req { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: #94a3b8; transition: color .15s; }
     .pwm-req-tick {
@@ -246,7 +246,7 @@ type LoginStep = 'org' | 'credentials' | 'loading';
       border: 1px solid #fecaca;
     }
     .pwm-btn {
-      width: 100%; padding: 13px; border: none; border-radius: 12px; margin-top: 4px;
+      width: 100%; padding: 12px; border: none; border-radius: 12px; margin-top: 2px;
       background: linear-gradient(180deg, color-mix(in srgb, var(--accent, #0d9488) 92%, #fff), var(--accent, #0d9488));
       color: #fff; font-size: 14.5px; font-weight: 700; cursor: pointer;
       box-shadow: 0 1px 1px rgba(15,23,42,.12), 0 12px 24px -8px color-mix(in srgb, var(--accent, #0d9488) 60%, transparent);

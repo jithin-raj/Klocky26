@@ -22,10 +22,13 @@ import {
   TIMEZONE_OPTIONS,
   COUNTRIES,
   COUNTRY_DEFAULT_TIMEZONE,
+  COUNTRY_DEFAULT_CURRENCY,
   WEEKDAYS,
 } from '../../../../core/config/form-options.const';
 import { SelectOption } from '../../../../shared/components/ui-select/ui-select.component';
 import { ORG_CODE_PATTERN, toOrgSlug } from '../../../../core/utils/org-slug.util';
+import { nameFormatValidator } from '../../../../core/utils/name-validation.util';
+import { SendOtpResponse } from '../../../../core/models/org-auth.model';
 
 type RegStep = 'org-info' | 'admin-email' | 'otp' | 'org-profile' | 'done';
 
@@ -47,6 +50,8 @@ export class RegisterComponent implements OnInit {
 
   /** Single-use token from verify-otp (4h validity), needed by the final register call */
   private verificationToken = '';
+  /** send-otp response — seeds the OTP step's expiry/resend countdowns. */
+  sendOtpResult: SendOtpResponse | null = null;
 
   readonly authState = inject(AuthStateService);
   private router = inject(Router);
@@ -90,12 +95,12 @@ export class RegisterComponent implements OnInit {
 
   // ── Form groups per step ──────────────────────────────────────
   readonly orgInfoForm: FormGroup = this.fb.group({
-    orgName: ['', [Validators.required, Validators.minLength(2)]],
+    orgName: ['', [Validators.required, Validators.minLength(2), nameFormatValidator()]],
     orgSlug: ['', [Validators.required, Validators.pattern(SLUG_PATTERN)]],
   });
 
   readonly adminForm: FormGroup = this.fb.group({
-    adminName:  ['', [Validators.required, Validators.minLength(2)]],
+    adminName:  ['', [Validators.required, Validators.minLength(2), nameFormatValidator()]],
     adminEmail: ['', [Validators.required, Validators.email]],
   });
 
@@ -171,8 +176,9 @@ export class RegisterComponent implements OnInit {
     this.authState.setEmail(email);
 
     this.orgAuth.sendOtp({ organisationName: this.authState.orgDisplayName(), email }).subscribe({
-      next: () => {
+      next: (res) => {
         this.loading = false;
+        this.sendOtpResult = res.data;
         this.step = 'otp';
       },
       error: (err) => {
@@ -210,7 +216,7 @@ export class RegisterComponent implements OnInit {
       companySize,
       country,
       defaultTimezone: timezone,
-      currency: 'INR',
+      currency: COUNTRY_DEFAULT_CURRENCY[country] ?? 'INR',
       emailDomain: adminEmail.split('@')[1] ?? '',
       website: website || undefined,
       // Advanced attendance config is no longer collected at sign-up — the server

@@ -1,4 +1,4 @@
-<div class="layout" [style.--accent]="orgAccentColor || '#0d9488'">
+<div class="layout" [class.is-native-mobile]="isMobile" [style.--accent]="orgAccentColor || '#0d9488'">
   <!-- Mobile backdrop -->
   <div class="mobile-backdrop" [class.visible]="isSidebarOpen" (click)="closeSidebar()"></div>
 
@@ -23,8 +23,10 @@
     </div>
   </div>
 
-  <!-- Mobile bottom navigation — only rendered/visible on ≤768px -->
-  <klocky-bottom-nav class="mobile-bottom-nav"></klocky-bottom-nav>
+  <!-- App-style bottom navigation — only for the real RN mobile app, never a browser -->
+  @if (isMobile) {
+    <klocky-bottom-nav class="mobile-bottom-nav"></klocky-bottom-nav>
+  }
 </div>
 
 <!-- Global overlays — ui-toast-container lives at the app root (app.component.html) so toasts work outside the authenticated shell too -->

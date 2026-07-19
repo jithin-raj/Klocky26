@@ -150,12 +150,12 @@
   [submitLabel]="editingDeptId() ? 'Save changes' : 'Create department'"
   size="md"
   [busy]="savingDepartment()"
-  [submitDisabled]="!newDepartmentName().trim()"
+  [submitDisabled]="!newDepartmentName().trim() || departmentNameInvalid"
   (submit)="submitAddDepartment()"
   (cancel)="cancelAddDepartment()"
 >
   <ui-form-grid [columns]="1">
-    <ui-form-field label="Name" [required]="true">
+    <ui-form-field label="Name" [required]="true" [error]="departmentNameInvalid ? nameError : ''">
       <ui-input placeholder="e.g. Engineering"
         [ngModel]="newDepartmentName()" (ngModelChange)="newDepartmentName.set($event)" />
     </ui-form-field>
@@ -180,12 +180,12 @@
   [submitLabel]="editingRoleId() ? 'Save changes' : 'Create role'"
   size="md"
   [busy]="savingRole()"
-  [submitDisabled]="!newRoleName().trim()"
+  [submitDisabled]="!newRoleName().trim() || roleNameInvalid"
   (submit)="submitAddRole()"
   (cancel)="cancelAddRole()"
 >
   <ui-form-grid [columns]="2">
-    <ui-form-field label="Name" [required]="true" [full]="true">
+    <ui-form-field label="Name" [required]="true" [full]="true" [error]="roleNameInvalid ? nameError : ''">
       <ui-input placeholder="e.g. Team Lead"
         [ngModel]="newRoleName()" (ngModelChange)="newRoleName.set($event)" />
     </ui-form-field>

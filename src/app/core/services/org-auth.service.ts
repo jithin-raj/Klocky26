@@ -8,6 +8,7 @@ import { ApiResponse }        from '../models/api-response.model';
 import { ChangePasswordRequest } from '../models/user.model';
 import {
   SendOtpRequest,
+  SendOtpResponse,
   VerifyOtpRequest,
   VerifyOtpResponse,
   RegisterOrgRequest,
@@ -43,9 +44,9 @@ export class OrgAuthService {
 
   // ── Registration (public) ───────────────────────────────────────────────
 
-  /** POST /api/org/register/send-otp */
-  sendOtp(payload: SendOtpRequest): Observable<ApiResponse<null>> {
-    return this.api.post<ApiResponse<null>>('/org/register/send-otp', payload);
+  /** POST /api/org/register/send-otp — { expiresAt, expiresInSeconds, resendAvailableInSeconds, message } */
+  sendOtp(payload: SendOtpRequest): Observable<ApiResponse<SendOtpResponse>> {
+    return this.api.post<ApiResponse<SendOtpResponse>>('/org/register/send-otp', payload);
   }
 
   /** POST /api/org/register/verify-otp */

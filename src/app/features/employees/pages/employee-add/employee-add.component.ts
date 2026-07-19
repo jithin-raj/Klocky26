@@ -19,6 +19,7 @@ import {
   UiFormSectionComponent, UiFormGridComponent, UiFormFieldComponent, UiSaveBarComponent,
 } from '../../../../shared/components';
 import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
+import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
 
 interface EmployeeForm {
   employeeCode: string;
@@ -309,7 +310,9 @@ export class EmployeeAddComponent implements OnInit {
     const errs: Record<string, string> = {};
     if (!f.employeeCode.trim()) errs['employeeCode'] = 'Employee code is required';
     if (!f.firstName.trim())   errs['firstName']   = 'First name is required';
+    else if (!isValidName(f.firstName)) errs['firstName'] = NAME_VALIDATION_MESSAGE;
     if (!f.lastName.trim())    errs['lastName']     = 'Last name is required';
+    else if (!isValidName(f.lastName)) errs['lastName'] = NAME_VALIDATION_MESSAGE;
     if (!this.isEdit()) {
       if (!f.gender)           errs['gender']       = 'Gender is required';
       if (!f.email.trim())     errs['email']        = 'Email is required';
@@ -318,6 +321,9 @@ export class EmployeeAddComponent implements OnInit {
     }
     if (!f.dateOfJoining)      errs['dateOfJoining'] = 'Join date is required';
     if (!f.departmentId)       errs['departmentId'] = 'Department is required';
+    if (f.emergencyContactName.trim() && !isValidName(f.emergencyContactName)) {
+      errs['emergencyContactName'] = NAME_VALIDATION_MESSAGE;
+    }
 
     // Duplicate pre-check against the loaded roster — fail fast before saving.
     const roster = this.managers();

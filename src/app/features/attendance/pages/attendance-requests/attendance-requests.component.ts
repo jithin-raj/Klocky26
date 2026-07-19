@@ -3,7 +3,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { RouterHistoryService } from '../../../../core/services/router-history.service';
 
 import { UiSelectComponent, UiIconComponent } from '../../../../shared/components';
 import { UiDatePickerComponent } from '../../../../shared/components/ui-datepicker/ui-datepicker.component';
@@ -48,6 +49,8 @@ export class AttendanceRequestsComponent implements OnInit {
   private readonly appState = inject(AppStateService);
   private readonly toast    = inject(ToastService);
   private readonly route    = inject(ActivatedRoute);
+  private readonly router   = inject(Router);
+  private readonly routerHistory = inject(RouterHistoryService);
   private readonly loc      = inject(LocalizationService);
 
   readonly todayIso = new Date().toISOString().slice(0, 10);
@@ -171,6 +174,8 @@ export class AttendanceRequestsComponent implements OnInit {
   })();
 
   private _fromCalendar = false;
+  /** Where to navigate after a successful submit — set when arriving via a "regularise this" deep link. */
+  private returnUrl: string | null = null;
 
   // ── History ───────────────────────────────────────────────────────────
   myAttendance   = signal<AttendanceRequestResponse[]>([]);
@@ -221,7 +226,28 @@ export class AttendanceRequestsComponent implements OnInit {
         this.clockIn.set('09:00');
         this.clockOut.set('18:30');
       }
+      if (params['returnUrl']) {
+        this.returnUrl = params['returnUrl'];
+      } else {
+        // No explicit origin was passed (e.g. sidebar/bottom-nav) — fall back to
+        // wherever the user actually navigated in from, so "go back" still works.
+        const prev = this.routerHistory.getPreviousUrl();
+        if (prev && !prev.includes('/attendance/requests')) {
+          this.returnUrl = prev;
+        }
+      }
     });
+  }
+
+  /** After a successful submit: go back to wherever the user came from, or reset in place. */
+  private afterSubmitSuccess() {
+    if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl);
+      return;
+    }
+    this.resetForm();
+    this.historyFetched.set(false);
+    this.loadRegularisationWindow();
   }
 
   /**
@@ -372,9 +398,7 @@ export class AttendanceRequestsComponent implements OnInit {
       next: () => {
         this.submitting.set(false);
         this.toast.success('Leave applied', 'Your request has been submitted.');
-        this.resetForm();
-        this.historyFetched.set(false);
-        this.loadRegularisationWindow();
+        this.afterSubmitSuccess();
       },
       error: err => {
         this.submitting.set(false);
@@ -435,9 +459,7 @@ export class AttendanceRequestsComponent implements OnInit {
       next: () => {
         this.submitting.set(false);
         this.toast.success('Request submitted', 'Your attendance request is awaiting approval.');
-        this.resetForm();
-        this.historyFetched.set(false);
-        this.loadRegularisationWindow(); // this date now has a live request → disable it going forward
+        this.afterSubmitSuccess();
       },
       error: err => {
         this.submitting.set(false);

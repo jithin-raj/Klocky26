@@ -119,6 +119,27 @@ export const COUNTRY_DEFAULT_TIMEZONE: Record<string, string> = {
   'Japan':          'Asia/Tokyo',
 };
 
+// ── Country → default currency ──────────────────────────────────────────────
+// Same "best-effort client-side nicety" as COUNTRY_DEFAULT_TIMEZONE above —
+// auto-fills the currency field once a country is picked at sign-up, still
+// freely editable afterward. Every value here is one already present in
+// CURRENCIES; countries without a natural match (South Africa, Brazil) fall
+// back to USD rather than introducing a currency with no dropdown entry.
+export const COUNTRY_DEFAULT_CURRENCY: Record<string, string> = {
+  'India':          'INR',
+  'United States':  'USD',
+  'United Kingdom': 'GBP',
+  'Canada':         'CAD',
+  'Australia':      'AUD',
+  'Germany':        'EUR',
+  'France':         'EUR',
+  'Singapore':      'SGD',
+  'UAE':            'AED',
+  'South Africa':   'USD',
+  'Brazil':         'USD',
+  'Japan':          'JPY',
+};
+
 // ── Company legal types ───────────────────────────────────────────────────────
 export const COMPANY_TYPES: string[] = [
   'Private Limited',

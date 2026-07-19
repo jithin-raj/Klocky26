@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, signal, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Title, Meta } from '@angular/platform-browser';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
 
@@ -13,12 +14,23 @@ import { AppStateService } from '../../core/services/app-state.service';
 })
 export class LandingComponent implements OnInit {
   private orgTheme = inject(OrgThemeService);
+  private titleSvc = inject(Title);
+  private metaSvc = inject(Meta);
 
   constructor(private router: Router, private appState: AppStateService) {}
 
   ngOnInit(): void {
     this.orgTheme.reset();
     this.appState.clearState();
+
+    // Reinforce the static index.html tags for search engines/crawlers that
+    // read the rendered DOM (Googlebot executes JS) — keeps the title/description
+    // targeted at "Klock HRMS" / "Klock attendance" style searches.
+    this.titleSvc.setTitle('Klock — HRMS & Attendance Management Software');
+    this.metaSvc.updateTag({
+      name: 'description',
+      content: 'Klock is an all-in-one HRMS and attendance management platform — real-time clock in/out, geofenced attendance, leave management, employee records, payroll-ready reports and AI-powered HR insights.',
+    });
   }
 
   features = [

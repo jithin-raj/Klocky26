@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { LeaveCategoryService } from '../../../../core/services/leave-category.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
 import { LeaveCategory, LeaveCategoryUpsert } from '../../../../core/models/leave-category.model';
+import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
 
 interface NewCategoryForm {
   name: string;
@@ -107,8 +108,13 @@ export class LeaveCategoriesComponent implements OnInit {
     if (!this.showAddForm()) this.form = defaultForm();
   }
 
+  get nameInvalid(): boolean {
+    return !!this.form.name.trim() && !isValidName(this.form.name);
+  }
+  readonly nameError = NAME_VALIDATION_MESSAGE;
+
   submitCreate(): void {
-    if (!this.form.name.trim() || this.form.daysPerYear == null) return;
+    if (!this.form.name.trim() || this.form.daysPerYear == null || this.nameInvalid) return;
     this.submitting.set(true);
 
     const body: LeaveCategoryUpsert = {

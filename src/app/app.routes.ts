@@ -39,6 +39,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'privacy-policy',
+    loadComponent: () =>
+      import('./features/legal/pages/privacy-policy/privacy-policy.component').then(
+        (m) => m.PrivacyPolicyComponent,
+      ),
+  },
+  {
     path: 'free-trial',
     canActivate: [webOnlyGuard],
     loadChildren: () =>

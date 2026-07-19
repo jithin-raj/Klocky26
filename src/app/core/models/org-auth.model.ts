@@ -10,6 +10,17 @@ export interface SendOtpRequest {
   email: string;
 }
 
+/** POST /api/org/register/send-otp (and .../resend-otp) response (data) */
+export interface SendOtpResponse {
+  /** Absolute ISO timestamp the OTP stops being valid — use this over expiresInSeconds to survive tab-switch/clock drift. */
+  expiresAt: string;
+  /** OTP validity window in seconds (300 = 5:00) — the initial value before the first expiresAt-based tick. */
+  expiresInSeconds: number;
+  /** How long the "Resend OTP" action stays disabled for, in seconds (30). */
+  resendAvailableInSeconds: number;
+  message: string;
+}
+
 /** POST /api/org/register/verify-otp request */
 export interface VerifyOtpRequest {
   email: string;

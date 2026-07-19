@@ -201,6 +201,7 @@
   @if (step === 'otp') {
     <klocky-otp-step
       [orgName]="authState.orgDisplayName()"
+      [sendResult]="sendOtpResult"
       (verified)="onOtpVerified($event)"
       (back)="goBack()"
     />

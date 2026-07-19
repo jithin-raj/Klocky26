@@ -57,8 +57,8 @@
 }
 
 @media (max-width: 768px) {
-  .page-loader {
-    /* Also leave room for the 72-px bottom nav bar */
+  .layout.is-native-mobile .page-loader {
+    /* Also leave room for the 72-px bottom nav bar — RN app only */
     bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 }
@@ -110,11 +110,14 @@
 
   .content {
     padding: 16px 12px;
-    /* Leave room for the bottom nav bar */
+  }
+
+  .layout.is-native-mobile .content {
+    /* Leave room for the bottom nav bar — RN app only */
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* Show the bottom nav */
+  /* Show the bottom nav (RN app only — element isn't even rendered otherwise) */
   .mobile-bottom-nav {
     display: block;
   }
@@ -123,6 +126,9 @@
 @media (max-width: 480px) {
   .content {
     padding: 12px 10px;
+  }
+
+  .layout.is-native-mobile .content {
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 }

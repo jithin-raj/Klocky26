@@ -41,12 +41,19 @@
           maxlength="1"
           autocomplete="one-time-code"
           [value]="digit"
+          [disabled]="otpExpired"
           (input)="onOtpInput($event, i)"
           (keydown)="onOtpKeydown($event, i)"
           (paste)="onOtpPaste($event)"
         />
       }
     </div>
+
+    @if (otpExpired) {
+      <p class="lk-otp-expired-msg">OTP expired — resend</p>
+    } @else {
+      <p class="lk-otp-expiry">Code expires in <span class="lk-otp-expiry-timer">{{ otpTimeLabel }}</span></p>
+    }
 
     @if (error) {
       <p class="lk-error-msg lk-error-center">{{ error }}</p>
@@ -55,7 +62,7 @@
     <button
       class="lk-btn"
       type="button"
-      [disabled]="!otpComplete || loading"
+      [disabled]="!otpComplete || loading || otpExpired"
       (click)="verifyOtp()"
     >
       @if (loading) {
@@ -72,12 +79,8 @@
     </button>
 
     <div class="lk-resend">
-      @if (resendSeconds > 0) {
-        Resend code in <span class="lk-resend-timer">{{ resendSeconds }}s</span>
-      } @else {
-        Didn't receive it?
-        <button type="button" class="lk-resend-btn" (click)="resendOtp()">Resend</button>
-      }
+      Didn't receive it?
+      <button type="button" class="lk-resend-btn" [disabled]="resendSeconds > 0" (click)="resendOtp()">Resend</button>
     </div>
 
   } @else {

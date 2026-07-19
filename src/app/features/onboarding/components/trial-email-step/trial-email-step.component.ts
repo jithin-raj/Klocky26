@@ -105,7 +105,7 @@ export interface TrialStartData {
 
         <p class="lk-legal" style="margin-top:8px">
           By continuing you agree to our
-          <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+          <a href="#">Terms of Service</a> and <a href="/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>.
         </p>
 
       </div>
