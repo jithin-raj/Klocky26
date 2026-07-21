@@ -24,6 +24,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { LoadingService } from '../../core/services/loading.service';
 import { SubscriptionService } from '../../core/services/subscription.service';
 import { MobileBridgeService } from '../../core/services/mobile-bridge.service';
+import { TaskService } from '../../core/services/task.service';
 
 @Component({
   selector: 'klocky-shell',
@@ -53,6 +54,9 @@ export class ShellComponent implements OnInit, OnDestroy {
    */
   private readonly subscriptionSvc = inject(SubscriptionService);
   readonly isExpired = this.subscriptionSvc.isExpiredNow;
+
+  /** Sidebar "Tasks" badge — TaskService self-refreshes on notification.created too. */
+  private readonly taskSvc = inject(TaskService);
 
   /** Legal-consent gate — LegalConsentModalComponent renders itself when this is true. */
   private readonly dpdpConsent = inject(DpdpConsentService);
@@ -145,6 +149,9 @@ export class ShellComponent implements OnInit, OnDestroy {
 
     // Load the notification list for the bell; live ones arrive via SignalR.
     this.notifications.load();
+
+    // Sidebar "Tasks" badge — populated on every shell mount (login / hard refresh).
+    this.taskSvc.refreshCounts();
 
     // Legal-consent gate — re-check on every shell mount (hard refresh / deep
     // link never goes through login()'s or refreshToken()'s own load() calls).

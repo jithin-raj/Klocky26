@@ -7,6 +7,7 @@ import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
 import { UserAuthService } from '../../core/services/user-auth.service';
 import { PermissionService } from '../../core/services/permission.service';
+import { TaskService } from '../../core/services/task.service';
 import { UserRole } from '../../core/models/user.model';
 import { AccessLevel } from '../../core/models/permission.model';
 
@@ -22,6 +23,8 @@ interface MenuItem {
   permLevel?: AccessLevel;
   /** Feature not yet built — link routes to the shared Coming Soon page and shows a "Soon" badge. */
   comingSoon?: boolean;
+  /** Live numeric badge (e.g. pending task count) — rendered only when > 0. */
+  badge?: () => number;
 }
 
 interface MenuSection {
@@ -57,6 +60,7 @@ export class SidebarComponent {
   private appState  = inject(AppStateService);
   private userAuth  = inject(UserAuthService);
   private permissions = inject(PermissionService);
+  private readonly taskSvc = inject(TaskService);
 
   // Track current URL reactively
   currentUrl = signal<string>(this.router.url);
@@ -98,19 +102,17 @@ export class SidebarComponent {
       items: [
         { label: 'Overview', route: 'app/time-management', icon: 'grid', exact: true },
         { label: 'Attendance', route: 'app/attendance', icon: 'calendar', exact: true, roles: NON_ADMIN_ROLES },
-        { label: 'Regularization', route: 'app/attendance/requests', icon: 'repeat', roles: NON_ADMIN_ROLES },
         { label: 'My Leave', route: 'app/leaves/my', icon: 'calendar', roles: NON_ADMIN_ROLES },
-        { label: 'Leave Approvals', route: 'app/leaves', icon: 'check-circle', exact: true, roles: MANAGEMENT_ROLES },
       ]
     },
-    // §3 — Task Box (not yet built)
+    // §3 — Task Box: unified requests/approvals/work-tasks workspace
     {
       id: 'tasks',
       label: 'Task Box',
       icon: 'clipboard-check',
       expanded: false,
       items: [
-        { label: 'Task List', route: 'app/tasks', icon: 'clipboard-check', exact: true },
+        { label: 'Tasks', route: 'app/tasks', icon: 'clipboard-check', exact: true, badge: () => this.taskSvc.total() },
         { label: 'Manage Delegation', route: 'app/tasks/delegation', icon: 'repeat', roles: MANAGEMENT_ROLES },
       ]
     },

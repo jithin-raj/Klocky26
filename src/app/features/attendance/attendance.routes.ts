@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { redirectToTasksGuard } from '../../core/guards/redirect-to-tasks.guard';
 
 export const routes: Routes = [
   {
@@ -7,9 +8,11 @@ export const routes: Routes = [
       import('./pages/attendance/attendance.component').then(m => m.AttendanceComponent),
   },
   {
+    // The standalone regularisation/leave/approvals hub was consolidated into
+    // the unified Tasks workspace — any old link/bookmark redirects there.
     path: 'requests',
-    loadComponent: () =>
-      import('./pages/attendance-requests/attendance-requests.component').then(m => m.AttendanceRequestsComponent),
+    canActivate: [redirectToTasksGuard],
+    children: [],
   },
   {
     path: 'geofence',

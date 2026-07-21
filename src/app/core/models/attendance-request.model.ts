@@ -98,3 +98,17 @@ export interface MarkPresentBulkResponse {
   failed: number;
   results: MarkPresentBulkResultItem[];
 }
+
+/**
+ * GET /api/attendance-requests/selectable-range response (data) — drives the
+ * regularisation date picker directly, replacing the old client-side
+ * "fetch 2 months of calendar and derive it" approach.
+ */
+export interface SelectableRangeResponse {
+  /** Earliest selectable date (ISO, YYYY-MM-DD) — null = no lower bound. */
+  minDate: string | null;
+  /** Latest selectable date (ISO) — today. */
+  maxDate: string;
+  /** Individual dates already requested/locked — disable in the picker. */
+  blockedDates: string[];
+}

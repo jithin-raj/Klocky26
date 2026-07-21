@@ -53,7 +53,7 @@ export class AuthStateService {
     this.orgDisplayName.set('');
     this.orgSlugForLogin.set('');
     this.email.set('');
-    this.titleService.setTitle('Klock');
+    this.titleService.setTitle('Klockk');
   }
 
   resetToOrgStep(): void {
@@ -61,6 +61,6 @@ export class AuthStateService {
     this.orgIdentifier.set('');
     this.orgDisplayName.set('');
     this.orgSlugForLogin.set('');
-    this.titleService.setTitle('Klock');
+    this.titleService.setTitle('Klockk');
   }
 }

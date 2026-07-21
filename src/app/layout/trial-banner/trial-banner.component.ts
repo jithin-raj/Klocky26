@@ -42,7 +42,7 @@ const FORCE_SHOW_DAYS = 10;
         <span class="tb__text">
           @if (expired()) {
             @if (canManageBilling()) {
-              <strong>Subscription expired.</strong> Renew now to unlock Klock again.
+              <strong>Subscription expired.</strong> Renew now to unlock Klockk again.
             } @else {
               <strong>Subscription expired.</strong> Ask an admin to renew — access is locked until then.
             }

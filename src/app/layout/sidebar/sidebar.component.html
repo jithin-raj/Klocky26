@@ -48,6 +48,9 @@
                 class="nav-item">
                 <span class="nav-item-icon"><ui-icon [name]="$any(item.icon)" [size]="17"></ui-icon></span>
                 <span class="nav-item-label label">{{ item.label }}</span>
+                @if (item.badge && item.badge() > 0) {
+                  <span class="nav-badge label">{{ item.badge()! > 99 ? '99+' : item.badge() }}</span>
+                }
               </a>
             }
           </div>
@@ -79,7 +82,7 @@
       <span class="nav-icon">
         <span class="klocky-dot"></span>
       </span>
-      <span class="by-klocky-text label">{{ isJv ? 'Powered by Klock' : 'by Klock' }}</span>
+      <span class="by-klocky-text label">{{ isJv ? 'Powered by Klockk' : 'by Klockk' }}</span>
     </div>
 
   </div>

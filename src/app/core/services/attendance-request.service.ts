@@ -11,7 +11,9 @@ import {
   MarkPresentResponse,
   MarkPresentBulkRequest,
   MarkPresentBulkResponse,
+  SelectableRangeResponse,
 } from '../models/attendance-request.model';
+import { unwrapObject } from '../utils/api-list.util';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AttendanceRequestService — /api/attendance-requests (regularization)
@@ -71,6 +73,12 @@ export class AttendanceRequestService {
   markPresentBulk(payload: MarkPresentBulkRequest): Observable<MarkPresentBulkResponse> {
     return this.api.post<ApiResponse<MarkPresentBulkResponse>>('/attendance-requests/mark-present/bulk', payload)
       .pipe(map(res => res.data));
+  }
+
+  /** GET /api/attendance-requests/selectable-range — feeds the regularisation date picker's min/max/disabledDates. */
+  getSelectableRange(): Observable<SelectableRangeResponse> {
+    return this.api.get<ApiResponse<SelectableRangeResponse>>('/attendance-requests/selectable-range')
+      .pipe(map(res => unwrapObject<SelectableRangeResponse>(res, 'maxDate')));
   }
 
   private _list(data: AttendanceRequestResponse[] | Paged<AttendanceRequestResponse> | null | undefined): AttendanceRequestResponse[] {

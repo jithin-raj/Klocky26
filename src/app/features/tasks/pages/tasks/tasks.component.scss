@@ -95,9 +95,26 @@
 .tk-modal__body{padding:20px;display:flex;flex-direction:column;gap:14px}
 .tk-modal__foot{display:flex;gap:10px;padding:16px 20px;border-top:1px solid #f1f5f9;justify-content:flex-end}
 .tk-field{display:flex;flex-direction:column;gap:5px;label{font-size:12.5px;font-weight:600;color:#374151}}
+.tk-field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tk-checkbox{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#374151;cursor:pointer}
 .tk-textarea{width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13.5px;color:#1e293b;resize:none;outline:none;box-sizing:border-box;font-family:inherit;&:focus{border-color:var(--accent,#6366f1)}}
 .tk-reject-info{margin:0;font-size:13.5px;color:#475569;line-height:1.5}
 .tk-required{color:#ef4444}
+
+// ── "New" split-button ────────────────────────────────────────────────────────
+.tk-new-wrap{position:relative}
+.tk-new-backdrop{position:fixed;inset:0;z-index:999}
+.tk-new-menu{
+  position:absolute;top:calc(100% + 6px);right:0;z-index:1000;min-width:190px;
+  background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 32px -8px rgba(15,23,42,.18);
+  padding:6px;display:flex;flex-direction:column;gap:2px;
+  button{
+    display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;border:none;background:none;
+    font-size:13px;font-weight:600;color:#334155;cursor:pointer;text-align:left;transition:background .12s;
+    &:hover{background:#f1f5f9}
+    ui-icon{color:#6366f1;flex-shrink:0}
+  }
+}
 
 // ── Detail rows (view modal) ───────────────────────────────────────────────────
 .tk-detail-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;font-size:13px;

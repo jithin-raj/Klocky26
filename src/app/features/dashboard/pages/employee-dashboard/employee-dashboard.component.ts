@@ -35,6 +35,7 @@ interface QuickAction {
   icon: UiIconName;
   route: string;
   color: string;
+  queryParams?: Record<string, string>;
 }
 
 @Component({
@@ -96,14 +97,14 @@ export class EmployeeDashboardComponent implements OnDestroy {
   });
 
   quickActions: QuickAction[] = [
-    { label: 'Apply Leave',     sub: '1 pending request', icon: 'calendar',        route: 'app/leaves',     color: '#f59e0b' },
+    { label: 'Apply Leave',     sub: '1 pending request', icon: 'calendar',        route: 'app/tasks',      color: '#f59e0b', queryParams: { new: 'leave' } },
     { label: 'View Attendance', sub: '22 days present',   icon: 'clock',           route: 'app/attendance', color: '#0ea5e9' },
     { label: 'My Tasks',        sub: '5 tasks pending',   icon: 'clipboard-check', route: 'app/tasks',      color: '#10b981' },
     { label: 'My Profile',      sub: 'View details',      icon: 'user',            route: 'app/profile',    color: '#8b5cf6' },
   ];
 
   onQuickAction(a: QuickAction): void {
-    this.router.navigate([this.orgPrefix(), ...a.route.split('/')]);
+    this.router.navigate([this.orgPrefix(), ...a.route.split('/')], { queryParams: a.queryParams });
   }
 
   // Shorthand getters for template

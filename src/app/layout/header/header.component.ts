@@ -119,11 +119,20 @@ export class HeaderComponent implements OnDestroy {
   readonly unreadCount = computed(() => this.notifications.unreadCount());
   readonly recentNotifs = computed(() => this.notifications.recent());
 
+  /** Request/task-related notification types that route to the Tasks workspace when there's no explicit link. */
+  private isTaskNotificationType(type: string): boolean {
+    const prefixes = ['leave_', 'attendance_', 'comp_off_', 'task'];
+    const exact = ['absence_deducted', 'attendance_marked_present'];
+    return prefixes.some(p => type.startsWith(p)) || exact.includes(type);
+  }
+
   openNotification(n: AppNotification): void {
     this.notifications.markRead(n.id);
     this.notifOpen.set(false);
     if (n.link) {
       this.router.navigateByUrl(n.link);
+    } else if (this.isTaskNotificationType(n.type)) {
+      this.router.navigate([this.orgPrefix(), 'app', 'tasks']);
     } else {
       this.viewAllNotifications();
     }

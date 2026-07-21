@@ -25,11 +25,11 @@ export class LandingComponent implements OnInit {
 
     // Reinforce the static index.html tags for search engines/crawlers that
     // read the rendered DOM (Googlebot executes JS) — keeps the title/description
-    // targeted at "Klock HRMS" / "Klock attendance" style searches.
-    this.titleSvc.setTitle('Klock — HRMS & Attendance Management Software');
+    // targeted at "Klockk HRMS" / "Klockk HCM" style searches.
+    this.titleSvc.setTitle('Klockk — HRMS & HCM Software for Small Businesses');
     this.metaSvc.updateTag({
       name: 'description',
-      content: 'Klock is an all-in-one HRMS and attendance management platform — real-time clock in/out, geofenced attendance, leave management, employee records, payroll-ready reports and AI-powered HR insights.',
+      content: 'Klockk is an all-in-one HRMS and HCM platform built for small and growing organisations — real-time clock in/out, geofenced attendance, leave management, employee records, payroll-ready reports and AI-powered HR insights.',
     });
   }
 

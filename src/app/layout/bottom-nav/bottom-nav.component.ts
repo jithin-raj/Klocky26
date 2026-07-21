@@ -107,7 +107,7 @@ export class BottomNavComponent implements OnInit, OnDestroy {
       ...(adminOrHr ? [
         { label: 'Employees',  icon: 'users' as UiIconName,         route: `${p}/app/employees`,                    color: '#64748b' },
         { label: 'Add Staff',  icon: 'user-check' as UiIconName,    route: `${p}/app/employees/add`,               color: '#0ea5e9' },
-        { label: 'Approvals',  icon: 'check-circle' as UiIconName,  route: `${p}/app/leaves`,                      color: '#10b981' },
+        { label: 'Approvals',  icon: 'check-circle' as UiIconName,  route: `${p}/app/tasks?tab=pending`,           color: '#10b981' },
         { label: 'Billing',    icon: 'clipboard-check' as UiIconName, route: `${p}/app/billing`,                   color: '#eab308' },
       ] : []),
       ...(adminOnly ? [
@@ -124,12 +124,12 @@ export class BottomNavComponent implements OnInit, OnDestroy {
     const isAdmin = this.permissions.isAdmin();
     return [
       ...(!isAdmin ? [
-        { label: 'Apply Leave',        icon: 'calendar' as UiIconName, route: `${p}/app/leaves/my`,           color: '#f59e0b', desc: 'Submit a leave request' },
+        { label: 'Apply Leave',        icon: 'calendar' as UiIconName, route: `${p}/app/tasks?new=leave`,           color: '#f59e0b', desc: 'Submit a leave request' },
       ] : []),
-      { label: 'Request Attendance',   icon: 'repeat',     route: `${p}/app/attendance/requests`, color: '#6366f1', desc: 'Regularize attendance' },
+      { label: 'Request Attendance',   icon: 'repeat',     route: `${p}/app/tasks?new=regularisation`, color: '#6366f1', desc: 'Regularize attendance' },
       ...(isAdmin ? [
         { label: 'Add Employee',       icon: 'user-check' as UiIconName, route: `${p}/app/employees/add`,  color: '#0ea5e9', desc: 'Add a new team member' },
-        { label: 'Leave Approvals',    icon: 'check-circle' as UiIconName, route: `${p}/app/leaves`,       color: '#10b981', desc: 'Review pending leave requests' },
+        { label: 'Task Approvals',     icon: 'check-circle' as UiIconName, route: `${p}/app/tasks?tab=pending`,       color: '#10b981', desc: 'Review pending requests' },
       ] : []),
     ];
   });

@@ -85,7 +85,7 @@ export class LegalComponent {
   async withdraw(item: DpdpConsentStatusItem): Promise<void> {
     const ok = await this.modal.confirm({
       title: `Withdraw consent for "${item.title}"?`,
-      message: 'You\'ll be asked to review and accept this document again before you can keep using Klock. Continue?',
+      message: 'You\'ll be asked to review and accept this document again before you can keep using Klockk. Continue?',
       confirmLabel: 'Withdraw consent',
       variant: 'danger',
     });
