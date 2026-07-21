@@ -54,7 +54,7 @@ import { Component, ChangeDetectionStrategy, signal, computed, HostListener, OnI
 
             <h2 class="om__title">You're offline</h2>
             <p class="om__msg">
-              We can't reach Klock right now. Check your internet connection —
+              We can't reach Klockk right now. Check your internet connection —
               we'll reconnect automatically the moment you're back.
             </p>
 

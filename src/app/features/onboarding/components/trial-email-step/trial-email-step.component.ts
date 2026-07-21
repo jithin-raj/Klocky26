@@ -26,7 +26,7 @@ export interface TrialStartData {
           <span class="lk-heading-accent">workspace.</span>
         </h1>
         <p class="lk-subtext">
-          Set up your organisation on Klocky in minutes — no credit card required.
+          Set up your organisation on Klockk in minutes — no credit card required.
         </p>
 
         <!-- Organisation name -->

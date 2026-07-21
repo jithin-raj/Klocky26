@@ -1,19 +1,50 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
+import { RealtimeService } from './realtime.service';
 import { ApiResponse } from '../models/api-response.model';
-import { asArray } from '../utils/api-list.util';
+import { asArray, unwrapObject } from '../utils/api-list.util';
 import {
   TaskCategory, TaskHistoryItem, Delegation, CreateDelegationRequest,
   PendingTaskItem, TaskAction, TaskActionResult,
   WorkTaskDto, WorkTaskScope, WorkTaskStatusFilter, CreateWorkTaskRequest, UpdateWorkTaskRequest,
+  TaskCounts, AllTasksCategory, AllTasksResponse,
 } from '../models/task.model';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
 
   private readonly api = inject(ApiService);
+  private readonly realtime = inject(RealtimeService);
+
+  // ── Sidebar badge — self-refreshing, mirrors NotificationService's pattern ──
+  private readonly _counts = signal<TaskCounts | null>(null);
+  /** Total pending-on-me count for the sidebar "Tasks" badge. */
+  readonly total = computed(() => this._counts()?.total ?? 0);
+
+  constructor() {
+    // Any live notification (approval request/decision, etc.) can change what's
+    // pending on this user — re-pull the counts rather than trying to guess
+    // which notification types affect them.
+    this.realtime.on('notification.created').subscribe(() => this.refreshCounts());
+  }
+
+  /** GET /api/tasks/counts — call once after login/shell-mount, and again after any approve/reject/create. */
+  getCounts(): Observable<TaskCounts> {
+    return this.api.get<ApiResponse<TaskCounts>>('/tasks/counts')
+      .pipe(map(res => unwrapObject<TaskCounts>(res, 'total')));
+  }
+
+  refreshCounts(): void {
+    this.getCounts().subscribe({ next: c => this._counts.set(c), error: () => { /* keep last-known badge */ } });
+  }
+
+  /** GET /api/tasks/all — the unified feed behind the "All" tab. */
+  getAll(params?: { category?: AllTasksCategory; page?: number; pageSize?: number }): Observable<AllTasksResponse> {
+    return this.api.get<ApiResponse<AllTasksResponse>>('/tasks/all', params)
+      .pipe(map(res => unwrapObject<AllTasksResponse>(res, 'pendingApprovals')));
+  }
 
   getHistory(params?: { category?: TaskCategory; page?: number; pageSize?: number }): Observable<{ data: TaskHistoryItem[]; total: number }> {
     return this.api.get<ApiResponse<{ data: TaskHistoryItem[]; total: number }>>('/tasks/history', params)

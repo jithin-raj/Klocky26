@@ -21,7 +21,7 @@ import { IconKlockyLogoComponent } from '../../../../shared/icons/icon-klocky-lo
             <div class="lk-logo-mark">
               <icon-klocky-logo [size]="32"></icon-klocky-logo>
             </div>
-            <span class="lk-ll-name">klock</span>
+            <span class="lk-ll-name">klockk</span>
           </div>
 
           <div class="lk-ll-body">
@@ -95,7 +95,7 @@ import { IconKlockyLogoComponent } from '../../../../shared/icons/icon-klocky-lo
               @if (orgName) {
                 <span class="lk-logo-name lk-logo-org">{{ orgName }}<span class="lk-logo-tld">.klock</span></span>
               } @else {
-                <span class="lk-logo-name">klock</span>
+                <span class="lk-logo-name">klockk</span>
               }
             </div>
 
@@ -105,7 +105,7 @@ import { IconKlockyLogoComponent } from '../../../../shared/icons/icon-klocky-lo
 
       </div>
 
-      <p class="lk-footer">© 2026 Klock · Secure login</p>
+      <p class="lk-footer">© 2026 Klockk · Secure login</p>
     </div>
   `,
   styleUrl: './auth-shell.component.scss',

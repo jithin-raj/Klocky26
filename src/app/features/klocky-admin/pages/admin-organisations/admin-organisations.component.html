@@ -3,7 +3,7 @@
   <!-- ── Header ───────────────────────────────────────────────────── -->
   <div class="ao-header">
     <div class="ao-header__text">
-      <span class="ao-eyebrow">Platform · Klock admin</span>
+      <span class="ao-eyebrow">Platform · Klockk admin</span>
       <h1 class="ao-title">Organisations</h1>
       <p class="ao-subtitle">Manage every tenant, subscription and access setting.</p>
     </div>
@@ -146,7 +146,7 @@
   >
     @if (editingOrg(); as org) {
       <!-- Identity -->
-      <ui-form-section title="Identity" description="How the organisation appears across Klock.">
+      <ui-form-section title="Identity" description="How the organisation appears across Klockk.">
         <ui-form-grid [columns]="2">
           <ui-form-field label="Company name">
             <ui-input [(ngModel)]="editCompanyName" />
@@ -227,7 +227,7 @@
       </div>
 
       <!-- URL name -->
-      <ui-form-section title="Workspace URL" description="klock.vercel.app/&lt;this&gt;/app">
+      <ui-form-section title="Workspace URL" description="klockk.in/&lt;this&gt;/app">
         <span actions class="ao-instant-chip">Instant</span>
         <div class="ao-rename-row">
           <ui-input class="ao-rename-input" [(ngModel)]="editOrgUrlName" placeholder="acme" />

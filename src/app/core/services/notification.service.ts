@@ -4,6 +4,7 @@ import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { RealtimeService } from './realtime.service';
 import { ApiResponse, Paged } from '../models/api-response.model';
+import { ToastService } from '../../shared/components/ui-toast/toast.service';
 import {
   AppNotification,
   SendNotificationRequest,
@@ -26,6 +27,7 @@ export class NotificationService {
 
   private readonly api = inject(ApiService);
   private readonly realtime = inject(RealtimeService);
+  private readonly toast = inject(ToastService);
 
   private readonly _items = signal<AppNotification[]>([]);
   readonly items = this._items.asReadonly();
@@ -42,8 +44,9 @@ export class NotificationService {
     // Live pushes — a new notification for this user lands in real time.
     this.realtime.on<unknown>('notification.created').subscribe((payload) => {
       const n = normalizeNotification(payload);
-      this._items.update(list =>
-        list.some(x => x.id === n.id) ? list : [n, ...list]);
+      const isNew = !this._items().some(x => x.id === n.id);
+      if (isNew) this._items.update(list => [n, ...list]);
+      if (isNew) this.toast.info(n.title, n.body);
     });
 
     // Cross-device sync — another device read/deleted/cleared; mirror it here.

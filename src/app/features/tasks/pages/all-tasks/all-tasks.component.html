@@ -1,0 +1,103 @@
+<div class="at-page">
+
+  <!-- Category filter chips -->
+  <div class="at-chips">
+    @for (c of categories; track c.value) {
+      <button class="at-chip" [class.at-chip--active]="category() === c.value" (click)="selectCategory(c.value)">
+        {{ c.label }}
+      </button>
+    }
+  </div>
+
+  @if (loading() && !pendingApprovals().length && !workTasks().length && !historyItems().length) {
+    <div class="at-empty">Loading…</div>
+  } @else if (error()) {
+    <div class="at-empty at-empty--error">Couldn't load tasks — {{ error() }}</div>
+  } @else {
+
+    <!-- Pending approvals -->
+    @if (pendingApprovals().length) {
+      <section class="at-section">
+        <h2 class="at-section__title">Pending Approvals</h2>
+        <div class="at-table-wrap">
+          <table class="at-table">
+            <thead>
+              <tr><th>Type</th><th>By</th><th>Closing Date</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              @for (item of pendingApprovals(); track item.id) {
+                <tr>
+                  <td data-label="Type"><span class="at-badge" [class]="taskTypeBadgeClass(item.taskType)">{{ taskTypeLabel(item.taskType) }}</span></td>
+                  <td data-label="By">{{ item.requestedBy.name }}</td>
+                  <td data-label="Closing Date">{{ closingDate(item) ? (closingDate(item) | orgDateOnly) : '—' }}</td>
+                  <td data-label="Status"><span class="at-status-badge">{{ item.status }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    <!-- Work tasks -->
+    @if (workTasks().length) {
+      <section class="at-section">
+        <h2 class="at-section__title">Work Tasks</h2>
+        <div class="at-table-wrap">
+          <table class="at-table">
+            <thead>
+              <tr><th>Title</th><th>Assigned To</th><th>Due Date</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              @for (item of workTasks(); track item.id) {
+                <tr>
+                  <td data-label="Title">{{ item.title }}</td>
+                  <td data-label="Assigned To">{{ item.assignedTo.name }}</td>
+                  <td data-label="Due Date">{{ item.dueDate ? (item.dueDate | orgDateOnly) : '—' }}</td>
+                  <td data-label="Status"><span class="at-status" [class]="workStatusClass(item.status)">{{ workStatusLabel(item.status) }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    <!-- History -->
+    @if (historyItems().length) {
+      <section class="at-section">
+        <h2 class="at-section__title">History</h2>
+        <div class="at-table-wrap">
+          <table class="at-table">
+            <thead>
+              <tr><th>Title</th><th>Category</th><th>Assigned To</th><th>Closed</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              @for (item of historyItems(); track item.id) {
+                <tr>
+                  <td data-label="Title">{{ item.title }}</td>
+                  <td data-label="Category">{{ item.category }}</td>
+                  <td data-label="Assigned To">{{ item.assignedTo.name }}</td>
+                  <td data-label="Closed">{{ item.completedAt ? (item.completedAt | orgDateOnly) : '—' }}</td>
+                  <td data-label="Status"><span class="at-status" [class]="historyStatusClass(item.status)">{{ item.status }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (totalPages() > 1) {
+          <div class="at-pagination">
+            <button class="at-page-btn" [disabled]="!hasPrev()" (click)="prevPage()">Prev</button>
+            <span class="at-page-info">Page {{ page() }} of {{ totalPages() }}</span>
+            <button class="at-page-btn" [disabled]="!hasNext()" (click)="nextPage()">Next</button>
+          </div>
+        }
+      </section>
+    }
+
+    @if (!pendingApprovals().length && !workTasks().length && !historyItems().length) {
+      <div class="at-empty">Nothing here yet.</div>
+    }
+  }
+
+</div>

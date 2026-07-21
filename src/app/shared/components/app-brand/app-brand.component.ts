@@ -219,9 +219,9 @@ export class AppBrandComponent {
   @Input() showText = true;
 
   /** App Name (NEW) */
-  @Input() appName = 'Klock';
+  @Input() appName = 'Klockk';
 
-  /** Show the app branding (divider + Klock logo/text) */
+  /** Show the app branding (divider + Klockk logo/text) */
   @Input() showAppBranding = true;
 
   /** Org Name */

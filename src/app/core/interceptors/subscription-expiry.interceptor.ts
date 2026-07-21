@@ -63,7 +63,7 @@ export const subscriptionExpiryInterceptor: HttpInterceptorFn = (req, next) => {
 
         if (!blockedCallWasBillingOrAuthCheck && !alreadyHeadingToBilling) {
           if (!wasAlreadyKnown) {
-            toast.error('Subscription expired', 'Please renew to continue using Klock.');
+            toast.error('Subscription expired', 'Please renew to continue using Klockk.');
           }
           orgNav.navigate(['app', 'billing']);
         }

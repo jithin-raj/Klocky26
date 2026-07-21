@@ -149,22 +149,22 @@ export class MyLeavesComponent implements OnInit {
     });
   }
 
-  // Navigate to the unified request hub, optionally pre-selecting a leave type
+  // Navigate to the unified Tasks workspace, optionally pre-selecting a leave type
   openApplyFor(typeId: string) {
-    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
-      queryParams: { type: 'leave', leaveTypeId: typeId, returnUrl: `${this.orgPrefix()}/app/leaves/my`},
+    this.router.navigate([this.orgPrefix(), 'app', 'tasks'], {
+      queryParams: { new: 'leave', leaveTypeId: typeId, returnUrl: `${this.orgPrefix()}/app/leaves/my` },
     });
   }
 
   navigateToApply() {
-    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
-      queryParams: { returnUrl: `${this.orgPrefix()}/app/leaves/my`},
+    this.router.navigate([this.orgPrefix(), 'app', 'tasks'], {
+      queryParams: { new: 'leave', returnUrl: `${this.orgPrefix()}/app/leaves/my` },
     });
   }
 
   goToRegularisation() {
-    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
-      queryParams: { returnUrl: `${this.orgPrefix()}/app/leaves/my`},
+    this.router.navigate([this.orgPrefix(), 'app', 'tasks'], {
+      queryParams: { new: 'regularisation', returnUrl: `${this.orgPrefix()}/app/leaves/my` },
     });
   }
 
@@ -206,8 +206,8 @@ export class MyLeavesComponent implements OnInit {
   }
 
   takeOptionalHoliday(h: Holiday) {
-    this.router.navigate([this.orgPrefix(), 'app', 'attendance', 'requests'], {
-      queryParams: { type: 'leave', date: h.date, returnUrl: `${this.orgPrefix()}/app/leaves/my` },
+    this.router.navigate([this.orgPrefix(), 'app', 'tasks'], {
+      queryParams: { new: 'leave', date: h.date, returnUrl: `${this.orgPrefix()}/app/leaves/my` },
     });
   }
 

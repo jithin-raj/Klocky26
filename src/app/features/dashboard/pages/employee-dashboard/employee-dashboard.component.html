@@ -110,7 +110,7 @@
       <div class="ed-card">
         <div class="ed-card-header">
           <h2 class="ed-card-title">Leave Balance</h2>
-          <a class="ed-link-btn" [routerLink]="[orgPrefix(), 'app', 'leaves']">Apply →</a>
+          <a class="ed-link-btn" [routerLink]="[orgPrefix(), 'app', 'tasks']" [queryParams]="{ new: 'leave' }">Apply →</a>
         </div>
         <div class="ed-leave-list">
           @for (b of leaveBalances; track b.type) {

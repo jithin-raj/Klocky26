@@ -452,7 +452,7 @@ export class BillingComponent implements OnInit {
         order_id: order.gatewayOrderId,
         amount: order.amount * 100,       // Razorpay wants paise
         currency: order.currency,
-        name: 'Klock',
+        name: 'Klockk',
         image: KLOCK_LOGO_URL,
         description: `${planCode} · ${this.billingCycle()}`,
         prefill: { name: user?.fullName ?? '', email: user?.email ?? '' },
@@ -562,7 +562,7 @@ export class BillingComponent implements OnInit {
       const rzp = createRazorpay({
         key: res.razorpayKeyId,
         subscription_id: res.subscriptionId,
-        name: 'Klock',
+        name: 'Klockk',
         image: KLOCK_LOGO_URL,
         description: `${res.planCode} (${res.billingCycle}) auto-renew`,
         prefill: { name: user?.fullName ?? '', email: user?.email ?? '' },

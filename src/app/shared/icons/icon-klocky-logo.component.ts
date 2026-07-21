@@ -9,7 +9,7 @@ export type KlockyLogoBg = 'none' | 'circle' | 'square';
   template: `
     <img
       src="logo.png"
-      alt="Klocky"
+      alt="Klockk"
       [style.width.px]="px"
       [style.height.px]="px"
       style="display:block;flex-shrink:0;object-fit:contain"

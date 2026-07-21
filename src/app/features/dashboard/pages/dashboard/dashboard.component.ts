@@ -200,7 +200,7 @@ export class DashboardComponent implements OnInit {
     { label: 'Add Employee',        sub: 'Onboard a new member',     icon: 'user-plus',        accent: '#6366f1', action: 'add-employee' },
     { label: 'Departments & Roles', sub: 'Org structure',            icon: 'sitemap',          accent: '#0ea5e9', action: 'org-structure' },
     { label: 'Roles & Permissions', sub: 'Access control',           icon: 'shield',           accent: '#8b5cf6', action: 'permissions' },
-    { label: 'Leave Approvals',     sub: 'Review requests',          icon: 'clipboard-check',  accent: '#22c55e', action: 'leaves' },
+    { label: 'Task Approvals',      sub: 'Review requests',          icon: 'clipboard-check',  accent: '#22c55e', action: 'leaves' },
     { label: 'Send Notification',   sub: 'Broadcast to the team',    icon: 'megaphone',        accent: '#f59e0b', action: 'notifications' },
     { label: 'Org Settings',        sub: 'Profile & policies',       icon: 'settings',         accent: '#ec4899', action: 'settings' },
   ];
@@ -211,11 +211,11 @@ export class DashboardComponent implements OnInit {
       'add-employee':  `/${org}/app/employees/add`,
       'org-structure': `/${org}/app/employees/org-structure`,
       'permissions':   `/${org}/app/roles`,
-      'leaves':        `/${org}/app/leaves`,
+      'leaves':        `/${org}/app/tasks?tab=pending`,
       'notifications': `/${org}/app/notifications`,
       'settings':      `/${org}/app/settings/org-profile`,
     };
     const route = routes[action];
-    if (route) this.router.navigate([route]);
+    if (route) this.router.navigateByUrl(route);
   }
 }

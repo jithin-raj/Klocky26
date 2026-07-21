@@ -1,6 +1,28 @@
 export type TaskCategory = 'all'|'attendance'|'request'|'work';
 export type TaskHistoryStatus = 'completed'|'cancelled'|'expired';
 
+// ── Sidebar badge + "All" tab feed ───────────────────────────────────────────
+
+/** GET /api/tasks/counts response (data) — feeds the sidebar "Tasks" badge. */
+export interface TaskCounts {
+  pendingApprovals: number;
+  openWorkTasks: number;
+  total: number;
+  leaveApprovals: number;
+  attendanceApprovals: number;
+  compOffApprovals: number;
+}
+
+/** Category filter for GET /api/tasks/all — union of the approval + work categories. */
+export type AllTasksCategory = 'all' | 'attendance' | 'leave' | 'comp_off' | 'work';
+
+/** GET /api/tasks/all response (data) — the unified feed behind the "All" tab. */
+export interface AllTasksResponse {
+  pendingApprovals: PendingTaskItem[];
+  workTasks: WorkTaskDto[];
+  history: { data: TaskHistoryItem[]; total: number };
+}
+
 export interface TaskHistoryItem {
   id: string; title: string; category: TaskCategory; status: TaskHistoryStatus;
   assignedTo: { id: string; name: string }; completedAt: string | null;

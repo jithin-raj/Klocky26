@@ -792,7 +792,7 @@ export class NotFoundComponent implements OnInit {
   getMessage(): string {
     if (this.needsSubscription()) {
       return this.canManageBilling()
-        ? "Your organisation's subscription has expired. Complete your subscription to keep using Klock."
+        ? "Your organisation's subscription has expired. Complete your subscription to keep using Klockk."
         : "Your organisation's subscription has expired. Ask your administrator to renew — access is locked until then.";
     }
     return "The page you're looking for doesn't exist or has been moved.";
@@ -803,7 +803,7 @@ export class NotFoundComponent implements OnInit {
     if (orgUrlName && this.appState.isAuthenticated()) {
       if (this.needsSubscription()) {
         if (this.canManageBilling()) {
-          this.toast.error('Subscription required', 'Please complete your subscription to keep using Klock.');
+          this.toast.error('Subscription required', 'Please complete your subscription to keep using Klockk.');
           this.router.navigate([`/${orgUrlName}/app/billing`]);
         } else {
           // Non-admins can't reach /billing (roleGuard would just bounce them

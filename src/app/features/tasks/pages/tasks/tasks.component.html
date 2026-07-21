@@ -2,7 +2,22 @@
 
   <!-- Header -->
   <div class="tk-header">
-    <div><h1>Tasks</h1><p>Review and act on approvals awaiting your response</p></div>
+    <div><h1>Tasks</h1><p>Everything awaiting your action — requests, approvals and work tasks</p></div>
+    <div class="tk-new-wrap">
+      <button class="tk-btn tk-btn--primary" (click)="toggleNewMenu()">
+        <ui-icon name="plus" [size]="14"></ui-icon>
+        New
+      </button>
+      @if (newMenuOpen()) {
+        <div class="tk-new-backdrop" (click)="closeNewMenu()"></div>
+        <div class="tk-new-menu">
+          <button (click)="selectNewOption('custom')"><ui-icon name="clipboard-check" [size]="15"></ui-icon> Custom task</button>
+          <button (click)="selectNewOption('leave')"><ui-icon name="calendar" [size]="15"></ui-icon> Leave request</button>
+          <button (click)="selectNewOption('regularisation')"><ui-icon name="clock" [size]="15"></ui-icon> Regularisation</button>
+          <button (click)="selectNewOption('comp_off')"><ui-icon name="award" [size]="15"></ui-icon> Comp-off</button>
+        </div>
+      }
+    </div>
   </div>
 
   <!-- Tabs -->
@@ -17,7 +32,11 @@
   @switch (activeTab()) {
 
     @case ('all') {
-      <app-work-tasks></app-work-tasks>
+      <app-all-tasks></app-all-tasks>
+    }
+
+    @case ('mine') {
+      <app-work-tasks initialScope="mine"></app-work-tasks>
     }
 
     @case ('pending') {
@@ -213,6 +232,113 @@
           }
         </div>
       }
+    </div>
+  </div>
+}
+
+<!-- Quick-create: Leave / Comp-off -->
+@if (leaveModalOpen()) {
+  <div class="tk-overlay" (click)="closeLeaveModal()">
+    <div class="tk-modal" (click)="$event.stopPropagation()">
+      <div class="tk-modal__head">
+        <h3>{{ leaveIsCompOff() ? 'Apply Comp-Off' : 'Apply Leave' }}</h3>
+        <button (click)="closeLeaveModal()"><ui-icon name="x" [size]="16"></ui-icon></button>
+      </div>
+      <div class="tk-modal__body">
+        <div class="tk-field">
+          <label>Leave Type <span class="tk-required">*</span></label>
+          <ui-select [options]="leaveTypeOptions()" placeholder="Select leave type"
+                     [ngModel]="leaveTypeId()" (ngModelChange)="leaveTypeId.set($event)"></ui-select>
+        </div>
+        <div class="tk-field-row">
+          <div class="tk-field">
+            <label>From <span class="tk-required">*</span></label>
+            <ui-datepicker [maxDate]="todayIso" [ngModel]="leaveFromDate()" (ngModelChange)="onLeaveFromChange($event)"></ui-datepicker>
+          </div>
+          <div class="tk-field">
+            <label>To <span class="tk-required">*</span></label>
+            <ui-datepicker [minDate]="leaveFromDate()" [disabled]="leaveHalfDay()"
+                           [ngModel]="leaveToDate()" (ngModelChange)="leaveToDate.set($event)"></ui-datepicker>
+          </div>
+        </div>
+        @if (leaveIsCompOff()) {
+          <div class="tk-field">
+            <label>Worked Date <span class="tk-required">*</span></label>
+            <ui-datepicker [maxDate]="todayIso" [ngModel]="leaveWorkedDate()" (ngModelChange)="leaveWorkedDate.set($event)"></ui-datepicker>
+          </div>
+        }
+        <label class="tk-checkbox">
+          <input type="checkbox" [ngModel]="leaveHalfDay()" (ngModelChange)="leaveHalfDay.set($event)" />
+          Half day
+        </label>
+        @if (leaveHalfDay()) {
+          <div class="tk-field">
+            <label>Session</label>
+            <ui-select [options]="sessionOptions" [ngModel]="leaveHalfSession()" (ngModelChange)="leaveHalfSession.set($event)"></ui-select>
+          </div>
+        }
+        <div class="tk-field">
+          <label>Reason</label>
+          <textarea class="tk-textarea" rows="3" placeholder="Optional"
+                    [ngModel]="leaveReason()" (ngModelChange)="leaveReason.set($event)"></textarea>
+        </div>
+      </div>
+      <div class="tk-modal__foot">
+        <button class="tk-btn tk-btn--ghost" (click)="closeLeaveModal()">Cancel</button>
+        <button class="tk-btn tk-btn--primary" [disabled]="!canSubmitLeave()" (click)="submitLeave()">
+          {{ leaveSubmitting() ? 'Submitting…' : 'Submit' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Quick-create: Regularisation -->
+@if (regModalOpen()) {
+  <div class="tk-overlay" (click)="closeRegModal()">
+    <div class="tk-modal" (click)="$event.stopPropagation()">
+      <div class="tk-modal__head">
+        <h3>Request Attendance Regularisation</h3>
+        <button (click)="closeRegModal()"><ui-icon name="x" [size]="16"></ui-icon></button>
+      </div>
+      <div class="tk-modal__body">
+        <div class="tk-field">
+          <label>Type <span class="tk-required">*</span></label>
+          <ui-select [options]="regTypeOptions" [ngModel]="regType()" (ngModelChange)="regType.set($event)"></ui-select>
+        </div>
+        <div class="tk-field">
+          <label>Date <span class="tk-required">*</span></label>
+          <ui-datepicker [minDate]="regMinDate()" [maxDate]="regMaxDate()" [disabledDates]="regBlockedDates()"
+                         [ngModel]="regDate()" (ngModelChange)="regDate.set($event)"></ui-datepicker>
+        </div>
+        @if (regType() !== 'wfh') {
+          <div class="tk-field-row">
+            <div class="tk-field">
+              <label>Clock In <span class="tk-required">*</span></label>
+              <ui-timepicker [ngModel]="regClockIn()" (ngModelChange)="regClockIn.set($event)"></ui-timepicker>
+            </div>
+            <div class="tk-field">
+              <label>Clock Out</label>
+              <ui-timepicker [ngModel]="regClockOut()" (ngModelChange)="regClockOut.set($event)"></ui-timepicker>
+            </div>
+          </div>
+        }
+        <div class="tk-field">
+          <label>Office</label>
+          <ui-select [options]="officeOptions()" [ngModel]="regOfficeId()" (ngModelChange)="regOfficeId.set($event)"></ui-select>
+        </div>
+        <div class="tk-field">
+          <label>Reason</label>
+          <textarea class="tk-textarea" rows="3" placeholder="Optional"
+                    [ngModel]="regReason()" (ngModelChange)="regReason.set($event)"></textarea>
+        </div>
+      </div>
+      <div class="tk-modal__foot">
+        <button class="tk-btn tk-btn--ghost" (click)="closeRegModal()">Cancel</button>
+        <button class="tk-btn tk-btn--primary" [disabled]="!canSubmitReg()" (click)="submitRegularisation()">
+          {{ regSubmitting() ? 'Submitting…' : 'Submit' }}
+        </button>
+      </div>
     </div>
   </div>
 }

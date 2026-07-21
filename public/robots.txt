@@ -4,4 +4,4 @@ Disallow: /app/
 Disallow: /login/
 Disallow: /klocky-admin/
 
-Sitemap: https://klock.vercel.app/sitemap.xml
+Sitemap: https://klockk.in/sitemap.xml

@@ -601,14 +601,14 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     return 'This day needs attendance regularization.';
   }
 
-  /** Navigate to the attendance requests page with this date pre-selected */
+  /** Navigate to the Tasks workspace with this date pre-selected for a regularisation request */
   regularize(cell: DayCell): void {
     if (this.regularizeBlockedReason(cell)) return; // guarded — button is disabled, but be safe
     const org = this.appState.orgUrlName() || 'default';
     const date = this._cellDateKey(cell);
     this.closeDetail();
-    this.router.navigate([`/${org}/app/attendance/requests`], {
-      queryParams: { type: 'missed_punch', date, fromCalendar: '1', returnUrl: `/${org}/app/attendance` },
+    this.router.navigate([`/${org}/app/tasks`], {
+      queryParams: { new: 'regularisation', date, returnUrl: `/${org}/app/attendance` },
     });
   }
 

@@ -7,9 +7,16 @@
 // Admins/HR compose & send via POST /api/notifications.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// The known set drives icon/color lookups (header.component.ts's notifIcon/
+// notifColor); those already fall back via `?? default`. Widened to `| string`
+// so real backend values (leave_approved, attendance_marked_present,
+// comp_off_requested, task_assigned, etc.) survive normalizeNotification()
+// unchanged instead of being lossy-mapped — needed for the Tasks click-through
+// routing, which matches on these specific raw values.
 export type NotificationType =
   | 'info' | 'success' | 'warning'
-  | 'attendance' | 'leave' | 'announcement' | 'system';
+  | 'attendance' | 'leave' | 'announcement' | 'system'
+  | (string & {});
 
 /** A single in-app notification for the current user. */
 export interface AppNotification {

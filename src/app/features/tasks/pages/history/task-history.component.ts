@@ -4,6 +4,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../../../core/services/task.service';
+import { RealtimeService } from '../../../../core/services/realtime.service';
 import { TaskCategory, TaskHistoryItem } from '../../../../core/models/task.model';
 import { OrgDatePipe } from '../../../../shared/pipes/localization.pipes';
 
@@ -18,6 +19,7 @@ import { OrgDatePipe } from '../../../../shared/pipes/localization.pipes';
 export class TaskHistoryComponent implements OnInit {
 
   private readonly svc = inject(TaskService);
+  private readonly realtime = inject(RealtimeService);
 
   readonly PAGE_SIZE = 20;
 
@@ -41,6 +43,9 @@ export class TaskHistoryComponent implements OnInit {
       const pg   = this.page();
       this._load(cat, pg);
     });
+
+    // Live refresh — a newly-closed request/task can change this page's contents.
+    this.realtime.on('notification.created').subscribe(() => this._load(this.category(), this.page()));
   }
 
   ngOnInit() { /* effect fires on first run */ }

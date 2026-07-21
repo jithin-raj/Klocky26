@@ -1,10 +1,11 @@
 import {
-  Component, ChangeDetectionStrategy, signal, computed, inject, effect,
+  Component, ChangeDetectionStrategy, signal, computed, inject, effect, Input,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UiSelectComponent, UiDatePickerComponent, UiIconComponent } from '../../../../shared/components';
 import { TaskService } from '../../../../core/services/task.service';
+import { RealtimeService } from '../../../../core/services/realtime.service';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { EmployeeService } from '../../../../core/services/employee.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
@@ -29,10 +30,14 @@ interface AssigneeOption { label: string; value: string; }
 export class WorkTasksComponent {
 
   private readonly taskSvc     = inject(TaskService);
+  private readonly realtime    = inject(RealtimeService);
   private readonly employeeSvc = inject(EmployeeService);
   private readonly permissions = inject(PermissionService);
   private readonly appState    = inject(AppStateService);
   private readonly toast       = inject(ToastService);
+
+  /** Which scope this instance defaults to — set by the parent tab (e.g. 'mine' for the "My tasks" tab). */
+  @Input() set initialScope(v: WorkTaskScope) { this.scope.set(v); }
 
   // ── Permission gates (feature key 'tasks') ─────────────────────────────
   readonly canCreate = computed(() => this.permissions.can('tasks', 1));
@@ -68,6 +73,9 @@ export class WorkTasksComponent {
       const status = this.statusFilter();
       this.loadTasks(scope, status);
     });
+
+    // Live refresh — an assignment/status change elsewhere can affect this list.
+    this.realtime.on('notification.created').subscribe(() => this.refresh());
   }
 
   loadTasks(scope: WorkTaskScope, status: WorkTaskStatusFilter) {
@@ -198,6 +206,7 @@ export class WorkTasksComponent {
           this.tasks.update(l => [created, ...l]);
           this.toast.success('Task created', created.title);
           this.closeForm();
+          this.taskSvc.refreshCounts();
         },
         error: err => {
           this.saving.set(false);
@@ -243,6 +252,7 @@ export class WorkTasksComponent {
       next: updated => {
         this.busyId.set(null);
         this.tasks.update(l => l.map(t => t.id === updated.id ? updated : t));
+        this.taskSvc.refreshCounts();
       },
       error: err => {
         this.busyId.set(null);
@@ -260,6 +270,7 @@ export class WorkTasksComponent {
         this.busyId.set(null);
         this.tasks.update(l => l.filter(t => t.id !== item.id));
         this.toast.success('Task deleted');
+        this.taskSvc.refreshCounts();
       },
       error: err => {
         this.busyId.set(null);

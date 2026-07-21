@@ -1,10 +1,13 @@
 import { Routes } from '@angular/router';
+import { redirectToTasksGuard } from '../../core/guards/redirect-to-tasks.guard';
 
 export const leaveRoutes: Routes = [
   {
+    // The standalone Leave Approvals page was consolidated into the unified
+    // Tasks workspace (Pending tab) — any old link/bookmark redirects there.
     path: '',
-    loadComponent: () =>
-      import('./pages/leave-approvals/leave-approvals.component').then(m => m.LeaveApprovalsComponent),
+    canActivate: [redirectToTasksGuard],
+    children: [],
   },
   {
     path: 'my',
