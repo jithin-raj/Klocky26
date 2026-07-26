@@ -84,6 +84,19 @@ export class DashboardComponent implements OnInit {
   readonly onLeaveCount      = computed(() => this.teamItems().filter(e => e.today?.status === 'leave').length);
   readonly pendingLeaveCount = computed(() => this.pendingLeaves().length);
 
+  // ── Today's attendance overview tiles (real team status) ───────────────
+  readonly attendanceTiles = computed<{ label: string; value: number; icon: UiIconName; color: string; bg: string }[]>(() => [
+    { label: 'Clocked in',   value: this.clockedInCount(),    icon: 'user-check', color: '#10b981', bg: '#ecfdf5' },
+    { label: 'Not in yet',   value: this.notClockedInCount(), icon: 'clock',      color: '#f59e0b', bg: '#fffbeb' },
+    { label: 'On leave',     value: this.onLeaveCount(),      icon: 'calendar',   color: '#8b5cf6', bg: '#f5f3ff' },
+    { label: 'Pending approvals', value: this.pendingLeaveCount(), icon: 'clipboard-check', color: '#0ea5e9', bg: '#eff6ff' },
+  ]);
+  readonly teamTotal = computed(() => this.teamItems().length);
+  readonly clockedInPct = computed(() => {
+    const t = this.teamTotal();
+    return t ? Math.round((this.clockedInCount() / t) * 100) : 0;
+  });
+
   ngOnInit(): void {
     this.employeeSvc.getAll().subscribe({
       next: (res) => { this.employees.set(res.data ?? []); this.employeesLoading.set(false); },

@@ -1,9 +1,10 @@
 <div class="db-page">
 
   <!-- HERO BANNER -->
-  <div class="db-banner">
+  <div class="db-banner db-mount" style="--i:0">
     <div class="db-banner-orb db-banner-orb--1" aria-hidden="true"></div>
     <div class="db-banner-orb db-banner-orb--2" aria-hidden="true"></div>
+    <div class="db-banner-grid" aria-hidden="true"></div>
     <div class="db-banner-content">
       <div class="db-banner-left">
         <p class="db-banner-eyebrow">
@@ -39,14 +40,47 @@
 
   <!-- STAT CARDS -->
   <div class="db-stats">
-    @for (s of stats(); track s.label) {
-      <div class="db-stat-card" [style.--sc]="s.color" [style.--sb]="s.bg"
+    @for (s of stats(); track s.label; let i = $index) {
+      <div class="db-stat-card db-mount" [style.--i]="i + 1"
+           [style.--sc]="s.color" [style.--sb]="s.bg"
            [style.--stat-color]="s.color" [style.--stat-bg]="s.bg">
         <div class="db-stat-icon"><ui-icon [name]="s.icon" [size]="22"></ui-icon></div>
         <div class="db-stat-body">
           <p class="db-stat-value">{{ s.value }}</p>
           <p class="db-stat-label">{{ s.label }}</p>
           <p class="db-stat-sub">{{ s.sub }}</p>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- TODAY'S ATTENDANCE OVERVIEW -->
+  <div class="db-card db-attend db-mount" style="--i:5">
+    <div class="db-card-header">
+      <h2 class="db-card-title"><ui-icon name="scan" [size]="16"></ui-icon> Today's Attendance</h2>
+      <button class="db-linkbtn" (click)="onQuickAction('leaves')">Review approvals →</button>
+    </div>
+
+    @if (teamLoading()) {
+      <p class="db-card-state">Loading team status…</p>
+    } @else {
+      <div class="db-attend-body">
+        <!-- Ratio ring -->
+        <div class="db-attend-ring" [style.--pct]="clockedInPct()">
+          <div class="db-attend-ring-in">
+            <span class="db-attend-pct">{{ clockedInPct() }}%</span>
+            <span class="db-attend-cap">Present</span>
+          </div>
+        </div>
+        <!-- Tiles -->
+        <div class="db-attend-tiles">
+          @for (t of attendanceTiles(); track t.label) {
+            <div class="db-attend-tile" [style.--tc]="t.color" [style.--tb]="t.bg">
+              <span class="db-attend-tico"><ui-icon [name]="t.icon" [size]="18"></ui-icon></span>
+              <span class="db-attend-tval">{{ t.value }}</span>
+              <span class="db-attend-tlbl">{{ t.label }}</span>
+            </div>
+          }
         </div>
       </div>
     }
@@ -59,14 +93,14 @@
     <div class="db-col-main">
 
       <!-- Quick Actions -->
-      <div class="db-card">
+      <div class="db-card db-mount" style="--i:6">
         <div class="db-card-header">
-          <h2 class="db-card-title">Quick Actions</h2>
+          <h2 class="db-card-title"><ui-icon name="grid" [size]="16"></ui-icon> Quick Actions</h2>
           <span class="db-card-sub">Common admin tasks</span>
         </div>
         <div class="db-quicklinks">
-          @for (q of quickActions; track q.label) {
-            <button class="db-ql-btn" [style.--ql]="q.accent" (click)="onQuickAction(q.action)">
+          @for (q of quickActions; track q.label; let i = $index) {
+            <button class="db-ql-btn" [style.--ql]="q.accent" [style.--i]="i" (click)="onQuickAction(q.action)">
               <span class="db-ql-icon"><ui-icon [name]="q.icon" [size]="20"></ui-icon></span>
               <span class="db-ql-text">
                 <span class="db-ql-label">{{ q.label }}</span>
@@ -79,9 +113,9 @@
       </div>
 
       <!-- Department headcount -->
-      <div class="db-card">
+      <div class="db-card db-mount" style="--i:7">
         <div class="db-card-header">
-          <h2 class="db-card-title">Headcount by Department</h2>
+          <h2 class="db-card-title"><ui-icon name="building" [size]="16"></ui-icon> Headcount by Department</h2>
           <span class="db-card-sub">{{ employees().length }} total</span>
         </div>
 
@@ -110,9 +144,9 @@
       </div>
 
       <!-- Workforce composition -->
-      <div class="db-card">
+      <div class="db-card db-mount" style="--i:8">
         <div class="db-card-header">
-          <h2 class="db-card-title">Workforce Composition</h2>
+          <h2 class="db-card-title"><ui-icon name="pie-chart" [size]="16"></ui-icon> Workforce Composition</h2>
           <span class="db-card-sub">By employment type</span>
         </div>
         @if (employeesLoading()) {
@@ -142,10 +176,41 @@
     <!-- RIGHT COLUMN -->
     <div class="db-col-side">
 
-      <!-- Recently Joined -->
-      <div class="db-card">
+      <!-- Pending Approvals -->
+      <div class="db-card db-mount" style="--i:9">
         <div class="db-card-header">
-          <h2 class="db-card-title">Recently Joined</h2>
+          <h2 class="db-card-title"><ui-icon name="clipboard-check" [size]="16"></ui-icon> Pending Approvals</h2>
+          @if (pendingLeaveCount() > 0) {
+            <span class="db-badge-count">{{ pendingLeaveCount() }}</span>
+          }
+        </div>
+        @if (pendingLeavesLoading()) {
+          <p class="db-card-state">Loading…</p>
+        } @else if (pendingLeaves().length === 0) {
+          <div class="db-empty"><ui-icon name="check-circle" [size]="26"></ui-icon><p>No pending requests.</p></div>
+        } @else {
+          <ul class="db-approvals">
+            @for (l of pendingLeaves().slice(0, 5); track l.id) {
+              <li class="db-approval-item" (click)="onQuickAction('leaves')">
+                <span class="db-approval-av" [style.background]="l.avatarColor">{{ l.initials }}</span>
+                <div class="db-approval-body">
+                  <p class="db-approval-name">{{ l.userFullName }}</p>
+                  <p class="db-approval-detail">{{ l.leaveTypeName }} · {{ l.fromDate | date:'MMM d' }} – {{ l.toDate | date:'MMM d' }}</p>
+                </div>
+                <span class="db-approval-days">{{ l.days }}d</span>
+              </li>
+            }
+          </ul>
+          @if (pendingLeaves().length > 5) {
+            <button class="db-seeall" (click)="onQuickAction('leaves')">See all {{ pendingLeaveCount() }} →</button>
+          }
+        }
+      </div>
+
+      <!-- Recently Joined -->
+      <div class="db-card db-mount" style="--i:10">
+        <div class="db-card-header">
+          <h2 class="db-card-title"><ui-icon name="user-plus" [size]="16"></ui-icon> Recently Joined</h2>
         </div>
         @if (employeesLoading()) {
           <p class="db-card-state">Loading…</p>
@@ -168,9 +233,9 @@
       </div>
 
       <!-- Upcoming Holidays -->
-      <div class="db-card">
+      <div class="db-card db-mount" style="--i:11">
         <div class="db-card-header">
-          <h2 class="db-card-title">Upcoming Holidays</h2>
+          <h2 class="db-card-title"><ui-icon name="award" [size]="16"></ui-icon> Upcoming Holidays</h2>
         </div>
         @if (holidaysGated()) {
           <p class="db-card-state">Sign in to Organisation Settings to view the holiday calendar.</p>
