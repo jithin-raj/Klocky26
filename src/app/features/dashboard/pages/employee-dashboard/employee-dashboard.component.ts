@@ -1,26 +1,17 @@
-import { Component, ChangeDetectionStrategy, signal, inject, OnDestroy, computed, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal, inject, OnInit, OnDestroy, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
+import { LeaveService } from '../../../../core/services/leave.service';
+import { TaskService } from '../../../../core/services/task.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 import { UiIconComponent, UiIconName } from '../../../../shared/components';
 import { IconClockInComponent, IconClockOutComponent } from '../../../../shared/icons';
 import { LocalizationService } from '../../../../core/services/localization.service';
-
-interface LeaveBalance {
-  type: string;
-  used: number;
-  total: number;
-  color: string;
-}
-
-interface Shift {
-  day: string;
-  date: number;
-  start: string;
-  end: string;
-  isToday: boolean;
-}
+import { LeaveBalance } from '../../../../core/models/leave.model';
+import { CalendarDay, CalendarSummary } from '../../../../core/models/attendance.model';
+import { TaskCounts } from '../../../../core/models/task.model';
 
 interface Activity {
   action: string;
@@ -38,6 +29,8 @@ interface QuickAction {
   queryParams?: Record<string, string>;
 }
 
+interface MonthSeg { label: string; count: number; color: string; }
+
 @Component({
   selector: 'app-employee-dashboard',
   standalone: true,
@@ -46,7 +39,7 @@ interface QuickAction {
   templateUrl: './employee-dashboard.component.html',
   styleUrl: './employee-dashboard.component.scss',
 })
-export class EmployeeDashboardComponent implements OnDestroy {
+export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   constructor(private router: Router) {
     // Keep the hero clock-in/out state and "Today's Hours" ticking in sync with
     // the real attendance state — whether the user clocked in here, from the
@@ -67,6 +60,9 @@ export class EmployeeDashboardComponent implements OnDestroy {
   readonly attendanceSvc = inject(AttendanceStateService);
   private  appState      = inject(AppStateService);
   private  loc           = inject(LocalizationService);
+  private  leaveSvc      = inject(LeaveService);
+  private  taskSvc       = inject(TaskService);
+  readonly notificationSvc = inject(NotificationService);
 
   // Org-scoped route prefix for routerLink bindings
   orgPrefix = computed(() => `/${this.appState.orgUrlName() || 'default'}`);
@@ -96,12 +92,112 @@ export class EmployeeDashboardComponent implements OnDestroy {
     return 'Good evening';
   });
 
-  quickActions: QuickAction[] = [
-    { label: 'Apply Leave',     sub: '1 pending request', icon: 'calendar',        route: 'app/tasks',      color: '#f59e0b', queryParams: { new: 'leave' } },
-    { label: 'View Attendance', sub: '22 days present',   icon: 'clock',           route: 'app/attendance', color: '#0ea5e9' },
-    { label: 'My Tasks',        sub: '5 tasks pending',   icon: 'clipboard-check', route: 'app/tasks',      color: '#10b981' },
-    { label: 'My Profile',      sub: 'View details',      icon: 'user',            route: 'app/profile',    color: '#8b5cf6' },
-  ];
+  // ── Real data ───────────────────────────────────────────────────
+  readonly leaveBalances = signal<LeaveBalance[]>([]);
+  readonly leaveLoading  = signal(true);
+
+  readonly summary   = signal<CalendarSummary | null>(null);
+  readonly calDays   = signal<CalendarDay[]>([]);
+  readonly attLoading = signal(true);
+
+  readonly taskCounts = signal<TaskCounts | null>(null);
+
+  ngOnInit(): void {
+    const now = new Date();
+
+    this.leaveSvc.balances().subscribe({
+      next: (b) => { this.leaveBalances.set(b ?? []); this.leaveLoading.set(false); },
+      error: () => this.leaveLoading.set(false),
+    });
+
+    this.attendanceSvc.getCalendar(now.getFullYear(), now.getMonth() + 1).subscribe({
+      next: (res) => {
+        this.summary.set(res.data?.summary ?? null);
+        this.calDays.set(res.data?.days ?? []);
+        this.attLoading.set(false);
+      },
+      error: () => this.attLoading.set(false),
+    });
+
+    this.taskSvc.getCounts().subscribe({
+      next: (c) => this.taskCounts.set(c),
+      error: () => {},
+    });
+
+    this.notificationSvc.load();
+  }
+
+  // ── Derived real figures ────────────────────────────────────────
+  presentDays  = computed(() => this.summary()?.presentDays ?? 0);
+  leaveLeft    = computed(() => this.leaveBalances().reduce((s, b) => s + (b.remainingDays ?? 0), 0));
+  pendingTasks = computed(() => this.taskCounts()?.total ?? 0);
+  leaveUsed    = computed(() => this.leaveBalances().reduce((s, b) => s + (b.usedDays ?? 0), 0));
+
+  /** Segmented "This Month" attendance breakdown, real values only. */
+  monthSegs = computed<MonthSeg[]>(() => {
+    const s = this.summary();
+    if (!s) return [];
+    return [
+      { label: 'Present', count: s.presentDays, color: '#10b981' },
+      { label: 'Half day', count: s.halfDays,   color: '#0ea5e9' },
+      { label: 'Leave',    count: s.leaveDays,   color: '#f59e0b' },
+      { label: 'Absent',   count: s.absentDays,  color: '#ef4444' },
+      { label: 'Holiday',  count: s.holidayDays, color: '#8b5cf6' },
+    ].filter(x => x.count > 0);
+  });
+  monthTotal = computed(() => this.monthSegs().reduce((s, x) => s + x.count, 0));
+
+  /** Recent activity built from real calendar days (most recent first). */
+  recentActivity = computed<Activity[]>(() => {
+    const days = this.calDays().filter(d => !d.isUpcoming);
+    const acts: Activity[] = [];
+    for (let i = days.length - 1; i >= 0 && acts.length < 6; i--) {
+      const d = days[i];
+      const when = this._relDate(d.date);
+      if (d.clockOutTime) acts.push({ action: 'Clocked out', time: this._fmtClock(d.clockOutTime), date: when, type: 'out' });
+      if (d.clockInTime)  acts.push({ action: 'Clocked in',  time: this._fmtClock(d.clockInTime),  date: when, type: 'in' });
+      if (!d.clockInTime && d.isLeave)    acts.push({ action: 'On leave', time: '', date: when, type: 'leave' });
+      if (!d.clockInTime && d.isHoliday)  acts.push({ action: d.holidayName || 'Holiday', time: '', date: when, type: 'holiday' });
+    }
+    return acts.slice(0, 6);
+  });
+
+  /** Current week Mon→Sun, mapped from real calendar days. */
+  weekStrip = computed(() => {
+    const byDate = new Map(this.calDays().map(d => [d.date, d]));
+    const now = new Date();
+    const monday = new Date(now);
+    const dow = (now.getDay() + 6) % 7; // 0 = Monday
+    monday.setDate(now.getDate() - dow);
+    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return labels.map((lbl, i) => {
+      const dt = new Date(monday);
+      dt.setDate(monday.getDate() + i);
+      const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      const day = byDate.get(iso);
+      const isToday = iso === this._isoToday();
+      return {
+        label: lbl,
+        date: dt.getDate(),
+        status: (day?.status ?? 'upcoming') as string,
+        color: this._statusColor(day?.status),
+        isToday,
+      };
+    });
+  });
+
+  // Recent notifications shown as "Updates"
+  updates = computed(() => this.notificationSvc.items().slice(0, 3));
+
+  quickActions = computed<QuickAction[]>(() => {
+    const pending = this.pendingTasks();
+    return [
+      { label: 'Apply Leave',     sub: `${this.leaveLeft()} days available`, icon: 'calendar',        route: 'app/tasks',      color: '#f59e0b', queryParams: { new: 'leave' } },
+      { label: 'View Attendance', sub: `${this.presentDays()} present this month`, icon: 'clock',     route: 'app/attendance', color: '#0ea5e9' },
+      { label: 'My Tasks',        sub: pending ? `${pending} pending` : 'All caught up', icon: 'clipboard-check', route: 'app/tasks', color: '#10b981' },
+      { label: 'My Profile',      sub: 'View details',      icon: 'user',            route: 'app/profile',    color: '#8b5cf6' },
+    ];
+  });
 
   onQuickAction(a: QuickAction): void {
     this.router.navigate([this.orgPrefix(), ...a.route.split('/')], { queryParams: a.queryParams });
@@ -191,33 +287,11 @@ export class EmployeeDashboardComponent implements OnDestroy {
     this._stopTimer();
   }
 
-  leaveBalances: LeaveBalance[] = [
-    { type: 'Annual',      used: 5,  total: 18, color: '#6366f1' },
-    { type: 'Sick',        used: 2,  total: 12, color: '#10b981' },
-    { type: 'Casual',      used: 1,  total: 6,  color: '#f59e0b' },
-    { type: 'Comp-off',    used: 0,  total: 3,  color: '#8b5cf6' },
-  ];
-
-  upcomingShifts: Shift[] = [
-    { day: 'Mon', date: 28, start: '09:00', end: '18:00', isToday: false },
-    { day: 'Tue', date: 29, start: '09:00', end: '18:00', isToday: false },
-    { day: 'Wed', date: 30, start: '09:00', end: '18:00', isToday: false },
-    { day: 'Thu', date: 1,  start: '09:00', end: '18:00', isToday: false },
-    { day: 'Fri', date: 2,  start: '09:00', end: '18:00', isToday: false },
-  ];
-
-  recentActivity: Activity[] = [
-    { action: 'Clocked In',   time: '09:02 AM', date: 'Today',     type: 'in'     },
-    { action: 'Clocked Out',  time: '06:14 PM', date: 'Yesterday', type: 'out'    },
-    { action: 'Clocked In',   time: '08:58 AM', date: 'Yesterday', type: 'in'     },
-    { action: 'Leave Approved', time: '',       date: 'Apr 25',    type: 'leave'  },
-    { action: 'Clocked Out',  time: '06:30 PM', date: 'Apr 24',    type: 'out'    },
-  ];
-
-  announcements = [
-    { title: 'Public Holiday — May 1',   body: "Labour Day is an office holiday. Enjoy the long weekend!", date: 'Apr 26', tag: 'Holiday' },
-    { title: 'Q2 Performance Reviews',   body: 'Self-assessments are due by May 5. Check your HR portal.', date: 'Apr 24', tag: 'HR' },
-  ];
+  leavePercent(b: LeaveBalance): number {
+    const total = b.totalDays || 0;
+    if (!total) return 0;
+    return Math.min(100, Math.round((b.usedDays / total) * 100));
+  }
 
   activityColor(type: Activity['type']): string {
     const map: Record<Activity['type'], string> = {
@@ -226,7 +300,37 @@ export class EmployeeDashboardComponent implements OnDestroy {
     return map[type];
   }
 
-  leavePercent(b: LeaveBalance): number {
-    return Math.round((b.used / b.total) * 100);
+  fmtNotifDate(iso: string): string {
+    return this._relDate(iso.slice(0, 10));
+  }
+
+  // ── Small date/format helpers ───────────────────────────────────
+  private _isoToday(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  private _relDate(iso: string): string {
+    if (!iso) return '';
+    const d = new Date(iso + (iso.length === 10 ? 'T00:00:00' : ''));
+    if (isNaN(d.getTime())) return iso;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const that = new Date(d); that.setHours(0, 0, 0, 0);
+    const diff = Math.round((today.getTime() - that.getTime()) / 86_400_000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    return this.loc.formatDateOnly(iso);
+  }
+  private _fmtClock(s: string): string {
+    if (!s) return '';
+    const d = new Date(/[T:]/.test(s) && /\d{4}-\d{2}-\d{2}/.test(s) ? s : `1970-01-01T${s}`);
+    return isNaN(d.getTime()) ? s : this.loc.formatTime(d);
+  }
+  private _statusColor(status?: string): string {
+    const map: Record<string, string> = {
+      present: '#10b981', half_day: '#0ea5e9', overtime: '#14b8a6',
+      leave: '#f59e0b', absent: '#ef4444', holiday: '#8b5cf6',
+      comp_off: '#a855f7', weekend: '#cbd5e1', upcoming: '#e2e8f0',
+    };
+    return map[status ?? 'upcoming'] ?? '#e2e8f0';
   }
 }

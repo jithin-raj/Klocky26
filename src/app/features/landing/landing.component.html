@@ -1,18 +1,42 @@
 <div class="lp" [class.menu-open]="mobileMenuOpen()">
 
+  <!-- ─── ANNOUNCEMENT / BETA BAR ───────────────────────────── -->
+  @if (announcement()?.enabled) {
+    <div class="lp-announce">
+      <span class="lp-announce-shine" aria-hidden="true"></span>
+      <span class="lp-announce-tag">Beta</span>
+      <span class="lp-announce-text">{{ announcement()!.text }}</span>
+      @if (announcement()!.ctaLabel && announcement()!.ctaUrl) {
+        <button class="lp-announce-cta" (click)="goAnnounce()">
+          {{ announcement()!.ctaLabel }}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      }
+    </div>
+  }
+
   <!-- ─── NAV ───────────────────────────────────────────────── -->
   <nav class="lp-nav">
     <div class="lp-nav-inner">
       <div class="lp-logo">
-        <span class="lp-logo-icon"></span>
+        <span class="lp-logo-icon" aria-hidden="true">
+          <img src="/klock-logo.png" alt="" width="32" height="32" />
+        </span>
         <span class="lp-logo-name">Klockk</span>
+        <span class="lp-beta-pill">Beta</span>
       </div>
 
       <!-- Desktop actions -->
       <div class="lp-nav-actions">
         <button class="lp-btn-ghost" (click)="goLogin()">Sign In</button>
         <button class="lp-btn-ghost" (click)="goDemo()">Request a Demo</button>
-        <button class="lp-btn-primary" (click)="goTrial()">Start Free Trial</button>
+        <button class="lp-btn-primary" (click)="goTrial()">
+          Start Free Trial
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Mobile hamburger -->
@@ -41,72 +65,496 @@
 
   <!-- ─── HERO ──────────────────────────────────────────────── -->
   <section class="lp-hero">
+    <!-- Animated backdrop -->
+    <div class="lp-hero-bg" aria-hidden="true">
+      <div class="lp-grid"></div>
+      <div class="lp-aurora"></div>
+      <div class="lp-blob lp-blob-1"></div>
+      <div class="lp-blob lp-blob-2"></div>
+      <div class="lp-blob lp-blob-3"></div>
+    </div>
+
     <div class="lp-hero-inner">
-      <div class="lp-hero-badge">✦ Built for modern HR teams</div>
-      <h1 class="lp-hero-title">
-        HR & Attendance<br/>
-        <span class="lp-gradient-text">Made effortless</span>
-      </h1>
-      <p class="lp-hero-sub">
-        Klockk brings employee management, attendance tracking, leave
-        approvals and org insights into one elegant platform.
-        No spreadsheets. No chaos.
-      </p>
-      <div class="lp-hero-ctas">
-        <button class="lp-cta-primary" (click)="goTrial()">
-          Start Free Trial
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <path d="M5 12h14M12 5l7 7-7 7"/>
-          </svg>
-        </button>
-        <button class="lp-cta-ghost" (click)="goDemo()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-            <rect x="2" y="3" width="20" height="14" rx="2"/>
-            <path d="M8 21h8M12 17v4"/>
-          </svg>
-          Request a Demo
-        </button>
+      <!-- Copy -->
+      <div class="lp-hero-copy">
+        <div class="lp-hero-badge lp-anim-up" style="--d:0ms">
+          <span class="lp-badge-pill">New</span>
+          <span class="lp-badge-dot"></span>
+          AI-powered HR insights are here
+        </div>
+        <h1 class="lp-hero-title lp-anim-up" style="--d:80ms">
+          HR &amp; Attendance<br/>
+          <span class="lp-gradient-text">Made effortless</span>
+        </h1>
+        <p class="lp-hero-sub lp-anim-up" style="--d:160ms">
+          Klockk brings employee management, attendance tracking, leave
+          approvals and org insights into one elegant platform.
+          No spreadsheets. No chaos.
+        </p>
+        <div class="lp-hero-ctas lp-anim-up" style="--d:240ms">
+          <button class="lp-cta-primary" (click)="goTrial()">
+            Start Free Trial
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+          <button class="lp-cta-ghost" (click)="goDemo()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <path d="M8 21h8M12 17v4"/>
+            </svg>
+            Request a Demo
+          </button>
+        </div>
+        <div class="lp-hero-perks lp-anim-up" style="--d:320ms">
+          @for (perk of ['Free during beta', 'No credit card', 'Set up in minutes']; track perk) {
+            <span class="lp-perk">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              {{ perk }}
+            </span>
+          }
+        </div>
       </div>
-      <!-- Floating mock stats -->
-      <div class="lp-hero-stats">
-        @for (s of stats; track s.label) {
-          <div class="lp-hero-stat">
-            <span class="lp-hs-value">{{ s.value }}</span>
-            <span class="lp-hs-label">{{ s.label }}</span>
+
+      <!-- Product preview -->
+      <div class="lp-hero-visual lp-anim-in" style="--d:220ms">
+        <span class="lp-pv-preview" aria-hidden="true">Product preview</span>
+        <div class="lp-preview-card">
+          <!-- Window top bar -->
+          <div class="lp-pv-top">
+            <div class="lp-pv-brand">
+              <img src="/klock-logo.png" alt="" width="22" height="22" />
+              <div class="lp-pv-brand-meta">
+                <span class="lp-pv-brand-name">Klockk</span>
+                <span class="lp-pv-brand-sub">HR Dashboard</span>
+              </div>
+            </div>
+            <div class="lp-pv-top-right">
+              <span class="lp-pv-time"><span class="lp-live-dot"></span>{{ clockTime() }} <em>{{ clockMeridiem() }}</em></span>
+              <span class="lp-pv-bell">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 2 8 2 8H4s2-1 2-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+                <span class="lp-pv-bell-dot"></span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Greeting -->
+          <div class="lp-pv-greet">
+            <span class="lp-pv-hi">Good afternoon 👋</span>
+            <span class="lp-pv-date">{{ clockDate() }}</span>
+          </div>
+
+          <!-- KPI tiles -->
+          <div class="lp-pv-kpis">
+            @for (k of kpis; track k.label) {
+              <div class="lp-kpi" [class]="'tone-' + k.tone">
+                <span class="lp-kpi-label">{{ k.label }}</span>
+                <span class="lp-kpi-value">{{ k.value }}</span>
+                <span class="lp-kpi-trend" [class.down]="!k.up">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6-6 6 6"/></svg>
+                  {{ k.trend }}
+                </span>
+              </div>
+            }
+          </div>
+
+          <!-- Panels: donut + weekly chart -->
+          <div class="lp-pv-panels">
+            <div class="lp-pv-panel lp-pv-donut">
+              <div class="lp-ring">
+                <div class="lp-ring-center">
+                  <span class="lp-ring-pct">92%</span>
+                  <span class="lp-ring-cap">Present</span>
+                </div>
+              </div>
+              <div class="lp-ring-legend">
+                <span><i class="dot in"></i>Present</span>
+                <span><i class="dot off"></i>Away</span>
+              </div>
+            </div>
+
+            <div class="lp-pv-panel lp-pv-chart">
+              <div class="lp-chart-head">
+                <span class="lp-chart-title">This week</span>
+                <span class="lp-chart-trend">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v6h-6"/></svg>
+                  8%
+                </span>
+              </div>
+              <div class="lp-chart-bars">
+                @for (b of weekBars; track $index) {
+                  <div class="lp-chart-col">
+                    <div class="lp-chart-bar" [style.--bh.%]="b.h" [style.--bi]="$index"></div>
+                    <span class="lp-chart-day">{{ b.d }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Live activity -->
+          <div class="lp-pv-activity">
+            <div class="lp-pv-act-head">
+              <span>Live activity</span>
+              <span class="lp-pv-act-all">View all</span>
+            </div>
+            <ul class="lp-presence">
+              @for (p of presence; track p.name) {
+                <li class="lp-presence-row">
+                  <span class="lp-presence-av">
+                    {{ p.initials }}
+                    <i class="lp-presence-dot" [class.leave]="p.status === 'leave'"></i>
+                  </span>
+                  <span class="lp-presence-meta">
+                    <span class="lp-presence-name">{{ p.name }}</span>
+                    <span class="lp-presence-role">{{ p.role }}</span>
+                  </span>
+                  <span class="lp-presence-right">
+                    <span class="lp-presence-badge" [class.leave]="p.status === 'leave'">
+                      {{ p.status === 'leave' ? 'On leave' : 'Clocked in' }}
+                    </span>
+                    <span class="lp-presence-time">{{ p.time }}</span>
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <!-- Floating chips -->
+          <div class="lp-float-chip lp-chip-1">
+            <span class="lp-chip-ico lp-chip-ok">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <span>Leave approved</span>
+          </div>
+          <div class="lp-float-chip lp-chip-2">
+            <span class="lp-chip-ico lp-chip-pin">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.686-7-11a7 7 0 1 1 14 0c0 5.314-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            </span>
+            <span>Geofenced check-in</span>
+          </div>
+          <div class="lp-float-chip lp-chip-3">
+            <span class="lp-chip-ico lp-chip-ai">✦</span>
+            <span>AI insight ready</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── LOGO CLOUD / USE-CASES ───────────────────────────── -->
+  <section class="lp-logos" data-reveal>
+    <div class="lp-section-inner">
+      @if (customers().length) {
+        <!-- Real, consented customer logos from the server -->
+        <p class="lp-logos-label">Teams already building on <strong>Klockk</strong></p>
+        <div class="lp-logo-cloud">
+          @for (c of customers(); track c.name; let i = $index) {
+            <div class="lp-logo-item" data-reveal="zoom" [style.--i]="i">
+              @if (c.logoUrl) {
+                <img class="lp-logo-img" [src]="c.logoUrl" [alt]="c.name" loading="lazy" />
+              } @else {
+                <span class="lp-logo-word">{{ c.name }}</span>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Honest fallback: who Klockk is built for (no fake customers) -->
+        <p class="lp-logos-label">Built for teams of every shape</p>
+        <div class="lp-industry-strip">
+          @for (ind of industries; track ind; let i = $index) {
+            <span class="lp-industry-chip" data-reveal="zoom" [style.--i]="i">{{ ind }}</span>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ─── STATS BAND / VALUE PILLARS ───────────────────────── -->
+  <section class="lp-stats-band">
+    <div class="lp-blob lp-blob-band" aria-hidden="true"></div>
+    @if (serverStats().length) {
+      <!-- Real, verifiable platform metrics from the server -->
+      <div class="lp-section-inner lp-stats-grid">
+        @for (s of serverStats(); track s.label; let i = $index) {
+          <div class="lp-stat" data-reveal="up" [style.--i]="i">
+            <span class="lp-stat-value">{{ s.value }}</span>
+            <span class="lp-stat-label">{{ s.label }}</span>
           </div>
         }
       </div>
-    </div>
-
-    <!-- Abstract decorative blobs -->
-    <div class="lp-blob lp-blob-1"></div>
-    <div class="lp-blob lp-blob-2"></div>
+    } @else {
+      <!-- Honest fallback: product value pillars (no fabricated numbers) -->
+      <div class="lp-section-inner lp-pillars-grid">
+        @for (p of valuePillars; track p.title; let i = $index) {
+          <div class="lp-pillar" data-reveal="up" [style.--i]="i">
+            <span class="lp-pillar-icon">
+              @switch (p.key) {
+                @case ('fast') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg> }
+                @case ('truth') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a8 3 0 0 0 16 0 8 3 0 0 0-16 0z"/><path d="M4 7v10a8 3 0 0 0 16 0V7"/><path d="M4 12a8 3 0 0 0 16 0"/></svg> }
+                @case ('devices') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="10" rx="1.5"/><path d="M2 18h11"/><rect x="16" y="9" width="6" height="11" rx="1.5"/></svg> }
+                @case ('ai') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18 9.5l-4.2 1.8L12 16l-1.8-4.7L6 9.5l4.2-1.8z"/><path d="M18 15l.9 2.3L21 18l-2.1.7L18 21l-.9-2.3L15 18l2.1-.7z"/></svg> }
+              }
+            </span>
+            <span class="lp-pillar-title">{{ p.title }}</span>
+            <span class="lp-pillar-desc">{{ p.desc }}</span>
+          </div>
+        }
+      </div>
+    }
   </section>
 
   <!-- ─── FEATURES ─────────────────────────────────────────── -->
   <section class="lp-features">
     <div class="lp-section-inner">
-      <p class="lp-section-tag">Everything you need</p>
-      <h2 class="lp-section-title">One platform,<br/>every HR workflow</h2>
+      <div class="lp-section-head" data-reveal>
+        <p class="lp-section-tag">Everything you need</p>
+        <h2 class="lp-section-title">One platform,<br/>every HR workflow</h2>
+        <p class="lp-section-lede">
+          From the first clock-in to org-wide insights — Klockk replaces the
+          spreadsheets, chat threads and guesswork with one calm, connected system.
+        </p>
+      </div>
       <div class="lp-feature-grid">
-        @for (f of features; track f.title) {
-          <div class="lp-feature-card">
-            <div class="lp-feature-icon">{{ f.icon }}</div>
+        @for (f of features; track f.title; let i = $index) {
+          <div class="lp-feature-card" data-reveal="up" [style.--i]="i" [style.--accent]="f.accent">
+            <span class="lp-feature-top" aria-hidden="true"></span>
+            <span class="lp-feature-shine" aria-hidden="true"></span>
+            <span class="lp-feature-index" aria-hidden="true">{{ '0' + (i + 1) }}</span>
+            <div class="lp-feature-icon">
+              @switch (f.key) {
+                @case ('attendance') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                }
+                @case ('leave') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12v9"/><path d="M3 12a9 5 0 0 1 18 0z"/><path d="M12 12c0-4 2-7 5-8"/></svg>
+                }
+                @case ('directory') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 6M18.5 20a5.5 5.5 0 0 0-3-4.9"/></svg>
+                }
+                @case ('dashboard') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M8 15v2M12 11v6M16 8v9"/></svg>
+                }
+                @case ('offices') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V6l7-3 7 3v15"/><path d="M2 21h20"/><path d="M8 9h0M8 13h0M14 9h0M14 13h0M11 21v-4h2v4"/></svg>
+                }
+                @case ('notifications') {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 2 8 2 8H4s2-1 2-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+                }
+              }
+            </div>
             <h3 class="lp-feature-title">{{ f.title }}</h3>
             <p class="lp-feature-desc">{{ f.desc }}</p>
+            <div class="lp-feature-tags">
+              @for (t of f.tags; track t) {
+                <span class="lp-feature-tag">{{ t }}</span>
+              }
+            </div>
+            <span class="lp-feature-link">
+              Learn more
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+            <span class="lp-feature-glow" aria-hidden="true"></span>
           </div>
         }
       </div>
     </div>
   </section>
 
+  <!-- ─── KLOCKK AI ────────────────────────────────────────── -->
+  <section class="lp-ai">
+    <div class="lp-ai-bg" aria-hidden="true">
+      <div class="lp-grid lp-grid-dark"></div>
+      <div class="lp-blob lp-blob-ai-1"></div>
+      <div class="lp-blob lp-blob-ai-2"></div>
+    </div>
+    <div class="lp-section-inner lp-ai-inner">
+      <!-- Copy -->
+      <div class="lp-ai-copy" data-reveal="left">
+        <p class="lp-section-tag lp-ai-tag">
+          <span class="lp-ai-spark">✦</span> Klockk AI
+        </p>
+        <h2 class="lp-section-title">
+          Ask your HR data
+          <span class="lp-gradient-text">anything</span>
+        </h2>
+        <p class="lp-section-lede">
+          Klockk AI is grounded on your live data — not model guesses. Get
+          instant answers on attendance, leave and headcount, plus
+          auto-generated insight reports your whole team can trust.
+        </p>
+        <ul class="lp-ai-points">
+          @for (pt of aiPoints; track pt; let i = $index) {
+            <li class="lp-ai-point" data-reveal="left" [style.--i]="i + 1">
+              <span class="lp-ai-check" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+              </span>
+              {{ pt }}
+            </li>
+          }
+        </ul>
+        <button class="lp-cta-primary lp-cta-ai" (click)="goTrial()">
+          Try Klockk AI
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Chat visual -->
+      <div class="lp-ai-visual" data-reveal="right">
+        <div class="lp-ai-card">
+          <div class="lp-ai-head">
+            <span class="lp-ai-avatar">
+              <span class="lp-ai-spark">✦</span>
+            </span>
+            <span class="lp-ai-name">Klockk Assistant</span>
+            <span class="lp-ai-live"><span class="lp-live-dot"></span> live data</span>
+          </div>
+
+          <div class="lp-ai-chat">
+            <div class="lp-ai-msg lp-ai-msg-user">
+              Who’s on leave this week?
+            </div>
+            <div class="lp-ai-msg lp-ai-msg-ai">
+              <p><strong>3 employees</strong> are on approved leave this week — Rohan (Sales), Priya (Ops) and Dev (Design). Coverage stays above 90%.</p>
+              <div class="lp-ai-chip-row">
+                <span class="lp-ai-inline-stat">92% present</span>
+                <span class="lp-ai-inline-stat">3 on leave</span>
+              </div>
+            </div>
+            <div class="lp-ai-typing" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <div class="lp-ai-suggests">
+            @for (s of aiSuggests; track s) {
+              <span class="lp-ai-suggest">{{ s }}</span>
+            }
+          </div>
+        </div>
+
+        <!-- floating AI report chip -->
+        <div class="lp-ai-report" aria-hidden="true">
+          <span class="lp-ai-report-ico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M8 13h8M8 17h5"/></svg>
+          </span>
+          <div>
+            <span class="lp-ai-report-t">Weekly report</span>
+            <span class="lp-ai-report-s">Auto-generated</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── HOW IT WORKS ─────────────────────────────────────── -->
+  <section class="lp-steps">
+    <div class="lp-section-inner">
+      <div class="lp-section-head lp-steps-head" data-reveal>
+        <p class="lp-section-tag">How it works</p>
+        <h2 class="lp-section-title">Up and running in minutes</h2>
+      </div>
+      <div class="lp-steps-grid">
+        <div class="lp-steps-line" aria-hidden="true"></div>
+        @for (st of steps; track st.num; let i = $index) {
+          <div class="lp-step" data-reveal="up" [style.--i]="i">
+            <div class="lp-step-badge">
+              <div class="lp-step-icon">
+                @switch (st.key) {
+                  @case ('workspace') {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M9 4v5"/><path d="M12 15h3M13.5 13.5v3"/></svg>
+                  }
+                  @case ('invite') {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M18 8v6M15 11h6"/></svg>
+                  }
+                  @case ('autopilot') {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/></svg>
+                  }
+                }
+              </div>
+              <span class="lp-step-num">{{ st.num }}</span>
+            </div>
+            <h3 class="lp-step-title">{{ st.title }}</h3>
+            <p class="lp-step-desc">{{ st.desc }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── TESTIMONIALS / WHY KLOCKK ────────────────────────── -->
+  <section class="lp-quote-section">
+    <div class="lp-section-inner">
+      @if (serverTestimonials().length) {
+        <!-- Real, attributable customer quotes from the server -->
+        <div class="lp-section-head lp-quote-head" data-reveal>
+          <p class="lp-section-tag">Loved by HR teams</p>
+          <h2 class="lp-section-title">Don’t just take our word for it</h2>
+        </div>
+        <div class="lp-quote-grid">
+          @for (t of serverTestimonials(); track t.author; let i = $index) {
+            <figure class="lp-quote" data-reveal="up" [style.--i]="i">
+              <div class="lp-quote-stars">{{ starsFor(t.rating) }}</div>
+              <blockquote class="lp-quote-text">{{ t.quote }}</blockquote>
+              <figcaption class="lp-quote-by">
+                @if (t.avatarUrl) {
+                  <img class="lp-quote-img" [src]="t.avatarUrl" [alt]="t.author" loading="lazy" />
+                } @else {
+                  <span class="lp-quote-av">{{ initialsOf(t.author) }}</span>
+                }
+                <span class="lp-quote-meta">
+                  <span class="lp-quote-name">{{ t.author }}</span>
+                  <span class="lp-quote-role">{{ t.role }}</span>
+                </span>
+              </figcaption>
+            </figure>
+          }
+        </div>
+      } @else {
+        <!-- Honest fallback: reasons teams choose Klockk (no fake quotes) -->
+        <div class="lp-section-head lp-quote-head" data-reveal>
+          <p class="lp-section-tag">Why Klockk</p>
+          <h2 class="lp-section-title">Built to earn your trust</h2>
+        </div>
+        <div class="lp-quote-grid">
+          @for (w of whyChoose; track w.title; let i = $index) {
+            <div class="lp-why" data-reveal="up" [style.--i]="i">
+              <span class="lp-why-icon">
+                @switch (w.key) {
+                  @case ('admin') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 8h18M6 3v5M18 3v5"/><circle cx="12" cy="14" r="3"/></svg> }
+                  @case ('accurate') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.686-7-11a7 7 0 1 1 14 0c0 5.314-7 11-7 11z"/><path d="m9 10 2 2 4-4"/></svg> }
+                  @case ('insight') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg> }
+                }
+              </span>
+              <h3 class="lp-why-title">{{ w.title }}</h3>
+              <p class="lp-why-desc">{{ w.desc }}</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
   <!-- ─── CTA BANNER ───────────────────────────────────────── -->
   <section class="lp-cta-banner">
-    <div class="lp-section-inner lp-cta-inner">
+    <div class="lp-cta-bg" aria-hidden="true">
+      <div class="lp-grid lp-grid-dark"></div>
+      <div class="lp-blob lp-blob-cta-1"></div>
+      <div class="lp-blob lp-blob-cta-2"></div>
+    </div>
+    <div class="lp-section-inner lp-cta-inner" data-reveal="zoom">
+      <span class="lp-cta-badge">Free while we're in beta — no card required</span>
       <h2 class="lp-cta-title">Ready to simplify your HR?</h2>
-      <p class="lp-cta-sub">Join 500+ organizations already running on Klockk.</p>
+      <p class="lp-cta-sub">Be one of the first teams to run their HR on Klockk.</p>
       <div class="lp-cta-actions">
         <button class="lp-cta-primary light" (click)="goTrial()">
           Start Free Trial
@@ -118,16 +566,56 @@
         <button class="lp-cta-ghost light" (click)="goDemo()">Request a Demo →</button>
       </div>
     </div>
-    <div class="lp-blob lp-blob-3"></div>
   </section>
 
   <!-- ─── FOOTER ───────────────────────────────────────────── -->
   <footer class="lp-footer">
     <div class="lp-footer-inner">
-      <div class="lp-logo">
-        <span class="lp-logo-name">Klockk</span>
+      <div class="lp-footer-brand">
+        <div class="lp-logo">
+          <span class="lp-logo-icon lp-logo-icon-footer" aria-hidden="true">
+            <img src="/klock-logo.png" alt="" width="32" height="32" />
+          </span>
+          <span class="lp-logo-name">Klockk</span>
+        </div>
+        <p class="lp-footer-tag">
+          The all-in-one HRMS &amp; attendance platform for growing teams.
+        </p>
+        <div class="lp-footer-social">
+          <a class="lp-soc" href="#" aria-label="Twitter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22 5.9c-.8.3-1.6.6-2.4.7a4.1 4.1 0 0 0 1.8-2.3c-.8.5-1.7.8-2.6 1a4.1 4.1 0 0 0-7 3.7A11.6 11.6 0 0 1 3.4 4.6a4.1 4.1 0 0 0 1.3 5.5c-.7 0-1.3-.2-1.9-.5a4.1 4.1 0 0 0 3.3 4c-.6.2-1.2.2-1.8.1a4.1 4.1 0 0 0 3.8 2.9A8.3 8.3 0 0 1 2 18.3a11.6 11.6 0 0 0 6.3 1.8c7.5 0 11.6-6.2 11.6-11.6v-.5c.8-.6 1.5-1.3 2.1-2.1z"/></svg>
+          </a>
+          <a class="lp-soc" href="#" aria-label="LinkedIn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.9 8.5H3.7V21h3.2zM5.3 3.4a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 0 0 0-3.8zM21 21v-6.9c0-3.5-1.9-5.1-4.4-5.1-2 0-2.9 1.1-3.4 1.9V8.5H10V21h3.2v-6.6c0-1.6.6-2.6 2-2.6 1.3 0 1.8.9 1.8 2.6V21z"/></svg>
+          </a>
+          <a class="lp-soc" href="#" aria-label="GitHub">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.7.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7c-.1-.3-.5-1.3.1-2.7 0 0 .8-.3 2.7 1a9.3 9.3 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .6 1.4.2 2.4.1 2.7a3.9 3.9 0 0 1 1 2.7c0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.8v2.7c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
+          </a>
+        </div>
       </div>
+
+      <div class="lp-footer-cols">
+        <div class="lp-footer-col">
+          <h4>Product</h4>
+          <button (click)="goTrial()">Free Trial</button>
+          <button (click)="goDemo()">Request a Demo</button>
+          <button (click)="goLogin()">Sign In</button>
+        </div>
+        <div class="lp-footer-col">
+          <h4>Company</h4>
+          <button (click)="goDemo()">Contact</button>
+          <button (click)="goRegister()">Register</button>
+        </div>
+        <div class="lp-footer-col">
+          <h4>Legal</h4>
+          <button type="button">Privacy</button>
+          <button type="button">Terms</button>
+        </div>
+      </div>
+    </div>
+    <div class="lp-footer-bottom">
       <p class="lp-footer-copy">© 2026 Klockk. All rights reserved.</p>
+      <p class="lp-footer-made">Made with <span class="lp-heart">♥</span> for HR teams</p>
     </div>
   </footer>
 

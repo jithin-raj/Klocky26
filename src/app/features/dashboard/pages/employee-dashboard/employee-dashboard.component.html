@@ -1,53 +1,60 @@
 <div class="ed-page">
 
   <!-- ── Hero Banner ─────────────────────────────────────────────────────────── -->
-  <div class="ed-banner">
-    <!-- Decorative blobs -->
+  <div class="ed-banner ed-mount" style="--i:0">
     <div class="ed-banner-orb ed-banner-orb--1" aria-hidden="true"></div>
     <div class="ed-banner-orb ed-banner-orb--2" aria-hidden="true"></div>
+    <div class="ed-banner-grid" aria-hidden="true"></div>
 
     <div class="ed-banner-content">
       <div class="ed-banner-text">
-        <p class="ed-banner-eyebrow">{{ now | date:'EEEE, MMMM d' }}</p>
-        <h1 class="ed-banner-title">{{ greeting() }},<br>{{ firstName() }}!</h1>
+        <p class="ed-banner-eyebrow">
+          <ui-icon name="calendar" [size]="13"></ui-icon>
+          {{ now | date:'EEEE, MMMM d' }}
+        </p>
+        <h1 class="ed-banner-title">{{ greeting() }}, {{ firstName() }}!</h1>
         @if (userMeta()) {
           <p class="ed-banner-meta">{{ userMeta() }}</p>
         }
 
-        <!-- Stat pills inside banner on desktop -->
         <div class="ed-banner-stats">
           <div class="ed-stat-pill">
             <span class="ed-stat-value">{{ todayHours() }}</span>
             <span class="ed-stat-label">Today</span>
           </div>
           <div class="ed-stat-pill">
-            <span class="ed-stat-value">22</span>
+            <span class="ed-stat-value">{{ presentDays() }}</span>
             <span class="ed-stat-label">Present</span>
           </div>
           <div class="ed-stat-pill">
-            <span class="ed-stat-value">8</span>
+            <span class="ed-stat-value">{{ leaveLeft() }}</span>
             <span class="ed-stat-label">Leave left</span>
+          </div>
+          <div class="ed-stat-pill">
+            <span class="ed-stat-value">{{ pendingTasks() }}</span>
+            <span class="ed-stat-label">Tasks</span>
           </div>
         </div>
       </div>
 
-      <!-- Illustration placeholder — just abstract shapes for now -->
-      <div class="ed-banner-illo" aria-hidden="true">
-        <div class="ed-illo-circle"></div>
-        <div class="ed-illo-ring"></div>
-        <svg class="ed-illo-svg" viewBox="0 0 120 120" fill="none">
-          <circle cx="60" cy="40" r="18" fill="rgba(255,255,255,0.18)"/>
-          <rect x="35" y="55" width="50" height="40" rx="6" fill="rgba(255,255,255,0.12)"/>
-          <rect x="52" y="45" width="16" height="16" rx="2" fill="rgba(255,255,255,0.22)"/>
-          <line x1="45" y1="68" x2="75" y2="68" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round"/>
-          <line x1="45" y1="76" x2="65" y2="76" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+      <!-- Avatar / identity chip -->
+      <div class="ed-banner-id" aria-hidden="true">
+        <div class="ed-id-avatar">
+          @if (avatarUrl()) {
+            <img [src]="avatarUrl()" [alt]="fullName()" />
+          } @else {
+            <span>{{ initials() }}</span>
+          }
+          <span class="ed-id-status" [class.on]="isClockedIn()"></span>
+        </div>
+        <span class="ed-id-name">{{ fullName() }}</span>
+        <span class="ed-id-state">{{ isClockedIn() ? 'Clocked in' : 'Clocked out' }}</span>
       </div>
     </div>
   </div>
 
   <!-- ── Clock-in prompt card ─────────────────────────────────────────────── -->
-  <div class="ed-clockin-card" [class.ed-clockin-card--active]="isClockedIn()">
+  <div class="ed-clockin-card ed-mount" style="--i:1" [class.ed-clockin-card--active]="isClockedIn()">
     <div class="ed-clockin-left">
       @if (isClockedIn()) {
         <div class="ed-clockin-status">
@@ -86,9 +93,9 @@
 
   <!-- ── Quick Action Cards ───────────────────────────────────────────────── -->
   <div class="ed-quick-actions">
-    @for (a of quickActions; track a.label) {
-      <button class="ed-action-card"
-              [style.--qa]="a.color"
+    @for (a of quickActions(); track a.label; let i = $index) {
+      <button class="ed-action-card ed-mount"
+              [style.--qa]="a.color" [style.--i]="i + 2"
               (click)="onQuickAction(a)">
         <span class="ed-action-icon"><ui-icon [name]="a.icon" [size]="22"></ui-icon></span>
         <span class="ed-action-text">
@@ -107,48 +114,75 @@
     <div class="ed-col-left">
 
       <!-- Leave balances -->
-      <div class="ed-card">
+      <div class="ed-card ed-mount" style="--i:6">
         <div class="ed-card-header">
-          <h2 class="ed-card-title">Leave Balance</h2>
+          <h2 class="ed-card-title"><ui-icon name="calendar" [size]="16"></ui-icon> Leave Balance</h2>
           <a class="ed-link-btn" [routerLink]="[orgPrefix(), 'app', 'tasks']" [queryParams]="{ new: 'leave' }">Apply →</a>
         </div>
-        <div class="ed-leave-list">
-          @for (b of leaveBalances; track b.type) {
-            <div class="ed-leave-row">
-              <span class="ed-leave-type">{{ b.type }}</span>
-              <div class="ed-leave-bar-wrap">
+        @if (leaveLoading()) {
+          <div class="ed-skeleton-list"><span></span><span></span><span></span></div>
+        } @else if (leaveBalances().length === 0) {
+          <div class="ed-empty"><ui-icon name="inbox" [size]="26"></ui-icon><p>No leave policy assigned yet.</p></div>
+        } @else {
+          <div class="ed-leave-list">
+            @for (b of leaveBalances(); track b.leaveTypeId) {
+              <div class="ed-leave-row">
+                <div class="ed-leave-head">
+                  <span class="ed-leave-type">{{ b.leaveTypeName || 'Leave' }}</span>
+                  <span class="ed-leave-count"><strong>{{ b.remainingDays }}</strong> left · {{ b.usedDays }}/{{ b.totalDays }}</span>
+                </div>
                 <div class="ed-leave-bar">
-                  <div class="ed-leave-fill"
-                       [style.width.%]="leavePercent(b)"
-                       [style.background]="b.color">
-                  </div>
+                  <div class="ed-leave-fill" [style.width.%]="leavePercent(b)"></div>
                 </div>
               </div>
-              <span class="ed-leave-count">{{ b.used }}/{{ b.total }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- This week strip -->
+      <div class="ed-card ed-mount" style="--i:7">
+        <div class="ed-card-header">
+          <h2 class="ed-card-title"><ui-icon name="clock" [size]="16"></ui-icon> This Week</h2>
+          <a class="ed-link-btn" [routerLink]="[orgPrefix(), 'app', 'attendance']">Details →</a>
+        </div>
+        <div class="ed-week">
+          @for (d of weekStrip(); track d.label) {
+            <div class="ed-week-day" [class.ed-week-today]="d.isToday">
+              <span class="ed-week-dname">{{ d.label }}</span>
+              <span class="ed-week-dnum">{{ d.date }}</span>
+              <span class="ed-week-dot" [style.background]="d.color"></span>
             </div>
           }
         </div>
       </div>
 
-      <!-- This week -->
-      <div class="ed-card">
+      <!-- This month summary -->
+      <div class="ed-card ed-mount" style="--i:8">
         <div class="ed-card-header">
-          <h2 class="ed-card-title">This Week</h2>
+          <h2 class="ed-card-title"><ui-icon name="bar-chart" [size]="16"></ui-icon> This Month</h2>
+          <span class="ed-card-sub">{{ now | date:'MMMM' }}</span>
         </div>
-        <div class="ed-shift-list">
-          @for (s of upcomingShifts; track s.date) {
-            <div class="ed-shift-row" [class.ed-shift-today]="s.isToday">
-              <div class="ed-shift-day">
-                <span class="ed-shift-dname">{{ s.day }}</span>
-                <span class="ed-shift-dnum">{{ s.date }}</span>
+        @if (attLoading()) {
+          <div class="ed-skeleton-list"><span></span><span></span></div>
+        } @else if (monthTotal() === 0) {
+          <div class="ed-empty"><ui-icon name="calendar" [size]="26"></ui-icon><p>No attendance recorded yet.</p></div>
+        } @else {
+          <div class="ed-month-bar">
+            @for (seg of monthSegs(); track seg.label) {
+              <span class="ed-month-seg" [style.flex]="seg.count" [style.background]="seg.color" [title]="seg.label + ': ' + seg.count"></span>
+            }
+          </div>
+          <div class="ed-month-legend">
+            @for (seg of monthSegs(); track seg.label) {
+              <div class="ed-month-item">
+                <span class="ed-month-dot" [style.background]="seg.color"></span>
+                <span class="ed-month-label">{{ seg.label }}</span>
+                <span class="ed-month-count">{{ seg.count }}</span>
               </div>
-              <div class="ed-shift-hours">
-                <span class="ed-shift-time">{{ s.start }} – {{ s.end }}</span>
-                <span class="ed-shift-dur">9h</span>
-              </div>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       </div>
 
     </div>
@@ -157,43 +191,54 @@
     <div class="ed-col-right">
 
       <!-- Recent activity -->
-      <div class="ed-card">
+      <div class="ed-card ed-mount" style="--i:9">
         <div class="ed-card-header">
-          <h2 class="ed-card-title">Recent Activity</h2>
+          <h2 class="ed-card-title"><ui-icon name="repeat" [size]="16"></ui-icon> Recent Activity</h2>
         </div>
-        <div class="ed-activity-list">
-          @for (a of recentActivity; track $index) {
-            <div class="ed-activity-row">
-              <div class="ed-activity-dot" [style.background]="activityColor(a.type)"></div>
-              <div class="ed-activity-body">
-                <span class="ed-activity-action">{{ a.action }}</span>
-                @if (a.time) {
-                  <span class="ed-activity-time">{{ a.time }}</span>
-                }
+        @if (attLoading()) {
+          <div class="ed-skeleton-list"><span></span><span></span><span></span></div>
+        } @else if (recentActivity().length === 0) {
+          <div class="ed-empty"><ui-icon name="clock" [size]="26"></ui-icon><p>No recent activity.</p></div>
+        } @else {
+          <div class="ed-activity-list">
+            @for (a of recentActivity(); track $index) {
+              <div class="ed-activity-row">
+                <div class="ed-activity-dot" [style.background]="activityColor(a.type)"></div>
+                <div class="ed-activity-body">
+                  <span class="ed-activity-action">{{ a.action }}</span>
+                  @if (a.time) { <span class="ed-activity-time">{{ a.time }}</span> }
+                </div>
+                <span class="ed-activity-date">{{ a.date }}</span>
               </div>
-              <span class="ed-activity-date">{{ a.date }}</span>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       </div>
 
-      <!-- Announcements -->
-      <div class="ed-card">
+      <!-- Updates / announcements (real notifications) -->
+      <div class="ed-card ed-mount" style="--i:10">
         <div class="ed-card-header">
-          <h2 class="ed-card-title">Announcements</h2>
+          <h2 class="ed-card-title"><ui-icon name="megaphone" [size]="16"></ui-icon> Updates</h2>
+          <a class="ed-link-btn" [routerLink]="[orgPrefix(), 'app', 'notifications']">All →</a>
         </div>
-        <div class="ed-announce-list">
-          @for (a of announcements; track a.title) {
-            <div class="ed-announce-row">
-              <span class="ed-announce-tag">{{ a.tag }}</span>
-              <div class="ed-announce-body">
-                <p class="ed-announce-title">{{ a.title }}</p>
-                <p class="ed-announce-desc">{{ a.body }}</p>
+        @if (notificationSvc.loading() && updates().length === 0) {
+          <div class="ed-skeleton-list"><span></span><span></span></div>
+        } @else if (updates().length === 0) {
+          <div class="ed-empty"><ui-icon name="check-circle" [size]="26"></ui-icon><p>You're all caught up.</p></div>
+        } @else {
+          <div class="ed-announce-list">
+            @for (n of updates(); track n.id) {
+              <div class="ed-announce-row" [class.unread]="!n.isRead">
+                <span class="ed-announce-icon"><ui-icon name="bell" [size]="15"></ui-icon></span>
+                <div class="ed-announce-body">
+                  <p class="ed-announce-title">{{ n.title }}</p>
+                  <p class="ed-announce-desc">{{ n.body }}</p>
+                </div>
+                <span class="ed-announce-date">{{ fmtNotifDate(n.createdAt) }}</span>
               </div>
-              <span class="ed-announce-date">{{ a.date }}</span>
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
       </div>
 
     </div>
