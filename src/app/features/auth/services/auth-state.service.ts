@@ -14,6 +14,8 @@ export class AuthStateService {
   /** The real backend login code (orgSlug, ".klock"-suffixed) — only used in POST /api/users/auth/login's body. */
   readonly orgSlugForLogin = signal('');
   readonly email = signal('');
+  /** Full mobile number incl. country code, e.g. "+919876543210" — mobile OTP login only. */
+  readonly mobileNumber = signal('');
   readonly userRole = signal<UserRole>('employee');
 
   // ── Register flow ───────────────────────────────────────────
@@ -48,16 +50,22 @@ export class AuthStateService {
     this.email.set(email);
   }
 
+  setMobileNumber(phone: string): void {
+    this.mobileNumber.set(phone);
+  }
+
   resetLogin(): void {
     this.orgIdentifier.set('');
     this.orgDisplayName.set('');
     this.orgSlugForLogin.set('');
     this.email.set('');
+    this.mobileNumber.set('');
     this.titleService.setTitle('Klockk');
   }
 
   resetToOrgStep(): void {
     this.email.set('');
+    this.mobileNumber.set('');
     this.orgIdentifier.set('');
     this.orgDisplayName.set('');
     this.orgSlugForLogin.set('');

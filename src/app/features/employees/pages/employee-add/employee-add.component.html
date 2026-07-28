@@ -69,7 +69,8 @@
           <ui-form-field label="Employee code" [required]="true" [error]="errors()['employeeCode']">
             <ui-input placeholder="EMP001" [ngModel]="form().employeeCode" (ngModelChange)="patch('employeeCode', $event)" name="code" />
           </ui-form-field>
-          <ui-form-field label="Phone">
+          <ui-form-field label="Phone" [error]="errors()['phone']"
+                         [hint]="errors()['phone'] ? '' : 'Include the country code, e.g. +91 98765 43210. Mobile-only staff sign in with an SMS OTP.'">
             <ui-input type="tel" inputmode="tel" placeholder="+91 98765 43210" [ngModel]="form().phone" (ngModelChange)="patch('phone', $event)" name="phone" />
           </ui-form-field>
           <ui-form-field label="First name" [required]="true" [error]="errors()['firstName']">
@@ -78,8 +79,8 @@
           <ui-form-field label="Last name" [required]="true" [error]="errors()['lastName']">
             <ui-input placeholder="Last name" [ngModel]="form().lastName" (ngModelChange)="patch('lastName', $event)" name="lastName" />
           </ui-form-field>
-          <ui-form-field label="Work email" [required]="true" [error]="errors()['email']" [full]="true"
-                         [hint]="isEdit() ? 'Email cannot be changed after creation.' : ''">
+          <ui-form-field label="Work email" [error]="errors()['email']" [full]="true"
+                         [hint]="isEdit() ? 'Email cannot be changed after creation.' : 'Provide an email or a mobile number. Mobile-only staff sign in with an SMS OTP.'">
             <ui-input type="email" inputmode="email" placeholder="name@company.com" [disabled]="isEdit()"
                       [ngModel]="form().email" (ngModelChange)="patch('email', $event)" name="email" />
           </ui-form-field>

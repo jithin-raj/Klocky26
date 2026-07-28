@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, tap, firstValueFrom } from 'rxjs';
+import { Observable, tap, shareReplay, firstValueFrom } from 'rxjs';
 import { ApiService }         from './api.service';
 import { AppStateService }    from './app-state.service';
 import { PermissionService }  from './permission.service';
@@ -12,6 +12,10 @@ import { ApiResponse }        from '../models/api-response.model';
 import {
   LoginRequest,
   LoginResponse,
+  LoginOptionsResponse,
+  RequestMobileOtpRequest,
+  RequestMobileOtpResponse,
+  VerifyMobileOtpRequest,
   RefreshTokenRequest,
   RefreshTokenResponse,
   EmployeeUser,
@@ -50,6 +54,37 @@ export class UserAuthService {
         this.appState.setEmployeeSession(res.data);
         // Legal-consent gate — must be current right after login, before the
         // shell even mounts, so the blocking modal can appear immediately.
+        this.dpdpConsent.load();
+      }),
+    );
+  }
+
+  /** Cached per orgSlug for the lifetime of the tab — the login screen re-mounts this service's
+   *  consumers on every "Back", but the org's available login methods don't change mid-session. */
+  private readonly loginOptionsCache = new Map<string, Observable<ApiResponse<LoginOptionsResponse>>>();
+
+  /** GET /api/users/auth/login-options/{orgSlug} — which login methods this org offers (email always; mobile OTP only if enabled). */
+  getLoginOptions(orgSlug: string): Observable<ApiResponse<LoginOptionsResponse>> {
+    let cached = this.loginOptionsCache.get(orgSlug);
+    if (!cached) {
+      cached = this.api.get<ApiResponse<LoginOptionsResponse>>(`/users/auth/login-options/${orgSlug}`).pipe(
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+      this.loginOptionsCache.set(orgSlug, cached);
+    }
+    return cached;
+  }
+
+  /** POST /api/users/auth/mobile/request-otp — sends an SMS OTP to `phone` (incl. country code). */
+  requestMobileOtp(payload: RequestMobileOtpRequest): Observable<ApiResponse<RequestMobileOtpResponse>> {
+    return this.api.post<ApiResponse<RequestMobileOtpResponse>>('/users/auth/mobile/request-otp', payload);
+  }
+
+  /** POST /api/users/auth/mobile/verify-otp — same completion path as password login (persists tokens, loads DPDP consent). */
+  verifyMobileOtp(payload: VerifyMobileOtpRequest): Observable<ApiResponse<LoginResponse>> {
+    return this.api.post<ApiResponse<LoginResponse>>('/users/auth/mobile/verify-otp', payload).pipe(
+      tap((res) => {
+        this.appState.setEmployeeSession(res.data);
         this.dpdpConsent.load();
       }),
     );

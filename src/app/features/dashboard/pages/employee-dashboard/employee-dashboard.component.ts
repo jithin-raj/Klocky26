@@ -147,6 +147,22 @@ export class EmployeeDashboardComponent implements OnInit, OnDestroy {
   });
   monthTotal = computed(() => this.monthSegs().reduce((s, x) => s + x.count, 0));
 
+  /** Whether today is the org's real week-off day (from the calendar's isWeekend flag, not a hardcoded Sat/Sun). */
+  isWeekendToday = computed(() => {
+    const today = this._isoToday();
+    return this.calDays().find(d => d.date === today)?.isWeekend ?? false;
+  });
+  /** Whether today is a configured holiday. */
+  isHolidayToday = computed(() => {
+    const today = this._isoToday();
+    const d = this.calDays().find(x => x.date === today);
+    return !!(d?.isHoliday);
+  });
+  todayHolidayName = computed(() => {
+    const today = this._isoToday();
+    return this.calDays().find(d => d.date === today)?.holidayName ?? '';
+  });
+
   /** Recent activity built from real calendar days (most recent first). */
   recentActivity = computed<Activity[]>(() => {
     const days = this.calDays().filter(d => !d.isUpcoming);

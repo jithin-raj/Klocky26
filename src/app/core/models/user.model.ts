@@ -36,6 +36,34 @@ export interface LoginResponse {
   subscriptionExpired?: boolean;
 }
 
+/** GET /api/users/auth/login-options/{orgSlug} response (data) — which login methods this org offers. */
+export interface LoginOptionsResponse {
+  orgSlug: string;
+  emailLoginEnabled: boolean;
+  /** SMS OTP login — only ever true for India-based orgs with the setting enabled. */
+  mobileLoginEnabled: boolean;
+}
+
+/** POST /api/users/auth/mobile/request-otp request. `phone` includes the country code, e.g. "+919876543210". */
+export interface RequestMobileOtpRequest {
+  orgSlug: string;
+  phone: string;
+}
+
+/** POST /api/users/auth/mobile/request-otp response (data) */
+export interface RequestMobileOtpResponse {
+  expiresAt: string;
+  expiresInSeconds: number;
+  resendAvailableInSeconds: number;
+}
+
+/** POST /api/users/auth/mobile/verify-otp request */
+export interface VerifyMobileOtpRequest {
+  orgSlug: string;
+  phone: string;
+  otp: string;
+}
+
 /** POST /api/users/auth/refresh request */
 export interface RefreshTokenRequest {
   orgSlug: string;

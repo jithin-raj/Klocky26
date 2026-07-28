@@ -321,6 +321,8 @@ export interface TenantSettings {
   offices: OfficeSettingDto[];
   isActive: boolean;
   createdAt: string;
+  /** Passwordless mobile-number (SMS OTP) login for this org's employees — India-based orgs only. */
+  allowMobileNumberLogin: boolean;
 }
 
 /**

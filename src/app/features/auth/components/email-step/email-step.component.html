@@ -1,7 +1,7 @@
-<form class="lk-step" [formGroup]="form" (ngSubmit)="login()" novalidate>
+<div class="lk-step">
 
   <div class="lk-top-bar">
-    <button type="button" class="lk-back-btn" (click)="back.emit()">
+    <button type="button" class="lk-back-btn" (click)="mobileStep === 'otp' && method === 'mobile' ? backToPhone() : back.emit()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
            stroke="currentColor" stroke-width="2.5"
            stroke-linecap="round" stroke-linejoin="round">
@@ -24,98 +24,230 @@
     Sign in to<br>
     <span class="lk-heading-accent">{{ state.orgDisplayName() }}.</span>
   </h1>
-  <p class="lk-subtext">
-    Enter your work email and password to continue.
-  </p>
 
-  <!-- Email -->
-  <div class="lk-field">
-    <label class="lk-label" for="email-input">Work email</label>
-    <div class="lk-input-wrap" [class.lk-input-error]="emailInvalid">
-      <svg class="lk-input-icon" width="16" height="16" viewBox="0 0 24 24"
-           fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-        <polyline points="22,6 12,13 2,6"/>
-      </svg>
-      <input
-        id="email-input"
-        class="lk-input"
-        type="email"
-        autocomplete="email"
-        placeholder="you@{{ state.orgIdentifier() }}.com"
-        formControlName="emailInput"
-      />
+  <!-- Email / Mobile number method switcher — only shown when the org has mobile OTP login enabled -->
+  @if (loginOptions?.mobileLoginEnabled) {
+    <div class="lk-method-tabs" role="tablist">
+      <button type="button" class="lk-method-tab" [class.active]="method === 'email'"
+              role="tab" [attr.aria-selected]="method === 'email'" (click)="setMethod('email')">
+        Email
+      </button>
+      <button type="button" class="lk-method-tab" [class.active]="method === 'mobile'"
+              role="tab" [attr.aria-selected]="method === 'mobile'" (click)="setMethod('mobile')">
+        Mobile number
+      </button>
     </div>
-    @if (emailInvalid) {
-      <p class="lk-error-msg">Please enter a valid work email.</p>
-    }
-  </div>
+  }
 
-  <!-- Password -->
-  <div class="lk-field">
-    <div class="lk-label-row">
-      <label class="lk-label" for="password-input">Password</label>
-      <a class="lk-forgot-link" routerLink="/login/forgot-password">Forgot password?</a>
-    </div>
-    <div class="lk-input-wrap" [class.lk-input-error]="passwordInvalid">
-      <svg class="lk-input-icon" width="16" height="16" viewBox="0 0 24 24"
-           fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-      </svg>
-      <input
-        id="password-input"
-        class="lk-input lk-input--pw"
-        [type]="showPassword ? 'text' : 'password'"
-        [attr.autocomplete]="'current-password'"
-        placeholder="••••••••"
-        formControlName="passwordInput"
-      />
-      <button type="button" class="lk-pw-toggle" (click)="togglePassword()" tabindex="-1">
-        @if (showPassword) {
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2"
+  <!-- ── EMAIL + PASSWORD ─────────────────────────────────────────────── -->
+  @if (method === 'email') {
+    <form [formGroup]="form" (ngSubmit)="login()" novalidate>
+      <p class="lk-subtext">
+        Enter your work email and password to continue.
+      </p>
+
+      <!-- Email -->
+      <div class="lk-field">
+        <label class="lk-label" for="email-input">Work email</label>
+        <div class="lk-input-wrap" [class.lk-input-error]="emailInvalid">
+          <svg class="lk-input-icon" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-            <line x1="1" y1="1" x2="23" y2="23"/>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
           </svg>
-        } @else {
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2"
+          <input
+            id="email-input"
+            class="lk-input"
+            type="email"
+            autocomplete="email"
+            placeholder="you@{{ state.orgIdentifier() }}.com"
+            formControlName="emailInput"
+          />
+        </div>
+        @if (emailInvalid) {
+          <p class="lk-error-msg">Please enter a valid work email.</p>
+        }
+      </div>
+
+      <!-- Password -->
+      <div class="lk-field">
+        <div class="lk-label-row">
+          <label class="lk-label" for="password-input">Password</label>
+          <a class="lk-forgot-link" routerLink="/login/forgot-password">Forgot password?</a>
+        </div>
+        <div class="lk-input-wrap" [class.lk-input-error]="passwordInvalid">
+          <svg class="lk-input-icon" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input
+            id="password-input"
+            class="lk-input lk-input--pw"
+            [type]="showPassword ? 'text' : 'password'"
+            [attr.autocomplete]="'current-password'"
+            placeholder="••••••••"
+            formControlName="passwordInput"
+          />
+          <button type="button" class="lk-pw-toggle" (click)="togglePassword()" tabindex="-1">
+            @if (showPassword) {
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            } @else {
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            }
+          </button>
+        </div>
+        @if (passwordInvalid) {
+          <p class="lk-error-msg">Password must be at least 6 characters.</p>
+        } @else if (error) {
+          <p class="lk-error-msg">{{ error }}</p>
+        }
+      </div>
+
+      <button
+        class="lk-btn"
+        type="submit"
+        [disabled]="loading"
+      >
+        @if (loading) {
+          <span class="lk-spinner"></span>
+          Signing in…
+        } @else {
+          Sign In
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         }
       </button>
-    </div>
-    @if (passwordInvalid) {
-      <p class="lk-error-msg">Password must be at least 6 characters.</p>
-    } @else if (error) {
-      <p class="lk-error-msg">{{ error }}</p>
-    }
-  </div>
+    </form>
+  }
 
-  <button
-    class="lk-btn"
-    type="submit"
-    [disabled]="loading"
-  >
-    @if (loading) {
-      <span class="lk-spinner"></span>
-      Signing in…
+  <!-- ── MOBILE OTP — step 1: phone number ───────────────────────────── -->
+  @if (method === 'mobile' && mobileStep === 'phone') {
+    <p class="lk-subtext">
+      Enter your registered mobile number — we'll text you a one-time code.
+    </p>
+
+    <div class="lk-field">
+      <label class="lk-label" for="phone-input">Mobile number</label>
+      <div class="lk-input-wrap">
+        <span class="lk-phone-prefix">+91</span>
+        <input
+          id="phone-input"
+          class="lk-input"
+          type="tel"
+          inputmode="numeric"
+          autocomplete="tel"
+          placeholder="98765 43210"
+          maxlength="10"
+          [value]="phoneNational"
+          (input)="onPhoneInput($event)"
+          (keydown.enter)="requestOtp()"
+        />
+      </div>
+      @if (error) {
+        <p class="lk-error-msg">{{ error }}</p>
+      }
+    </div>
+
+    <button
+      class="lk-btn"
+      type="button"
+      [disabled]="!phoneValid || loading"
+      (click)="requestOtp()"
+    >
+      @if (loading) {
+        <span class="lk-spinner"></span>
+        Sending code…
+      } @else {
+        Send Code
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      }
+    </button>
+  }
+
+  <!-- ── MOBILE OTP — step 2: enter code ─────────────────────────────── -->
+  @if (method === 'mobile' && mobileStep === 'otp') {
+    <p class="lk-subtext">
+      We sent a 6-digit code to<br>
+      <strong class="lk-email-pill">+91 {{ phoneNational }}</strong>
+    </p>
+
+    <div class="lk-otp-grid">
+      @for (digit of otp; track $index; let i = $index) {
+        <input
+          #otpBox
+          class="lk-otp-box"
+          [class.filled]="digit !== ''"
+          [class.lk-otp-error]="error"
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          autocomplete="one-time-code"
+          [value]="digit"
+          [disabled]="otpExpired"
+          (input)="onOtpInput($event, i)"
+          (keydown)="onOtpKeydown($event, i)"
+          (paste)="onOtpPaste($event)"
+        />
+      }
+    </div>
+
+    @if (otpExpired) {
+      <p class="lk-otp-expired-msg">OTP expired — resend</p>
     } @else {
-      Sign In
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2.5"
-           stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 12h14M12 5l7 7-7 7"/>
-      </svg>
+      <p class="lk-otp-expiry">Code expires in <span class="lk-otp-expiry-timer">{{ otpTimeLabel }}</span></p>
     }
-  </button>
+
+    @if (error) {
+      <p class="lk-error-msg lk-error-center">{{ error }}</p>
+    }
+
+    <button
+      class="lk-btn"
+      type="button"
+      [disabled]="!otpComplete || loading || otpExpired"
+      (click)="verifyOtp()"
+    >
+      @if (loading) {
+        <span class="lk-spinner"></span>
+        Verifying…
+      } @else {
+        Verify &amp; Sign In
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      }
+    </button>
+
+    <div class="lk-resend">
+      Didn't receive it?
+      <button type="button" class="lk-resend-btn" [disabled]="resendSeconds > 0" (click)="resendOtp()">
+        Resend@if (resendSeconds > 0) { &nbsp;({{ resendSeconds }}s) }
+      </button>
+    </div>
+  }
 
   <p class="lk-legal">
     By signing in, you agree to Klockk's
@@ -125,4 +257,4 @@
 
   <app-public-legal-document-modal #legalModal></app-public-legal-document-modal>
 
-</form>
+</div>

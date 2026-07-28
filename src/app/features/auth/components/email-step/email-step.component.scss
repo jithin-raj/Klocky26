@@ -37,3 +37,30 @@
 
   &:hover { color: rgba(255,255,255,.7); }
 }
+
+// ── Method switcher (Email / Mobile number) ─────────────────────────
+.lk-method-tabs {
+  display: flex; gap: 4px; margin-bottom: 24px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding: 4px;
+}
+.lk-method-tab {
+  flex: 1; padding: 9px 0; border: none; border-radius: 9px;
+  background: none; color: rgba(255,255,255,.45);
+  font-size: 13px; font-weight: 650; font-family: inherit; cursor: pointer;
+  transition: background .18s, color .18s;
+
+  &:hover { color: rgba(255,255,255,.7); }
+  &.active {
+    background: rgb(var(--th-ar) var(--th-ag) var(--th-ab) / .16);
+    color: var(--th-text-accent);
+  }
+}
+
+// ── Fixed "+91" prefix on the mobile-number field ───────────────────
+.lk-phone-prefix {
+  flex-shrink: 0; padding-left: 14px; padding-right: 4px;
+  font-size: 15px; font-weight: 650; color: rgba(255,255,255,.55);
+  user-select: none;
+}
+.lk-phone-prefix + .lk-input { padding-left: 6px; }

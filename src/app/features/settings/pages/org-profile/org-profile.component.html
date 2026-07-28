@@ -423,6 +423,12 @@
             [(ngModel)]="phone" (ngModelChange)="markDirty()">
           </ui-input>
 
+          <ui-toggle [row]="true"
+            label="Allow login with mobile number (SMS OTP)"
+            hint="Employees can sign in with an OTP sent to their mobile number instead of a password. Available for India-based organisations only."
+            [(ngModel)]="allowMobileNumberLogin" (ngModelChange)="markDirty()">
+          </ui-toggle>
+
           <div class="op-field op-field-sep">
             <p class="op-field-label">Secondary / Notify Emails</p>
             <p class="op-field-desc">Additional recipients for alerts, reports, and announcements</p>
