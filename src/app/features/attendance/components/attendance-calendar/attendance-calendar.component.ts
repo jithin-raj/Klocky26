@@ -12,13 +12,13 @@ import {
   effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceStateService } from '../../../../core/services/attendance-state.service';
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { RealtimeService } from '../../../../core/services/realtime.service';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { MarkPresentDialogService } from '../../../../shared/components/mark-present-dialog/mark-present-dialog.service';
+import { RegularisationDialogService } from '../../../../shared/components/regularisation-dialog/regularisation-dialog.service';
 import {
   AttendanceRecordResponse,
   CalendarDayStatus,
@@ -37,7 +37,8 @@ export type AttendanceStatus =
   | 'leave'
   | 'comp_off'
   | 'holiday'
-  | 'off';
+  | 'off'
+  | 'overtime';
 
 export interface AttendanceRecord {
   /** ISO date string YYYY-MM-DD */
@@ -100,16 +101,23 @@ export const STATUS_META: Record<
   { label: string; color: string; bg: string }
 > = {
   present:  { label: 'Present',  color: '#16A34A', bg: '#dcfce7' },
-  half:     { label: 'Half Day', color: '#F59E0B', bg: '#fef3c7' },
+  half:     { label: 'Half Day', color: '#D97706', bg: '#fef3c7' },
   absent:   { label: 'Absent',   color: '#DC2626', bg: '#fee2e2' },
   leave:    { label: 'Leave',    color: '#3B82F6', bg: '#dbeafe' },
   comp_off: { label: 'Comp Off', color: '#8B5CF6', bg: '#ede9fe' },
-  holiday:  { label: 'Holiday',  color: '#EC4899', bg: '#fce7f3' },
-  off:      { label: 'Weekend',  color: '#94A3B8', bg: '#f1f5f9' },
+  holiday:  { label: 'Holiday',  color: '#7C3AED', bg: '#ede9fe' },
+  off:      { label: 'Weekend',  color: '#F87171', bg: '#fff5f5' },
+  overtime: { label: 'Overtime', color: '#0D9488', bg: '#ccfbf1' },
 };
+
+/** Legend-only entry for future/scheduled days — not a real AttendanceStatus
+ *  (those cells carry `status: null` + `isFuture: true`), but the calendar
+ *  renders them in a distinct indigo style, so the legend should explain it. */
+export const UPCOMING_LEGEND = { key: 'upcoming', label: 'Upcoming', color: '#6366F1', bg: '#eef2ff' };
 
 const REQUIRED_HOURS: Partial<Record<AttendanceStatus, number>> = {
   present: 8,
+  overtime: 8,
   half: 4,
 };
 
@@ -131,10 +139,10 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   private readonly attendance = inject(AttendanceStateService);
   private readonly realtime   = inject(RealtimeService);
-  private readonly router     = inject(Router);
   private readonly appState   = inject(AppStateService);
   private readonly permissions = inject(PermissionService);
   private readonly markPresentDialog = inject(MarkPresentDialogService);
+  private readonly regularisationDialog = inject(RegularisationDialogService);
   private _liveSub?: Subscription;
 
   /** attendance permission level >= 2, or admin (PermissionService short-circuits admins to true). */
@@ -168,6 +176,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this._el.nativeElement.removeEventListener('wheel', this._wheelHandler);
     this._liveSub?.unsubscribe();
+    if (this._wheelAccumTimer) clearTimeout(this._wheelAccumTimer);
   }
 
   private readonly _wheelHandler = (e: WheelEvent): void => this.onWheel(e);
@@ -284,6 +293,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       case 'holiday':  return 'holiday';
       case 'weekend':
       case 'off':      return 'off';
+      case 'overtime': return 'overtime';
       case 'upcoming': return null;   // future day — no record
       default:         return null;
     }
@@ -293,11 +303,23 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   readonly dayHeaders = DAYS;
 
-  readonly legendItems = Object.entries(STATUS_META).map(([key, v]) => ({
-    key,
-    label: v.label,
-    color: v.color,
-  }));
+  /** Exposed so the template can bind directly to a status's colour (e.g. the
+   *  list view's Weekend badge) instead of re-hardcoding it — STATUS_META stays
+   *  the single source of truth for every status colour across the component. */
+  readonly STATUS_META = STATUS_META;
+
+  readonly legendItems = [
+    ...Object.entries(STATUS_META).map(([key, v]) => ({
+      key,
+      label: v.label,
+      color: v.color,
+      bg: v.bg,
+    })),
+    // "Upcoming" isn't a real AttendanceStatus (future cells carry status:null +
+    // isFuture:true), but they render in a distinct indigo style, so the legend
+    // needs an entry explaining what that dashed-indigo cell means.
+    UPCOMING_LEGEND,
+  ];
 
   readonly today = new Date();
   readonly viewDate = signal(new Date(this.today.getFullYear(), this.today.getMonth(), 1));
@@ -389,7 +411,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   readonly summaryChips = computed(() => {
     const isoDates = this._cycleDates();
     const map = this._recordMap();
-    const counts: Record<string, number> = { present: 0, half: 0, absent: 0, leave: 0, comp_off: 0, holiday: 0 };
+    const counts: Record<string, number> = { present: 0, half: 0, absent: 0, leave: 0, comp_off: 0, holiday: 0, overtime: 0 };
 
     const dates: Date[] = isoDates.length > 0
       ? isoDates.map(s => new Date(s + 'T00:00:00'))
@@ -404,7 +426,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       if (s && s !== 'off' && counts[s] !== undefined) counts[s]++;
     }
 
-    return (['present', 'half', 'absent', 'leave', 'comp_off', 'holiday'] as AttendanceStatus[]).map(k => ({
+    return (['present', 'half', 'absent', 'leave', 'comp_off', 'holiday', 'overtime'] as AttendanceStatus[]).map(k => ({
       key: k,
       count: counts[k],
       label: STATUS_META[k].label,
@@ -442,10 +464,11 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     };
   });
 
-  readonly listRows = computed(() => {
+  readonly listRows = computed((): DayCell[] => {
     const isoDates = this._cycleDates();
     const map  = this._recordMap();
     const hmap = this._holidayMap();
+    const metaMap = this._dayMetaMap();
 
     const dates: Date[] = isoDates.length > 0
       ? isoDates.map(s => new Date(s + 'T00:00:00'))
@@ -465,7 +488,15 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       const holidayName = rec?.holidayName ?? hmap[key];
       const required = this._requiredFor(status, rec);
       const hoursMet = hours !== undefined ? hours >= required : true;
-      return { date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet, requiredHours: required, holidayName, color: rec?.color };
+      const meta = metaMap[key];
+      return {
+        date, day: date.getDate(), status, isOff, isToday, isFuture, isPast, hours, hoursMet,
+        requiredHours: required, holidayName, color: rec?.color,
+        regularizationStatus: meta?.regularizationStatus ?? null,
+        leaveRequestStatus: meta?.leaveRequestStatus ?? null,
+        hasRequest: meta?.hasRequest ?? false,
+        isLocked: meta?.isLocked ?? false,
+      };
     });
   });
 
@@ -483,24 +514,44 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   private _touchStartY = 0;
   private _wheelCooldown = false;
 
+  /** Accumulated vertical wheel delta since the last pause — requires a sustained
+   *  scroll (roughly two mouse-wheel notches), not a single tick, before the month
+   *  flips. Resets after a short pause so it doesn't creep up between gestures. */
+  private _wheelAccum = 0;
+  private _wheelAccumTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly WHEEL_THRESHOLD = 220;
+  private static readonly WHEEL_ACCUM_RESET_MS = 350;
+
   onWheel(e: WheelEvent): void {
     if (this._wheelCooldown) return;
 
     const isDesktop = window.innerWidth > 600;
 
-    if (isDesktop) {
-      // Desktop / laptop: vertical scroll (mouse wheel or trackpad up/down)
-      if (Math.abs(e.deltaY) >= 30) {
-        e.preventDefault();
+    if (isDesktop && Math.abs(e.deltaY) >= 30 && Math.abs(e.deltaY) >= Math.abs(e.deltaX)) {
+      // Desktop / laptop: a deliberate vertical scroll (mouse wheel or trackpad
+      // up/down) over the calendar flips months instead of scrolling the page.
+      // Tiny/inertial deltas below 30 fall through untouched so the page still
+      // scrolls normally. Even a deliberate scroll only *counts* toward an
+      // accumulator — a single wheel notch no longer skips a whole month; it
+      // takes a sustained scroll (~2 notches) to actually flip.
+      e.preventDefault();
+      this._wheelAccum += e.deltaY;
+      if (this._wheelAccumTimer) clearTimeout(this._wheelAccumTimer);
+      this._wheelAccumTimer = setTimeout(() => { this._wheelAccum = 0; }, AttendanceCalendarComponent.WHEEL_ACCUM_RESET_MS);
+
+      if (Math.abs(this._wheelAccum) >= AttendanceCalendarComponent.WHEEL_THRESHOLD) {
+        const dir = this._wheelAccum;
+        this._wheelAccum = 0;
+        if (this._wheelAccumTimer) { clearTimeout(this._wheelAccumTimer); this._wheelAccumTimer = null; }
         this._wheelCooldown = true;
-        if (e.deltaY > 0) this.nextMonth();
+        if (dir > 0) this.nextMonth();
         else this.prevMonth();
-        setTimeout(() => { this._wheelCooldown = false; }, 600);
-        return;
+        setTimeout(() => { this._wheelCooldown = false; }, 700);
       }
+      return;
     }
 
-    // Horizontal trackpad swipe (all screen sizes)
+    // Horizontal trackpad swipe (all screen sizes) — already a deliberate, distinct gesture
     if (Math.abs(e.deltaX) < Math.abs(e.deltaY) * 2) return;
     this._wheelCooldown = true;
     if (e.deltaX > 30) this.nextMonth();
@@ -601,15 +652,15 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     return 'This day needs attendance regularization.';
   }
 
-  /** Navigate to the Tasks workspace with this date pre-selected for a regularisation request */
-  regularize(cell: DayCell): void {
+  /** Open the regularisation request dialog right here, over the calendar — no navigation away. */
+  async regularize(cell: DayCell): Promise<void> {
     if (this.regularizeBlockedReason(cell)) return; // guarded — button is disabled, but be safe
-    const org = this.appState.orgUrlName() || 'default';
     const date = this._cellDateKey(cell);
+    const dateLabel = cell.date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
     this.closeDetail();
-    this.router.navigate([`/${org}/app/tasks`], {
-      queryParams: { new: 'regularisation', date, returnUrl: `/${org}/app/attendance` },
-    });
+
+    const submitted = await this.regularisationDialog.open({ date, dateLabel });
+    if (submitted) this._refreshMonth();
   }
 
   /**

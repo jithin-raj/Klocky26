@@ -54,17 +54,27 @@
   </div>
 
   <!-- ── Clock-in prompt card ─────────────────────────────────────────────── -->
-  <div class="ed-clockin-card ed-mount" style="--i:1" [class.ed-clockin-card--active]="isClockedIn()">
+  <div class="ed-clockin-card ed-mount" style="--i:1"
+       [class.ed-clockin-card--active]="isClockedIn()"
+       [class.ed-clockin-card--off]="(isWeekendToday() || isHolidayToday()) && !isClockedIn()">
     <div class="ed-clockin-left">
       @if (isClockedIn()) {
         <div class="ed-clockin-status">
           <span class="ed-live-dot"></span>
-          <span class="ed-clockin-label">Session active</span>
+          <span class="ed-clockin-label">{{ (isWeekendToday() || isHolidayToday()) ? 'Overtime in progress' : 'Session active' }}</span>
         </div>
         <div class="ed-clockin-time">{{ todayHours() }}</div>
         @if (attendanceSvc.clockInTime()) {
           <p class="ed-clockin-since">Since {{ formatTime(attendanceSvc.clockInTime()!) }}</p>
         }
+      } @else if (isHolidayToday()) {
+        <div class="ed-clockin-off-badge">🎉 Holiday</div>
+        <div class="ed-clockin-label-big">{{ todayHolidayName() || 'Enjoy your day off!' }}</div>
+        <p class="ed-clockin-date">No shift scheduled — clock in only if you're logging overtime.</p>
+      } @else if (isWeekendToday()) {
+        <div class="ed-clockin-off-badge">Weekend</div>
+        <div class="ed-clockin-label-big">It's the weekend 🎉</div>
+        <p class="ed-clockin-date">No shift scheduled today — clock in only if you're planning overtime.</p>
       } @else {
         <div class="ed-clockin-label-big">Let's get to work!</div>
         <p class="ed-clockin-date">{{ now | date:'d MMMM, EEEE' }}</p>
@@ -86,7 +96,7 @@
         Clock Out
       } @else {
         <icon-clock-in [size]="20" color="currentColor"></icon-clock-in>
-        Clock In
+        {{ (isWeekendToday() || isHolidayToday()) ? 'Log Overtime' : 'Clock In' }}
       }
     </button>
   </div>

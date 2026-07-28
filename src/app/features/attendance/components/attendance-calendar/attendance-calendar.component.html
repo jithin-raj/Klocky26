@@ -45,7 +45,7 @@
           </button>
         </div>
 
-        @if (canMarkPresent() && viewMode() === 'calendar') {
+        @if (canMarkPresent()) {
           <button class="select-mode-btn" [class.active]="selectMode()" (click)="toggleSelectMode()">
             @if (selectMode()) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -160,7 +160,7 @@
 
                 @if (cell.holidayName) {
                   <span class="holiday-tag" [attr.data-tooltip]="cell.holidayName">
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="#7c3aed" stroke="none">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="var(--holiday-color, #7c3aed)" stroke="none">
                       <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
                     </svg>
                     <span class="holiday-name">{{ cell.holidayName }}</span>
@@ -194,24 +194,24 @@
       <!-- Legend (calendar only) -->
       <div class="legend">
         @for (entry of legendItems; track entry.key) {
-          <span class="leg-item">
+          <span class="leg-item" [style.background]="entry.bg" [style.color]="entry.color">
             <span class="leg-dot" [style.background]="entry.color"></span>
             {{ entry.label }}
           </span>
         }
       </div>
+    }
 
-      <!-- Bulk select action bar -->
-      @if (selectMode()) {
-        <div class="select-bar">
-          <span class="select-bar__count">{{ selectedDates().size }} selected</span>
-          <button type="button" class="select-bar__clear" [disabled]="!selectedDates().size" (click)="clearSelection()">Clear</button>
-          <button type="button" class="select-bar__confirm" [disabled]="!selectedDates().size" (click)="markPresentSelected()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Mark present
-          </button>
-        </div>
-      }
+    <!-- ── Bulk select action bar (shared — calendar + list view) ─────── -->
+    @if (selectMode()) {
+      <div class="select-bar">
+        <span class="select-bar__count">{{ selectedDates().size }} selected</span>
+        <button type="button" class="select-bar__clear" [disabled]="!selectedDates().size" (click)="clearSelection()">Clear</button>
+        <button type="button" class="select-bar__confirm" [disabled]="!selectedDates().size" (click)="markPresentSelected()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Mark present
+        </button>
+      </div>
     }
 
     <!-- ── LIST VIEW ──────────────────────────────────────────────── -->
@@ -219,7 +219,8 @@
       <div class="list-view">
 
         <!-- Table header -->
-        <div class="list-hdr">
+        <div class="list-hdr" [class.list-hdr--select]="selectMode()">
+          @if (selectMode()) { <span class="lh-check"></span> }
           <span class="lh-date">Date</span>
           <span class="lh-day">Day</span>
           <span class="lh-status">Status</span>
@@ -231,17 +232,41 @@
         <div class="list-body">
           @for (row of listRows(); track row.day) {
             <div class="list-row"
+                 [class.list-row--select]="selectMode()"
                  [class.row-off]="row.isOff"
                  [class.row-today]="row.isToday"
-                 [class.row-future]="row.isFuture && !row.isOff">
+                 [class.row-future]="row.isFuture && !row.isOff"
+                 [class.selectable]="selectMode() && canMarkPresentDay(row)"
+                 [class.selected]="selectMode() && isDateSelected(row)"
+                 [class.select-dimmed]="selectMode() && !canMarkPresentDay(row)"
+                 (click)="onCellClick(row)">
+
+              @if (selectMode()) {
+                <span class="lc-check">
+                  @if (canMarkPresentDay(row)) {
+                    <span class="cell-check" [class.cell-check--on]="isDateSelected(row)">
+                      @if (isDateSelected(row)) {
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      }
+                    </span>
+                  }
+                </span>
+              }
 
               <!-- Date -->
               <span class="lc-date">
                 <span class="lc-daynum" [class.today-num]="row.isToday">{{ row.day }}</span>
                 @if (row.holidayName) {
-                  <svg width="8" height="8" viewBox="0 0 24 24" fill="#7c3aed" stroke="none" style="flex-shrink:0">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="var(--holiday-color, #7c3aed)" stroke="none" style="flex-shrink:0">
                     <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
                   </svg>
+                }
+                @if (!selectMode() && requestBadge(row); as rb) {
+                  <span class="lc-req-flag"
+                        [class.req-flag--pending]="rb.kind === 'pending'"
+                        [class.req-flag--approved]="rb.kind === 'approved'"
+                        [class.req-flag--rejected]="rb.kind === 'rejected'"
+                        [title]="rb.label"></span>
                 }
               </span>
 
@@ -257,7 +282,11 @@
                     {{ row.holidayName || statusLabel(row.status) }}
                   </span>
                 } @else if (row.isOff) {
-                  <span class="status-badge off-badge">Weekend</span>
+                  <span class="status-badge"
+                        [style.background]="STATUS_META.off.bg"
+                        [style.color]="STATUS_META.off.color">
+                    Weekend
+                  </span>
                 } @else if (row.isFuture) {
                   <span class="status-badge future-badge">—</span>
                 } @else {
@@ -368,7 +397,7 @@
     <!-- Holiday name -->
     @if (cell.holidayName) {
       <div class="cdm-holiday">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="#7c3aed" stroke="none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--holiday-color, #7c3aed)" stroke="none">
           <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
         </svg>
         {{ cell.holidayName }}

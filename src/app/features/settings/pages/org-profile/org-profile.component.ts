@@ -338,6 +338,7 @@ export class OrgProfileComponent implements OnInit {
     this.autoCheckoutTime     = s.autoCheckoutTime ? s.autoCheckoutTime.slice(0, 5) : this.autoCheckoutTime;
 
     this.captureLocationOnClockIn = s.captureLocationOnClockIn ?? false;
+    this.allowMobileNumberLogin   = s.allowMobileNumberLogin ?? false;
     this.monthStartDay            = s.monthStartDay ?? 1;
 
     this.leaveYearStart           = this._capitalize(s.leaveYearStart ?? 'january');
@@ -505,6 +506,9 @@ export class OrgProfileComponent implements OnInit {
   // Attendance — location capture
   captureLocationOnClockIn = false;
   monthStartDay            = 1;
+
+  // Security — passwordless mobile-number (SMS OTP) login, India-based orgs only
+  allowMobileNumberLogin = false;
 
   // Leave & Holidays
   leaveYearStart            = 'January';
@@ -1157,6 +1161,7 @@ export class OrgProfileComponent implements OnInit {
       geofencePingIntervalMinutes: 5,
       geofenceMissedPingGraceMinutes: 15,
       captureLocationOnClockIn: this.captureLocationOnClockIn,
+      allowMobileNumberLogin: this.allowMobileNumberLogin ?? false,
       monthStartDay: (this.monthStartDay >= 1 && this.monthStartDay <= 31) ? this.monthStartDay : 1,
       leaveYearStart: (this.leaveYearStart ?? 'january').toLowerCase(),
       carryForwardEnabled: this.carryForwardEnabled,

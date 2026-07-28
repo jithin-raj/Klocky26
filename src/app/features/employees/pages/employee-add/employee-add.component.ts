@@ -20,6 +20,7 @@ import {
 } from '../../../../shared/components';
 import { extractApiErrorMessage } from '../../../../core/utils/api-error.util';
 import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
+import { detectDefaultDialCode } from '../../../../core/utils/detect-dial-code.util';
 
 interface EmployeeForm {
   employeeCode: string;
@@ -274,7 +275,10 @@ export class EmployeeAddComponent implements OnInit {
         error: () => { this.loading.set(false); },
       });
     } else {
-      // Create mode — snapshot the empty defaults so the save bar appears on first change.
+      // Create mode — pre-fill the phone field with a country-code starting
+      // point (best-effort guess from the browser/OS locale, always editable),
+      // then snapshot so the save bar only appears once the user actually types.
+      this.form.update(f => ({ ...f, phone: `+${detectDefaultDialCode()} ` }));
       this.snapshot();
     }
   }
@@ -296,6 +300,11 @@ export class EmployeeAddComponent implements OnInit {
     });
     const errs = { ...this.errors() };
     delete errs[field];
+    if (field === 'email' || field === 'phone') {
+      // Email/phone is a joint either-or requirement — clear both errors once either is touched.
+      delete errs['email'];
+      delete errs['phone'];
+    }
     if (field === 'departmentId' || field === 'orgRoleId') {
       // Classification needs a department OR an org role — clear both errors when either is touched.
       delete errs['departmentId'];
@@ -315,10 +324,25 @@ export class EmployeeAddComponent implements OnInit {
     else if (!isValidName(f.lastName)) errs['lastName'] = NAME_VALIDATION_MESSAGE;
     if (!this.isEdit()) {
       if (!f.gender)           errs['gender']       = 'Gender is required';
-      if (!f.email.trim())     errs['email']        = 'Email is required';
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) errs['email'] = 'Invalid email address';
       if (f.password && f.password.length < 8)  errs['password'] = 'Password must be at least 8 characters';
     }
+
+    // Email and phone are each optional, but at least one is required —
+    // mobile-only staff sign in with an SMS OTP instead of a password.
+    const email = f.email.trim();
+    const phone = f.phone.trim();
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errs['email'] = 'Invalid email address';
+    }
+    if (!email && !phone) {
+      const msg = 'Provide an email or a mobile number.';
+      errs['email'] = errs['email'] || msg;
+      errs['phone'] = msg;
+    } else if (phone && phoneDigits.length < 10) {
+      errs['phone'] = 'Enter a valid mobile number with country code (min 10 digits).';
+    }
+
     if (!f.dateOfJoining)      errs['dateOfJoining'] = 'Join date is required';
     if (!f.departmentId)       errs['departmentId'] = 'Department is required';
     if (f.emergencyContactName.trim() && !isValidName(f.emergencyContactName)) {
@@ -346,7 +370,7 @@ export class EmployeeAddComponent implements OnInit {
   /** Jump to whichever tab holds the first validation error, then scroll to it. */
   private focusErrorTab() {
     const e = this.errors();
-    const general = ['employeeCode', 'firstName', 'lastName', 'gender', 'email', 'password', 'dateOfJoining'];
+    const general = ['employeeCode', 'firstName', 'lastName', 'gender', 'email', 'phone', 'password', 'dateOfJoining'];
     if (general.some(k => e[k])) { this.tab.set('general'); }
     else if (e['departmentId'] || e['orgRoleId']) { this.tab.set('classification'); }
     // Scroll to the first visible error after Angular renders the tab
@@ -399,12 +423,12 @@ export class EmployeeAddComponent implements OnInit {
         },
         error: (err) => {
           this.loading.set(false);
-          this.submitError.set(this.extractError(err));
+          this.handleSubmitError(err);
         },
       });
     } else {
       this.employeeService.create({
-        email: f.email,
+        email: f.email.trim() || undefined,
         password: f.password || undefined,
         firstName: f.firstName,
         lastName: f.lastName,
@@ -439,10 +463,21 @@ export class EmployeeAddComponent implements OnInit {
         },
         error: (err) => {
           this.loading.set(false);
-          this.submitError.set(this.extractError(err));
+          this.handleSubmitError(err);
         },
       });
     }
+  }
+
+  /** 409s on phone (unique-within-org) surface as an inline field error, same as the email dupe pre-check; everything else falls back to the generic banner. */
+  private handleSubmitError(err: any): void {
+    const message = this.extractError(err);
+    if (err?.status === 409 && /phone|mobile/i.test(message)) {
+      this.errors.set({ ...this.errors(), phone: message });
+      this.focusErrorTab();
+      return;
+    }
+    this.submitError.set(message);
   }
 
   private extractError(err: any): string {

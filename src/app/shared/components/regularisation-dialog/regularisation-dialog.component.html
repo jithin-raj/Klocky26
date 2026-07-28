@@ -1,0 +1,61 @@
+@if (state(); as s) {
+  <div class="rg-overlay" (click)="cancel()">
+    <div class="rg-card" (click)="$event.stopPropagation()">
+
+      <div class="rg-head">
+        <div class="rg-head__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/>
+          </svg>
+        </div>
+        <div class="rg-head__text">
+          <h2>Regularize attendance</h2>
+          <p>{{ s.dateLabel }}</p>
+        </div>
+        <button type="button" class="rg-close" (click)="cancel()" aria-label="Close" [disabled]="submitting()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="rg-body">
+        <div class="rg-field">
+          <label>Type <span class="rg-required">*</span></label>
+          <ui-select [options]="typeOptions" [ngModel]="type()" (ngModelChange)="type.set($event)"></ui-select>
+        </div>
+
+        @if (type() !== 'wfh') {
+          <div class="rg-time-row">
+            <ui-timepicker label="Clock in" [ngModel]="clockIn()" (ngModelChange)="clockIn.set($event)"></ui-timepicker>
+            <ui-timepicker label="Clock out (optional)" [ngModel]="clockOut()" (ngModelChange)="clockOut.set($event)"></ui-timepicker>
+          </div>
+        }
+
+        <div class="rg-field">
+          <label>Office (optional)</label>
+          <ui-select [options]="officeOptions()" [ngModel]="officeId()" (ngModelChange)="officeId.set($event)"></ui-select>
+        </div>
+
+        <ui-textarea
+          label="Reason (optional)"
+          placeholder="Add a short note for your approver…"
+          [rows]="3"
+          [ngModel]="reason()" (ngModelChange)="reason.set($event)">
+        </ui-textarea>
+
+        @if (formError()) {
+          <p class="rg-error">{{ formError() }}</p>
+        }
+      </div>
+
+      <div class="rg-footer">
+        <button type="button" class="rg-btn rg-btn--ghost" (click)="cancel()" [disabled]="submitting()">Cancel</button>
+        <button type="button" class="rg-btn rg-btn--primary" [disabled]="!canSubmit()" (click)="submit()">
+          {{ submitting() ? 'Submitting…' : 'Submit request' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

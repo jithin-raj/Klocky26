@@ -16,9 +16,13 @@ export type Gender = 'male' | 'female' | 'other';
  * ("Hierarchy" mode, used when departmentId is null) — the API 400s if both
  * are null. `orgRoleId` can now be set directly here instead of a separate
  * POST /api/org-roles/assign call.
+ *
+ * `email` and `phone` are each optional, but at least one is required —
+ * mobile-only employees (no email) sign in with an SMS OTP instead of a
+ * password (org must have `allowMobileNumberLogin` enabled).
  */
 export interface AddEmployeeRequest {
-  email: string;
+  email?: string;
   password?: string | null;
   firstName: string;
   lastName: string;

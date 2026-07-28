@@ -10,6 +10,7 @@ import { UiModalOutletComponent, UiLoaderComponent } from '../../shared/componen
 import { TrialBannerComponent } from '../trial-banner/trial-banner.component';
 import { LegalConsentModalComponent } from '../../shared/components/legal-consent-modal/legal-consent-modal.component';
 import { MarkPresentDialogComponent } from '../../shared/components/mark-present-dialog/mark-present-dialog.component';
+import { RegularisationDialogComponent } from '../../shared/components/regularisation-dialog/regularisation-dialog.component';
 import { DpdpConsentService } from '../../core/services/dpdp-consent.service';
 import { AiService } from '../../core/services/ai.service';
 import { Subscription, filter, take } from 'rxjs';
@@ -29,7 +30,7 @@ import { TaskService } from '../../core/services/task.service';
 @Component({
   selector: 'klocky-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, HeaderComponent, BottomNavComponent, UiModalOutletComponent, UiLoaderComponent, TrialBannerComponent, LegalConsentModalComponent, MarkPresentDialogComponent],
+  imports: [RouterOutlet, SidebarComponent, HeaderComponent, BottomNavComponent, UiModalOutletComponent, UiLoaderComponent, TrialBannerComponent, LegalConsentModalComponent, MarkPresentDialogComponent, RegularisationDialogComponent],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.scss'],
 })
