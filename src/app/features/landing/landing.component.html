@@ -17,6 +17,7 @@
 
   <!-- ─── NAV ───────────────────────────────────────────────── -->
   <nav class="lp-nav">
+    <span class="lp-nav-progress" [style.width.%]="scrollProgress()" aria-hidden="true"></span>
     <div class="lp-nav-inner">
       <div class="lp-logo">
         <span class="lp-logo-icon" aria-hidden="true">
@@ -121,7 +122,7 @@
       <!-- Product preview -->
       <div class="lp-hero-visual lp-anim-in" style="--d:220ms">
         <span class="lp-pv-preview" aria-hidden="true">Product preview</span>
-        <div class="lp-preview-card">
+        <div class="lp-preview-card" (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
           <!-- Window top bar -->
           <div class="lp-pv-top">
             <div class="lp-pv-brand">
@@ -525,7 +526,7 @@
         <h2 class="lp-section-title">Up and running in minutes</h2>
       </div>
       <div class="lp-steps-grid">
-        <div class="lp-steps-line" aria-hidden="true"></div>
+        <div class="lp-steps-line" aria-hidden="true"><span class="lp-steps-dot"></span></div>
         @for (st of steps; track st.num; let i = $index) {
           <div class="lp-step" data-reveal="up" [style.--i]="i">
             <div class="lp-step-badge">
@@ -611,6 +612,7 @@
       <div class="lp-grid lp-grid-dark"></div>
       <div class="lp-blob lp-blob-cta-1"></div>
       <div class="lp-blob lp-blob-cta-2"></div>
+      <span class="lp-cta-shine"></span>
     </div>
     <div class="lp-section-inner lp-cta-inner" data-reveal="zoom">
       <span class="lp-cta-badge">Free while we're in beta — no card required</span>

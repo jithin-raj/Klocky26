@@ -301,10 +301,17 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     targets.forEach(el => this.io!.observe(el));
   }
 
+  // Thin gradient bar in the nav that fills with scroll depth.
+  scrollProgress = signal(0);
+
   private onScroll = (): void => {
     const scrolled = window.scrollY > 12;
     const el: HTMLElement = this.host.nativeElement;
     el.classList.toggle('is-scrolled', scrolled);
+
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    this.scrollProgress.set(max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0);
   };
 
   ngOnDestroy(): void {
