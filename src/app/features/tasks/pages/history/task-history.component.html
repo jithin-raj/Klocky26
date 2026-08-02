@@ -1,38 +1,40 @@
-<div class="page">
-
-  <!-- Header -->
-  <div class="page-header">
-    <h1 class="page-title">Task History</h1>
-    <p class="page-sub">Browse and filter your task activity.</p>
-  </div>
+<div class="th-page">
 
   <!-- Category tabs -->
-  <div class="tabs-bar">
+  <div class="th-tabs">
     @for (tab of tabs; track tab.value) {
       <button
-        class="tab-btn"
-        [class.tab-btn--active]="category() === tab.value"
+        class="th-tab"
+        [class.th-tab--active]="category() === tab.value"
         (click)="selectCategory(tab.value)"
       >{{ tab.label }}</button>
     }
   </div>
 
   <!-- Table card -->
-  <div class="card">
+  <div class="th-card">
     @if (loading()) {
-      <div class="state-center">
-        <div class="spinner"></div>
-        <span>Loading tasks…</span>
+      <div class="th-skeleton">
+        @for (i of [1,2,3,4]; track i) { <span class="th-skel-row"></span> }
+      </div>
+    } @else if (error()) {
+      <div class="th-state-center th-state-center--error">
+        <span class="th-empty-ico th-empty-ico--error">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </span>
+        <p class="th-empty-text">Couldn't load task history</p>
+        <p class="th-empty-sub">{{ error() }}</p>
+        <button class="th-btn-page" (click)="selectCategory(category())">Retry</button>
       </div>
     } @else if (items().length === 0) {
-      <div class="state-center">
-        <div class="empty-icon">📋</div>
-        <p class="empty-text">No tasks found</p>
-        <p class="empty-sub">Try a different category or check back later.</p>
+      <div class="th-state-center">
+        <span class="th-empty-ico"><ui-icon name="inbox" [size]="24"></ui-icon></span>
+        <p class="th-empty-text">No tasks found</p>
+        <p class="th-empty-sub">Try a different category or check back later.</p>
       </div>
     } @else {
-      <div class="table-wrap">
-        <table class="task-table">
+      <div class="th-table-wrap">
+        <table class="th-table">
           <thead>
             <tr>
               <th>Title</th>
@@ -43,9 +45,9 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of items(); track item.id) {
-              <tr>
-                <td class="col-title" data-label="Title">{{ item.title }}</td>
+            @for (item of items(); track item.id; let i = $index) {
+              <tr [style.--i]="i">
+                <td class="th-col-title" data-label="Title">{{ item.title }}</td>
                 <td data-label="Category"><span class="badge badge--gray">{{ item.category }}</span></td>
                 <td data-label="Status"><span [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span></td>
                 <td data-label="Assigned To">{{ item.assignedTo.name }}</td>
@@ -57,14 +59,20 @@
       </div>
 
       <!-- Pagination -->
-      <div class="pagination">
-        <span class="pagination__info">
+      <div class="th-pagination">
+        <span class="th-pagination__info">
           Page {{ page() }} of {{ totalPages }}
           &nbsp;·&nbsp; {{ total() }} total
         </span>
-        <div class="pagination__btns">
-          <button class="btn-page" [disabled]="!hasPrev" (click)="prevPage()">← Prev</button>
-          <button class="btn-page" [disabled]="!hasNext" (click)="nextPage()">Next →</button>
+        <div class="th-pagination__btns">
+          <button class="th-btn-page" [disabled]="!hasPrev" (click)="prevPage()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Prev
+          </button>
+          <button class="th-btn-page" [disabled]="!hasNext" (click)="nextPage()">
+            Next
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
       </div>
     }

@@ -2,10 +2,29 @@
 
   <!-- Filters + create -->
   <div class="wt-toolbar">
-    <div class="wt-filters">
-      <ui-select [options]="scopeOptions" [ngModel]="scope()" (ngModelChange)="scope.set($event)"></ui-select>
-      <ui-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"></ui-select>
-      <button class="wt-btn wt-btn--ghost wt-btn--sm" (click)="refresh()" [disabled]="loading()">
+    <div class="wt-filter-bar">
+      <span class="wt-filter-label">
+        <ui-icon name="sitemap" [size]="13"></ui-icon>
+        Scope
+      </span>
+      <div class="wt-scope-pills">
+        @for (opt of scopeOptions; track opt.value) {
+          <button type="button" [class.active]="scope() === opt.value" (click)="scope.set(opt.value)">{{ opt.label }}</button>
+        }
+      </div>
+
+      <span class="wt-filter-sep" aria-hidden="true"></span>
+
+      <div class="wt-status-filter" [class.wt-status-filter--active]="!!statusFilter()">
+        <ui-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)"></ui-select>
+        @if (statusFilter()) {
+          <button type="button" class="wt-filter-clear" (click)="statusFilter.set('')" title="Clear status filter">
+            <ui-icon name="x" [size]="12"></ui-icon>
+          </button>
+        }
+      </div>
+
+      <button class="wt-btn wt-btn--ghost wt-btn--sm wt-refresh-btn" (click)="refresh()" [disabled]="loading()">
         <ui-icon name="repeat" [size]="13"></ui-icon>
         Refresh
       </button>
@@ -20,81 +39,97 @@
 
   <!-- List -->
   @if (loading()) {
-    <div class="wt-empty">Loading tasks…</div>
+    <div class="wt-skeleton">
+      @for (i of [1,2,3]; track i) { <span class="wt-skel-row"></span> }
+    </div>
   } @else if (error()) {
     <div class="wt-empty wt-empty--error">
-      <ui-icon name="x" [size]="28" class="wt-empty-icon"></ui-icon>
-      Couldn't load tasks
+      <span class="wt-empty-ico wt-empty-ico--error">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </span>
+      <p class="wt-empty-title">Couldn't load tasks</p>
       <span class="wt-error-detail">{{ error() }}</span>
       <button class="wt-btn wt-btn--ghost wt-btn--sm" (click)="refresh()">Retry</button>
     </div>
   } @else if (tasks().length === 0) {
     <div class="wt-empty">
-      <ui-icon name="check-circle" [size]="28" class="wt-empty-icon"></ui-icon>
-      No tasks match these filters
+      <span class="wt-empty-ico wt-empty-ico--ok">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      <p class="wt-empty-title">No tasks match these filters</p>
     </div>
   } @else {
-    <div class="wt-table-wrap">
-      <table class="wt-table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Assigned To</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>Due Date</th>
-            <th class="wt-col-actions">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of tasks(); track item.id) {
-            <tr [class.wt-row--busy]="busyId() === item.id">
-              <td data-label="Title">
-                <div class="wt-title-cell">
-                  <span class="wt-title">{{ item.title }}</span>
-                  @if (item.isLocal) { <span class="wt-local-tag">Personal</span> }
-                </div>
-                @if (item.description) {
-                  <div class="wt-desc">{{ item.description }}</div>
-                }
-              </td>
-              <td data-label="Assigned To">{{ item.isLocal ? item.createdBy.name : item.assignedTo.name }}</td>
-              <td data-label="Priority">
-                <span class="wt-badge" [class]="priorityClass(item.priority)">{{ item.priority }}</span>
-              </td>
-              <td data-label="Status">
-                <span class="wt-badge" [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
-              </td>
-              <td data-label="Due Date">{{ item.dueDate ? (item.dueDate | orgDateOnly) : '—' }}</td>
-              <td class="wt-col-actions" data-label="Actions">
-                <div class="wt-row-actions">
-                  @if (item.actions.includes('complete')) {
-                    <button class="wt-action-btn wt-action-btn--complete" [disabled]="!!busyId()" (click)="completeTask(item)" title="Mark complete">
-                      <ui-icon name="check" [size]="14"></ui-icon>
-                    </button>
-                  }
-                  @if (item.actions.includes('cancel')) {
-                    <button class="wt-action-btn wt-action-btn--cancel" [disabled]="!!busyId()" (click)="cancelTask(item)" title="Cancel task">
-                      <ui-icon name="x" [size]="14"></ui-icon>
-                    </button>
-                  }
-                  @if (item.actions.includes('edit')) {
-                    <button class="wt-action-btn wt-action-btn--edit" [disabled]="!!busyId()" (click)="openEdit(item)" title="Edit">
-                      <ui-icon name="settings" [size]="14"></ui-icon>
-                    </button>
-                  }
-                  @if (item.actions.includes('delete')) {
-                    <button class="wt-action-btn wt-action-btn--delete" [disabled]="!!busyId()" (click)="deleteTask(item)" title="Delete">
-                      <ui-icon name="x" [size]="14"></ui-icon>
-                    </button>
-                  }
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+    <div class="wt-list">
+      @for (item of pagedTasks(); track item.id; let i = $index) {
+        <div class="wt-row-card" role="button" tabindex="0"
+             [class.wt-row-card--busy]="busyId() === item.id" [style.--i]="i"
+             (click)="openDetails(item)" (keydown.enter)="openDetails(item)">
+          <span class="wt-row-prio" [class]="priorityClass(item.priority)" [title]="item.priority + ' priority'"></span>
+
+          <div class="wt-row-main">
+            <div class="wt-row-top">
+              <span class="wt-row-title">{{ item.title }}</span>
+              @if (item.isLocal) { <span class="wt-local-tag">Personal</span> }
+              <span class="wt-badge" [class]="priorityClass(item.priority)">{{ item.priority }}</span>
+              <span class="wt-badge" [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
+            </div>
+            @if (item.description) {
+              <div class="wt-desc">{{ item.description }}</div>
+            }
+            <div class="wt-row-meta">
+              <span class="wt-row-assignee">
+                <ui-icon name="user" [size]="11"></ui-icon>
+                {{ item.isLocal ? item.createdBy.name : item.assignedTo.name }}
+              </span>
+              @if (item.dueDate) {
+                <span class="wt-row-due">
+                  <ui-icon name="calendar" [size]="11"></ui-icon>
+                  {{ item.dueDate | orgDateOnly }}
+                </span>
+              }
+            </div>
+          </div>
+
+          <div class="wt-row-actions" (click)="$event.stopPropagation()">
+            @if (item.actions.includes('complete')) {
+              <button class="wt-action-btn wt-action-btn--complete" [disabled]="!!busyId()" (click)="completeTask(item)" title="Mark complete">
+                @if (busyId() === item.id && busyAction() === 'done') { <span class="wt-spinner"></span> } @else { <ui-icon name="check" [size]="14"></ui-icon> }
+              </button>
+            }
+            @if (item.actions.includes('cancel')) {
+              <button class="wt-action-btn wt-action-btn--cancel" [disabled]="!!busyId()" (click)="cancelTask(item)" title="Cancel task">
+                @if (busyId() === item.id && busyAction() === 'cancelled') { <span class="wt-spinner"></span> } @else { <ui-icon name="x" [size]="14"></ui-icon> }
+              </button>
+            }
+            @if (item.actions.includes('delete')) {
+              <button class="wt-action-btn wt-action-btn--delete" [disabled]="!!busyId()" (click)="deleteTask(item)" title="Delete">
+                <ui-icon name="x" [size]="14"></ui-icon>
+              </button>
+            }
+          </div>
+
+          <span class="wt-row-chevron" aria-hidden="true">
+            <ui-icon name="arrow-right" [size]="15"></ui-icon>
+          </span>
+        </div>
+      }
     </div>
+
+    @if (totalPages() > 1) {
+      <div class="wt-pagination">
+        <span class="wt-pagination__info">Page {{ page() }} of {{ totalPages() }} &nbsp;·&nbsp; {{ tasks().length }} total</span>
+        <div class="wt-pagination__btns">
+          <button class="wt-page-btn" [disabled]="!hasPrevPage()" (click)="prevPage()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Prev
+          </button>
+          <button class="wt-page-btn" [disabled]="!hasNextPage()" (click)="nextPage()">
+            Next
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    }
   }
 
 </div>
@@ -104,34 +139,73 @@
   <div class="wt-overlay" (click)="closeForm()">
     <div class="wt-modal" (click)="$event.stopPropagation()">
       <div class="wt-modal__head">
-        <h3>{{ editTarget() ? 'Edit Task' : 'New Task' }}</h3>
+        <span class="wt-modal__ico">
+          <ui-icon [name]="formReadonly() ? 'eye' : 'clipboard-check'" [size]="17"></ui-icon>
+        </span>
+        <h3>{{ formReadonly() ? 'Task Details' : (editTarget() ? 'Edit Task' : 'New Task') }}</h3>
         <button (click)="closeForm()"><ui-icon name="x" [size]="16"></ui-icon></button>
       </div>
       <div class="wt-modal__body">
         <div class="wt-field">
-          <label for="wt-title">Title <span class="wt-required">*</span></label>
-          <input id="wt-title" class="wt-input" type="text" maxlength="200"
+          <label for="wt-title">Title @if (!formReadonly()) { <span class="wt-required">*</span> }</label>
+          <input id="wt-title" class="wt-input" type="text" maxlength="200" [disabled]="formReadonly()"
                  placeholder="Task title" [ngModel]="formTitle()" (ngModelChange)="formTitle.set($event)" />
         </div>
         <div class="wt-field">
           <label for="wt-desc">Description</label>
-          <textarea id="wt-desc" class="wt-textarea" rows="3" maxlength="4000"
+          <textarea id="wt-desc" class="wt-textarea" rows="3" maxlength="4000" [disabled]="formReadonly()"
                     placeholder="Optional details" [ngModel]="formDescription()" (ngModelChange)="formDescription.set($event)"></textarea>
         </div>
         <div class="wt-form-row">
-          <ui-select label="Priority" [options]="priorityOptions" [ngModel]="formPriority()" (ngModelChange)="formPriority.set($event)"></ui-select>
-          <ui-datepicker label="Due Date" [ngModel]="formDueDate()" (ngModelChange)="formDueDate.set($event)"></ui-datepicker>
+          <ui-select label="Priority" [options]="priorityOptions" [disabled]="formReadonly()" [ngModel]="formPriority()" (ngModelChange)="formPriority.set($event)"></ui-select>
+          <ui-datepicker label="Due Date" [disabled]="formReadonly()" [ngModel]="formDueDate()" (ngModelChange)="formDueDate.set($event)"></ui-datepicker>
         </div>
         @if (canAssign()) {
           <div class="wt-field">
-            <ui-select label="Assign To" [options]="assigneeSelectOptions()" [ngModel]="formAssignee()" (ngModelChange)="formAssignee.set($event)"></ui-select>
+            <ui-select label="Assign To" [options]="assigneeSelectOptions()" [disabled]="formReadonly()" [ngModel]="formAssignee()" (ngModelChange)="formAssignee.set($event)"></ui-select>
           </div>
         }
       </div>
       <div class="wt-modal__foot">
-        <button class="wt-btn wt-btn--ghost" (click)="closeForm()">Cancel</button>
-        <button class="wt-btn wt-btn--primary" [disabled]="!formTitle().trim() || saving()" (click)="submitForm()">
-          {{ editTarget() ? 'Save Changes' : 'Create Task' }}
+        @if (formReadonly()) {
+          <button class="wt-btn wt-btn--ghost" (click)="closeForm()">Close</button>
+        } @else {
+          <button class="wt-btn wt-btn--ghost" [disabled]="saving()" (click)="closeForm()">Cancel</button>
+          <button class="wt-btn wt-btn--primary" [disabled]="!formTitle().trim() || saving()" (click)="submitForm()">
+            @if (saving()) {
+              <span class="wt-spinner"></span> {{ editTarget() ? 'Saving…' : 'Creating…' }}
+            } @else {
+              {{ editTarget() ? 'Save Changes' : 'Create Task' }}
+            }
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete confirmation modal -->
+@if (deleteTarget(); as target) {
+  <div class="wt-overlay" (click)="cancelDelete()">
+    <div class="wt-modal wt-modal--sm" (click)="$event.stopPropagation()">
+      <div class="wt-modal__head">
+        <span class="wt-modal__ico wt-modal__ico--danger"><ui-icon name="x" [size]="17"></ui-icon></span>
+        <h3>Delete task?</h3>
+        <button (click)="cancelDelete()"><ui-icon name="x" [size]="16"></ui-icon></button>
+      </div>
+      <div class="wt-modal__body">
+        <p class="wt-confirm-text">
+          Delete <strong>{{ target.title }}</strong>? This can't be undone.
+        </p>
+      </div>
+      <div class="wt-modal__foot">
+        <button class="wt-btn wt-btn--ghost" [disabled]="!!busyId()" (click)="cancelDelete()">Cancel</button>
+        <button class="wt-btn wt-btn--danger" [disabled]="!!busyId()" (click)="confirmDelete()">
+          @if (busyId() === target.id) {
+            <span class="wt-spinner"></span> Deleting…
+          } @else {
+            Delete task
+          }
         </button>
       </div>
     </div>

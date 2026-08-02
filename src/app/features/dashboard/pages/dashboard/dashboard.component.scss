@@ -80,7 +80,13 @@
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--sc); background: var(--sb);
   transition: transform .25s;
+  &::before {
+    content: ''; position: absolute; inset: -6px; border-radius: 18px;
+    border: 1.5px solid var(--sc); opacity: 0; transform: scale(.85);
+    transition: opacity .3s, transform .3s; pointer-events: none;
+  }
 }
+.db-stat-card:hover .db-stat-icon::before { opacity: .35; transform: scale(1.12); }
 .db-stat-body { position: relative; z-index: 1; min-width: 0; }
 .db-stat-value { font-size: 26px; font-weight: 800; color: var(--ink); letter-spacing: -.8px; margin: 0; line-height: 1.05; }
 .db-stat-label { font-size: 13px; font-weight: 700; color: var(--ink); margin: 2px 0 0; }
@@ -88,10 +94,18 @@
 
 /* ─── Cards (shared) ────────────────────────────────────── */
 .db-card {
+  position: relative; overflow: hidden;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 20px 22px; box-shadow: 0 6px 20px rgba(15,23,42,.05);
   transition: box-shadow .25s;
+  &::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--pri), #8b5cf6);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .35s cubic-bezier(.16,1,.3,1);
+  }
   &:hover { box-shadow: 0 12px 30px rgba(15,23,42,.08); }
+  &:hover::before { transform: scaleX(1); }
 }
 .db-card-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
 .db-card-title { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: var(--ink); margin: 0; ui-icon { color: var(--pri); } }
@@ -140,7 +154,17 @@
   &:hover .db-ql-arrow { transform: translateX(3px); opacity: 1; color: var(--ql); }
   &:hover .db-ql-icon { transform: scale(1.08); }
 }
-.db-ql-icon { flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; color: var(--ql); background: color-mix(in srgb, var(--ql) 13%, #fff); transition: transform .2s; }
+.db-ql-icon {
+  position: relative; flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ql); background: color-mix(in srgb, var(--ql) 13%, #fff); transition: transform .2s;
+  &::before {
+    content: ''; position: absolute; inset: -5px; border-radius: 15px;
+    border: 1.5px solid var(--ql); opacity: 0; transform: scale(.85);
+    transition: opacity .3s, transform .3s; pointer-events: none;
+  }
+}
+.db-ql-btn:hover .db-ql-icon::before { opacity: .35; transform: scale(1.12); }
 .db-ql-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .db-ql-label { font-size: 13.5px; font-weight: 700; color: var(--ink); }
 .db-ql-sub { font-size: 11.5px; color: var(--slate); font-weight: 500; }

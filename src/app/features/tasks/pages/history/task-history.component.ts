@@ -7,12 +7,13 @@ import { TaskService } from '../../../../core/services/task.service';
 import { RealtimeService } from '../../../../core/services/realtime.service';
 import { TaskCategory, TaskHistoryItem } from '../../../../core/models/task.model';
 import { OrgDatePipe } from '../../../../shared/pipes/localization.pipes';
+import { UiIconComponent } from '../../../../shared/components';
 
 @Component({
   selector: 'app-task-history',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, OrgDatePipe],
+  imports: [CommonModule, FormsModule, OrgDatePipe, UiIconComponent],
   templateUrl: './task-history.component.html',
   styleUrl: './task-history.component.scss',
 })
@@ -28,6 +29,7 @@ export class TaskHistoryComponent implements OnInit {
   items    = signal<TaskHistoryItem[]>([]);
   total    = signal(0);
   loading  = signal(false);
+  error    = signal<string | null>(null);
 
   readonly tabs: { label: string; value: TaskCategory }[] = [
     { label: 'All',        value: 'all' },
@@ -52,6 +54,7 @@ export class TaskHistoryComponent implements OnInit {
 
   private _load(cat: TaskCategory, pg: number) {
     this.loading.set(true);
+    this.error.set(null);
     this.svc.getHistory({
       category: cat === 'all' ? undefined : cat,
       page: pg,
@@ -62,7 +65,12 @@ export class TaskHistoryComponent implements OnInit {
         this.total.set(res.total);
         this.loading.set(false);
       },
-      error: () => { this.loading.set(false); },
+      error: (err) => {
+        this.items.set([]);
+        this.total.set(0);
+        this.loading.set(false);
+        this.error.set(err?.error?.error ?? err?.message ?? `Request failed (${err?.status ?? 'unknown'})`);
+      },
     });
   }
 
@@ -84,7 +92,7 @@ export class TaskHistoryComponent implements OnInit {
     return {
       completed: 'badge badge--green',
       cancelled: 'badge badge--red',
-      expired:   'badge badge--amber',
+      expired:   'badge badge--muted',
     }[status] ?? 'badge';
   }
 

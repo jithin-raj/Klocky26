@@ -1,34 +1,71 @@
 <div class="tk-page">
 
   <!-- Header -->
-  <div class="tk-header">
-    <div><h1>Tasks</h1><p>Everything awaiting your action — requests, approvals and work tasks</p></div>
-    <div class="tk-new-wrap">
-      <button class="tk-btn tk-btn--primary" (click)="toggleNewMenu()">
-        <ui-icon name="plus" [size]="14"></ui-icon>
-        New
-      </button>
-      @if (newMenuOpen()) {
-        <div class="tk-new-backdrop" (click)="closeNewMenu()"></div>
-        <div class="tk-new-menu">
-          <button (click)="selectNewOption('custom')"><ui-icon name="clipboard-check" [size]="15"></ui-icon> Custom task</button>
-          <button (click)="selectNewOption('leave')"><ui-icon name="calendar" [size]="15"></ui-icon> Leave request</button>
-          <button (click)="selectNewOption('regularisation')"><ui-icon name="clock" [size]="15"></ui-icon> Regularisation</button>
-          <button (click)="selectNewOption('comp_off')"><ui-icon name="award" [size]="15"></ui-icon> Comp-off</button>
+  <div class="tk-banner tk-mount" style="--i:0">
+    <div class="tk-banner-bg" aria-hidden="true">
+      <div class="tk-banner-orb tk-banner-orb--1"></div>
+      <div class="tk-banner-orb tk-banner-orb--2"></div>
+      <div class="tk-banner-grid"></div>
+    </div>
+    <div class="tk-banner-content">
+      <div class="tk-banner-text">
+        <p class="tk-banner-eyebrow"><ui-icon name="clipboard-check" [size]="13"></ui-icon> Tasks</p>
+        <h1>Everything awaiting your action</h1>
+        <p class="tk-banner-sub">Requests, approvals and work tasks — all in one place.</p>
+      </div>
+
+      <div class="tk-banner-side">
+        @if (canView()) {
+          <div class="tk-banner-stat">
+            <span class="tk-banner-stat-val">{{ pendingCount() }}</span>
+            <span class="tk-banner-stat-lbl">Pending</span>
+          </div>
+        }
+        <div class="tk-new-wrap">
+          <button class="tk-btn tk-btn--primary tk-btn--lg" (click)="toggleNewMenu()">
+            <ui-icon name="plus" [size]="15"></ui-icon>
+            New
+            <svg class="tk-new-chevron" [class.open]="newMenuOpen()" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          @if (newMenuOpen()) {
+            <div class="tk-new-backdrop" (click)="closeNewMenu()"></div>
+            <div class="tk-new-menu">
+              <button (click)="selectNewOption('custom')">
+                <span class="tk-new-ico" style="--nc:#6366f1"><ui-icon name="clipboard-check" [size]="15"></ui-icon></span>
+                <span class="tk-new-text"><span>Custom task</span><small>Assign work to yourself or a report</small></span>
+              </button>
+              <button (click)="selectNewOption('leave')">
+                <span class="tk-new-ico" style="--nc:#0ea5e9"><ui-icon name="calendar" [size]="15"></ui-icon></span>
+                <span class="tk-new-text"><span>Leave request</span><small>Apply for time off</small></span>
+              </button>
+              <button (click)="selectNewOption('regularisation')">
+                <span class="tk-new-ico" style="--nc:#d97706"><ui-icon name="clock" [size]="15"></ui-icon></span>
+                <span class="tk-new-text"><span>Regularisation</span><small>Fix a missed or incorrect punch</small></span>
+              </button>
+              <button (click)="selectNewOption('comp_off')">
+                <span class="tk-new-ico" style="--nc:#16a34a"><ui-icon name="award" [size]="15"></ui-icon></span>
+                <span class="tk-new-text"><span>Comp-off</span><small>Claim time off for extra work</small></span>
+              </button>
+            </div>
+          }
         </div>
-      }
+      </div>
     </div>
   </div>
 
   <!-- Tabs -->
-  <div class="tk-tabs">
+  <div class="tk-tabs tk-mount" style="--i:1">
     @for (tab of tabs; track tab.id) {
       <button class="tk-tab" [class.tk-tab--active]="activeTab() === tab.id" (click)="activeTab.set(tab.id)">
         {{ tab.label }}
+        @if (tab.id === 'pending' && pendingCount() > 0) {
+          <span class="tk-tab-count">{{ pendingCount() }}</span>
+        }
       </button>
     }
   </div>
 
+  <div class="tk-mount" style="--i:2">
   @switch (activeTab()) {
 
     @case ('all') {
@@ -44,7 +81,7 @@
         <div class="tk-inbox">
           <div class="tk-inbox__head">
             <div class="tk-inbox__title">
-              <ui-icon name="inbox" [size]="18"></ui-icon>
+              <span class="tk-inbox__ico"><ui-icon name="inbox" [size]="16"></ui-icon></span>
               Approvals Inbox
               @if (pendingCount() > 0) {
                 <span class="tk-inbox__badge">{{ pendingCount() }}</span>
@@ -57,80 +94,98 @@
           </div>
 
           @if (loadingPending()) {
-            <div class="tk-inbox__empty">Loading pending approvals…</div>
+            <div class="tk-skeleton-list">
+              @for (i of [1,2,3]; track i) { <span class="tk-skel-row"></span> }
+            </div>
           } @else if (pendingError()) {
             <div class="tk-inbox__empty tk-inbox__empty--error">
-              <ui-icon name="x" [size]="28" class="tk-inbox__empty-icon"></ui-icon>
+              <span class="tk-empty-ico tk-empty-ico--error"><ui-icon name="x" [size]="24"></ui-icon></span>
               Couldn't load pending approvals
               <span class="tk-inbox__error-detail">{{ pendingError() }}</span>
               <button class="tk-btn tk-btn--ghost tk-btn--sm" (click)="loadPending()">Retry</button>
             </div>
           } @else if (pendingTasks().length === 0) {
             <div class="tk-inbox__empty">
-              <ui-icon name="check-circle" [size]="28" class="tk-inbox__empty-icon"></ui-icon>
+              <span class="tk-empty-ico tk-empty-ico--ok"><ui-icon name="check-circle" [size]="24"></ui-icon></span>
               All caught up — no pending approvals
             </div>
           } @else {
-            <div class="tk-table-wrap">
-              <table class="tk-table">
-                <thead>
-                  <tr>
-                    <th class="tk-col-sl">#</th>
-                    <th>Type</th>
-                    <th>By</th>
-                    <th>Status</th>
-                    <th>Closing Date</th>
-                    <th class="tk-col-actions">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (item of pendingTasks(); track item.id; let i = $index) {
-                    <tr [class.tk-row--busy]="inboxBusyId() === item.id">
-                      <td class="tk-col-sl" data-label="#">{{ i + 1 }}</td>
-                      <td data-label="Type">
-                        <span class="tk-badge" [class]="taskTypeBadgeClass(item.taskType)">
-                          {{ taskTypeLabel(item.taskType) }}
-                        </span>
-                      </td>
-                      <td data-label="By">{{ item.requestedBy.name }}</td>
-                      <td data-label="Status"><span class="tk-status-badge">{{ item.status }}</span></td>
-                      <td data-label="Closing Date">{{ closingDate(item) ? (closingDate(item) | orgDateOnly) : '—' }}</td>
-                      <td class="tk-col-actions" data-label="Actions">
-                        <div class="tk-row-actions">
-                          <button class="tk-action-btn tk-action-btn--view" (click)="openView(item)" title="View details">
-                            <ui-icon name="eye" [size]="14"></ui-icon>
-                            View
-                          </button>
-                          @if (canAct() && item.actions.includes('approve')) {
-                            <button class="tk-action-btn tk-action-btn--approve"
-                                    [disabled]="!!inboxBusyId()"
-                                    (click)="approveTask(item)"
-                                    title="Approve">
-                              <ui-icon name="check" [size]="14"></ui-icon>
-                              Approve
-                            </button>
-                          }
-                          @if (canAct() && item.actions.includes('reject')) {
-                            <button class="tk-action-btn tk-action-btn--reject"
-                                    [disabled]="!!inboxBusyId()"
-                                    (click)="openRejectTask(item)"
-                                    title="Reject">
-                              <ui-icon name="x" [size]="14"></ui-icon>
-                              Reject
-                            </button>
-                          }
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
+            <div class="tk-list">
+              @for (item of pagedPendingTasks(); track item.id; let i = $index) {
+                <div class="tk-row-card" role="button" tabindex="0"
+                     [class.tk-row-card--busy]="inboxBusyId() === item.id" [style.--i]="i" [style.--tc]="taskTypeAccent(item.taskType)"
+                     (click)="openView(item)" (keydown.enter)="openView(item)">
+                  <span class="tk-row-accent"></span>
+                  <span class="tk-row-avatar">{{ item.requestedBy.name.charAt(0) }}</span>
+
+                  <div class="tk-row-main">
+                    <div class="tk-row-top">
+                      <span class="tk-row-name">{{ item.requestedBy.name }}</span>
+                      <span class="tk-badge" [class]="taskTypeBadgeClass(item.taskType)">
+                        <ui-icon [name]="taskTypeIcon(item.taskType)" [size]="10"></ui-icon>
+                        {{ taskTypeLabel(item.taskType) }}
+                      </span>
+                    </div>
+                    <div class="tk-row-sub">
+                      <span class="tk-row-title">{{ item.title }}</span>
+                      <span class="tk-row-dot">·</span>
+                      <span class="tk-row-date">Closes {{ closingDate(item) ? (closingDate(item) | orgDateOnly) : '—' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="tk-row-actions tk-row-actions--card" (click)="$event.stopPropagation()">
+                    @if (canAct() && item.actions.includes('approve')) {
+                      <button class="tk-action-btn tk-action-btn--approve"
+                              [disabled]="!!inboxBusyId()"
+                              (click)="approveTask(item)"
+                              title="Approve">
+                        @if (inboxBusyId() === item.id) {
+                          <span class="tk-spinner"></span>
+                          <span class="tk-action-label">Approving…</span>
+                        } @else {
+                          <ui-icon name="check" [size]="14"></ui-icon>
+                          <span class="tk-action-label">Approve</span>
+                        }
+                      </button>
+                    }
+                    @if (canAct() && item.actions.includes('reject')) {
+                      <button class="tk-action-btn tk-action-btn--reject"
+                              [disabled]="!!inboxBusyId()"
+                              (click)="openRejectTask(item)"
+                              title="Reject">
+                        <ui-icon name="x" [size]="14"></ui-icon>
+                        <span class="tk-action-label">Reject</span>
+                      </button>
+                    }
+                  </div>
+
+                  <span class="tk-row-chevron" aria-hidden="true">
+                    <ui-icon name="arrow-right" [size]="15"></ui-icon>
+                  </span>
+                </div>
+              }
             </div>
+
+            @if (pendingTotalPages() > 1) {
+              <div class="tk-pagination">
+                <span class="tk-pagination__info">Page {{ pendingPage() }} of {{ pendingTotalPages() }} &nbsp;·&nbsp; {{ pendingCount() }} total</span>
+                <div class="tk-pagination__btns">
+                  <button class="tk-page-btn" [disabled]="!hasPrevPending()" (click)="prevPendingPage()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    Prev
+                  </button>
+                  <button class="tk-page-btn" [disabled]="!hasNextPending()" (click)="nextPendingPage()">
+                    Next
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+            }
           }
         </div>
       } @else {
         <div class="tk-noaccess">
-          <ui-icon name="inbox" [size]="32" class="tk-noaccess__icon"></ui-icon>
+          <span class="tk-empty-ico"><ui-icon name="inbox" [size]="28"></ui-icon></span>
           <p class="tk-noaccess__title">You don't have access to task approvals</p>
           <p class="tk-noaccess__sub">Ask an admin to grant view access. Looking for your own task activity? Check History.</p>
         </div>
@@ -141,6 +196,7 @@
       <app-task-history></app-task-history>
     }
   }
+  </div>
 
 </div>
 
@@ -149,7 +205,8 @@
   <div class="tk-overlay" (click)="cancelReject()">
     <div class="tk-modal tk-modal--sm" (click)="$event.stopPropagation()">
       <div class="tk-modal__head">
-        <h3>Reject Request</h3>
+        <span class="tk-modal__ico tk-modal__ico--danger"><ui-icon name="x" [size]="17"></ui-icon></span>
+        <div class="tk-modal__head-text"><h3>Reject Request</h3></div>
         <button (click)="cancelReject()"><ui-icon name="x" [size]="16"></ui-icon></button>
       </div>
       <div class="tk-modal__body">
@@ -169,7 +226,11 @@
         <button class="tk-btn tk-btn--danger"
                 [disabled]="!rejectMsg().trim() || !!inboxBusyId()"
                 (click)="confirmReject()">
-          Confirm Reject
+          @if (inboxBusyId() === rejectTarget()?.id) {
+            <span class="tk-spinner"></span> Rejecting…
+          } @else {
+            Confirm Reject
+          }
         </button>
       </div>
     </div>
@@ -181,7 +242,8 @@
   <div class="tk-overlay" (click)="closeView()">
     <div class="tk-modal tk-modal--sm" (click)="$event.stopPropagation()">
       <div class="tk-modal__head">
-        <h3>Request Details</h3>
+        <span class="tk-modal__ico"><ui-icon name="eye" [size]="17"></ui-icon></span>
+        <div class="tk-modal__head-text"><h3>Request Details</h3></div>
         <button (click)="closeView()"><ui-icon name="x" [size]="16"></ui-icon></button>
       </div>
       <div class="tk-modal__body">
@@ -219,7 +281,7 @@
         }
         <div class="tk-detail-row">
           <span class="tk-detail-label">Status</span>
-          <span class="tk-status-badge">{{ item.status }}</span>
+          <span class="tk-status-badge tk-status-badge--pending">{{ item.status }}</span>
         </div>
       </div>
       @if (canAct() && item.actions.length > 0) {
@@ -228,7 +290,13 @@
             <button class="tk-btn tk-btn--ghost" [disabled]="!!inboxBusyId()" (click)="closeView(); openRejectTask(item)">Reject</button>
           }
           @if (item.actions.includes('approve')) {
-            <button class="tk-btn tk-btn--primary" [disabled]="!!inboxBusyId()" (click)="approveTask(item); closeView()">Approve</button>
+            <button class="tk-btn tk-btn--primary" [disabled]="!!inboxBusyId()" (click)="approveTask(item)">
+              @if (inboxBusyId() === item.id) {
+                <span class="tk-spinner"></span> Approving…
+              } @else {
+                Approve
+              }
+            </button>
           }
         </div>
       }
@@ -241,7 +309,8 @@
   <div class="tk-overlay" (click)="closeLeaveModal()">
     <div class="tk-modal" (click)="$event.stopPropagation()">
       <div class="tk-modal__head">
-        <h3>{{ leaveIsCompOff() ? 'Apply Comp-Off' : 'Apply Leave' }}</h3>
+        <span class="tk-modal__ico" style="--mc:#0ea5e9"><ui-icon name="calendar" [size]="17"></ui-icon></span>
+        <div class="tk-modal__head-text"><h3>{{ leaveIsCompOff() ? 'Apply Comp-Off' : 'Apply Leave' }}</h3></div>
         <button (click)="closeLeaveModal()"><ui-icon name="x" [size]="16"></ui-icon></button>
       </div>
       <div class="tk-modal__body">
@@ -269,6 +338,7 @@
         }
         <label class="tk-checkbox">
           <input type="checkbox" [ngModel]="leaveHalfDay()" (ngModelChange)="leaveHalfDay.set($event)" />
+          <span class="tk-checkbox-box"><ui-icon name="check" [size]="11"></ui-icon></span>
           Half day
         </label>
         @if (leaveHalfDay()) {
@@ -298,7 +368,8 @@
   <div class="tk-overlay" (click)="closeRegModal()">
     <div class="tk-modal" (click)="$event.stopPropagation()">
       <div class="tk-modal__head">
-        <h3>Request Attendance Regularisation</h3>
+        <span class="tk-modal__ico" style="--mc:#d97706"><ui-icon name="clock" [size]="17"></ui-icon></span>
+        <div class="tk-modal__head-text"><h3>Request Attendance Regularisation</h3></div>
         <button (click)="closeRegModal()"><ui-icon name="x" [size]="16"></ui-icon></button>
       </div>
       <div class="tk-modal__body">

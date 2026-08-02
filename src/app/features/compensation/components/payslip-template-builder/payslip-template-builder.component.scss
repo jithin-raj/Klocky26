@@ -1,0 +1,277 @@
+:host { display: block; }
+
+.ptb-empty { padding: 44px 20px; text-align: center; color: #94a3b8; font-size: 13.5px; }
+
+.ptb-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 18px;
+  align-items: start;
+  &--readonly { grid-template-columns: 1fr; }
+  @media (max-width: 860px) { grid-template-columns: 1fr; }
+}
+
+// ── Palette ──────────────────────────────────────────────────────────────────
+.ptb-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  @media (max-width: 860px) { position: static; max-height: none; }
+}
+.ptb-palette__group { display: flex; flex-direction: column; gap: 6px; }
+.ptb-palette__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #94a3b8;
+  padding: 0 2px;
+}
+.ptb-palette__empty { font-size: 12.5px; color: #94a3b8; margin: 0; }
+
+.ptb-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1.5px solid #eef1f5;
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: grab;
+  transition: border-color .15s, background .15s;
+  &:hover { border-color: #cbd5e1; background: #f1f5f9; }
+  &:active { cursor: grabbing; }
+}
+.ptb-chip__text { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.ptb-chip__label { font-size: 12.5px; font-weight: 650; color: #1e293b; }
+.ptb-chip__hint { font-size: 10.5px; color: #94a3b8; line-height: 1.3; }
+.ptb-chip__add {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: none;
+  background: #e0e7ff;
+  color: var(--accent, #6366f1);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  &:hover { background: #c7d2fe; }
+}
+
+// ── Canvas ───────────────────────────────────────────────────────────────────
+.ptb-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ptb-canvas__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ptb-canvas__title { font-size: 14.5px; font-weight: 700; color: #0f172a; }
+.ptb-canvas__actions { display: flex; gap: 8px; }
+
+.ptb-warn { margin: 0; font-size: 12.5px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; }
+.ptb-dirty { margin: 0; font-size: 12.5px; color: #64748b; }
+
+// ── Document canvas — a grey "desk" holding a white "page", so the layout
+// reads like an actual document instead of a settings form. Blocks only
+// carry a top-to-bottom order (sortOrder), never an x/y position — dragging
+// reorders the flow, it does not place content anywhere on the sheet. ──────
+.ptb-desk {
+  background: #eef0f4;
+  border-radius: 14px;
+  padding: 28px 20px;
+  display: flex;
+  justify-content: center;
+  @media (max-width: 640px) { padding: 16px 10px; }
+}
+.ptb-page {
+  width: 100%;
+  max-width: 640px;
+  min-height: 380px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 18px 40px -16px rgba(15,23,42,.22);
+  padding: 40px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  @media (max-width: 640px) { padding: 24px 18px; }
+}
+.ptb-page__empty {
+  margin: auto;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  max-width: 260px;
+}
+
+.ptb-block {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 34px 6px 6px;
+  margin: 0 -6px;
+  border-radius: 8px;
+  transition: background .12s;
+  &[draggable="true"] { cursor: grab; }
+  &:hover, &:focus-within { background: #f8fafc; }
+  &--over { outline: 2px solid var(--accent, #6366f1); outline-offset: -2px; background: color-mix(in srgb, var(--accent, #6366f1) 6%, #fff); }
+  &--spacer { min-height: 22px; }
+  &--endzone {
+    justify-content: center;
+    color: #cbd5e1;
+    font-size: 12px;
+    border: 1.5px dashed #e2e8f0;
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 6px;
+    cursor: default;
+    &:hover { background: none; }
+  }
+}
+.ptb-block__content { flex: 1; min-width: 0; }
+
+// Icon rail: always present (not hover-only — hover-only controls are
+// unusable on touch), but kept low-opacity until interacted with.
+.ptb-block__rail {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  opacity: .45;
+  transition: opacity .12s;
+  .ptb-block:hover &, .ptb-block:focus-within & { opacity: 1; }
+}
+.ptb-block__handle { color: #cbd5e1; font-size: 13px; padding: 0 3px; align-self: center; }
+.ptb-block__rail button {
+  width: 21px;
+  height: 21px;
+  border: none;
+  background: none;
+  color: #94a3b8;
+  font-size: 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  &:hover:not(:disabled) { background: #eef2ff; color: #334155; }
+  &:disabled { opacity: .3; cursor: not-allowed; }
+}
+.ptb-block__remove {
+  font-size: 11px !important;
+  &:hover:not(:disabled) { background: #fef2f2 !important; color: #dc2626 !important; }
+}
+
+// ── Document-styled content (what each block actually looks like on the page) ──
+.ptb-doc-input {
+  width: 100%;
+  border: 1px dashed transparent;
+  border-radius: 5px;
+  padding: 2px 5px;
+  margin: -2px -5px;
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  &:hover { border-color: #e2e8f0; }
+  &:focus { outline: none; border-color: var(--accent, #6366f1); border-style: solid; background: #fff; }
+}
+.ptb-doc-heading {
+  margin: 10px 0 6px;
+  font-size: 18px;
+  font-weight: 750;
+  color: #0f172a;
+}
+input.ptb-doc-heading { font-size: 18px; font-weight: 750; color: #0f172a; }
+
+.ptb-doc-field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+.ptb-doc-field__label { color: #475569; font-weight: 600; flex-shrink: 0; max-width: 55%; }
+.ptb-doc-field__dots {
+  flex: 1;
+  border-bottom: 1px dotted #d1d5db;
+  margin-bottom: 4px;
+  min-width: 20px;
+}
+.ptb-doc-field__value { color: #0f172a; font-weight: 600; flex-shrink: 0; }
+
+.ptb-doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 2px;
+  font-size: 12.5px;
+  th { text-align: left; padding: 5px 8px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #94a3b8; border-bottom: 1.5px solid #e5e7eb; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; color: #1e293b; }
+}
+.ptb-doc-type { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 20px; background: #dcfce7; color: #15803d; &--deduction { background: #fee2e2; color: #b91c1c; } }
+.ptb-doc-caption { display: block; font-size: 11px; color: #94a3b8; font-style: italic; margin: 2px 0 8px; }
+
+.ptb-doc-logo {
+  width: 90px;
+  height: 44px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: #cbd5e1;
+  margin: 8px 0 2px;
+}
+.ptb-doc-spacer-label {
+  display: block;
+  font-size: 10px;
+  color: #cbd5e1;
+  text-align: center;
+  padding: 4px 0;
+}
+
+// ── Buttons (local — this component is view-encapsulated, doesn't inherit compensation-hub's .cp-btn) ──
+.ptb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: filter .15s, background .15s;
+  &--primary {
+    background: var(--accent, #6366f1);
+    color: #fff;
+    &:hover:not(:disabled) { filter: brightness(.94); }
+    &:disabled { opacity: .55; cursor: not-allowed; }
+  }
+  &--ghost {
+    background: #fff;
+    color: #374151;
+    border-color: #e5e7eb;
+    &:hover:not(:disabled) { background: #f8fafc; }
+    &:disabled { opacity: .55; cursor: not-allowed; }
+  }
+}
