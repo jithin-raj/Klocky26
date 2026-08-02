@@ -13,6 +13,7 @@ import { Router } from '@angular/router';
 import { Title, Meta } from '@angular/platform-browser';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
+import { UiIconComponent, UiIconName } from '../../shared/components';
 import {
   LandingContentService,
   LandingStat,
@@ -25,7 +26,7 @@ import {
   selector: 'app-landing',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [],
+  imports: [UiIconComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })
@@ -94,13 +95,14 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   );
 
   // ─── Content ─────────────────────────────────────────────────
-  features = [
+  features: { key: string; title: string; desc: string; accent: string; tags: string[]; icon: UiIconName }[] = [
     {
       key: 'attendance',
       title: 'Smart Attendance',
       desc: 'GPS-aware clock-in/out, automatic late detection, real-time presence tracking across offices.',
       accent: '#0d9488',
       tags: ['GPS check-in', 'Auto late'],
+      icon: 'scan',
     },
     {
       key: 'leave',
@@ -108,6 +110,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       desc: 'Custom leave policies, approval workflows, and balance tracking — all in one place.',
       accent: '#059669',
       tags: ['Policies', 'Approvals'],
+      icon: 'tree',
     },
     {
       key: 'directory',
@@ -115,6 +118,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       desc: 'Org chart, profiles, departments, and role management with fine-grained permissions.',
       accent: '#0891b2',
       tags: ['Org chart', 'Roles'],
+      icon: 'users',
     },
     {
       key: 'dashboard',
@@ -122,6 +126,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       desc: 'Real-time headcount, attendance rings, leave requests, and org-wide activity at a glance.',
       accent: '#16a34a',
       tags: ['Live', 'Insights'],
+      icon: 'bar-chart',
     },
     {
       key: 'offices',
@@ -129,6 +134,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       desc: 'Manage multiple locations with their own timezones, holidays, and attendance policies.',
       accent: '#0f766e',
       tags: ['Timezones', 'Holidays'],
+      icon: 'building',
     },
     {
       key: 'notifications',
@@ -136,6 +142,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
       desc: 'Instant alerts for approvals, clock-in reminders, anniversaries, and custom events.',
       accent: '#0284c7',
       tags: ['Realtime', 'Custom'],
+      icon: 'bell',
     },
   ];
 

@@ -8,7 +8,7 @@ import { AttendanceStateService } from '../../../../core/services/attendance-sta
 import { AppStateService } from '../../../../core/services/app-state.service';
 import { TimeOverview, UpcomingEventItem } from '../../../../core/models/time-management.model';
 import { TeamAttendanceItem } from '../../../../core/models/attendance.model';
-import { UiLoaderComponent } from '../../../../shared/components/ui-loader/ui-loader.component';
+import { UiIconComponent, CountUpDirective } from '../../../../shared/components';
 import { LocalizationService } from '../../../../core/services/localization.service';
 import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
 import { PermissionService } from '../../../../core/services/permission.service';
@@ -18,7 +18,7 @@ import { MarkPresentDialogService } from '../../../../shared/components/mark-pre
   selector: 'app-time-overview',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, UiLoaderComponent, OrgDateOnlyPipe],
+  imports: [CommonModule, FormsModule, UiIconComponent, CountUpDirective, OrgDateOnlyPipe],
   templateUrl: './overview.component.html',
   styleUrl: './overview.component.scss',
 })
@@ -169,7 +169,41 @@ export class TimeOverviewComponent implements OnInit {
     }
   }
 
+  /** Per-card quick action — regularise/mark present a single absent employee
+   *  without needing the checkbox multi-select flow. */
+  async markPresentSingle(emp: TeamAttendanceItem): Promise<void> {
+    if (this.markPresentBusy()) return;
+    this.markPresentBusy.set(true);
+    try {
+      const results = await this.markPresentDialog.open({
+        items: [{
+          userId: emp.userId,
+          userName: emp.fullName,
+          date: emp.today?.date || this.loc.todayDateStr(),
+        }],
+      });
+      if (results?.some(r => r.success)) this._loadTeam();
+    } finally {
+      this.markPresentBusy.set(false);
+    }
+  }
+
   trackById(_: number, item: TeamAttendanceItem): string {
     return item.userId;
+  }
+
+  // ── Stat-card hover-tilt (subtle 3D, desktop pointer only) ──────────────
+  onCardTilt(e: MouseEvent): void {
+    const card = e.currentTarget as HTMLElement;
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    card.style.setProperty('--tiltX', `${(-py * 8).toFixed(2)}deg`);
+    card.style.setProperty('--tiltY', `${(px * 8).toFixed(2)}deg`);
+  }
+  onCardTiltReset(e: MouseEvent): void {
+    const card = e.currentTarget as HTMLElement;
+    card.style.setProperty('--tiltX', '0deg');
+    card.style.setProperty('--tiltY', '0deg');
   }
 }

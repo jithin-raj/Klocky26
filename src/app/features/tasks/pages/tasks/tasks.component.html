@@ -322,7 +322,7 @@
         <div class="tk-field-row">
           <div class="tk-field">
             <label>From <span class="tk-required">*</span></label>
-            <ui-datepicker [maxDate]="todayIso" [ngModel]="leaveFromDate()" (ngModelChange)="onLeaveFromChange($event)"></ui-datepicker>
+            <ui-datepicker [minDate]="regMinDate()" [ngModel]="leaveFromDate()" (ngModelChange)="onLeaveFromChange($event)"></ui-datepicker>
           </div>
           <div class="tk-field">
             <label>To <span class="tk-required">*</span></label>
