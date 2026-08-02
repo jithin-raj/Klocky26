@@ -59,60 +59,83 @@
       </div>
     </div>
 
-    <!-- Backdrop: click anywhere outside to close summary panel -->
-    @if (summaryOpen()) {
-      <div class="summary-backdrop" (click)="toggleSummary()"></div>
-    }
+    <!-- ── Time Overview — expand/collapse vivid stat cards ─────────── -->
+    <div class="overview-panel">
+      <button class="overview-head" [class.open]="overviewOpen()" (click)="toggleOverview()" type="button" [attr.aria-expanded]="overviewOpen()">
+        <span class="overview-head-icon"><ui-icon name="bar-chart" [size]="13"></ui-icon></span>
+        <span class="overview-head-title">Time Overview</span>
+        <span class="overview-head-sub">{{ monthYear() }}</span>
 
-    <!-- ── Stats Accordion ────────────────────────────────────────── -->
-    <div class="stats-accordion" [class.open]="summaryOpen()">
-
-      <!-- Header / toggle bar -->
-      <button class="stats-header" (click)="toggleSummary()" type="button">
-        <span class="stats-title">Summary</span>
-        <!-- mini count pills preview -->
-        <span class="stats-preview">
-          @for (chip of summaryChips(); track chip.key) {
-            @if (chip.count > 0) {
-              <span class="preview-tag"
-                [style.background]="chip.bg"
-                [style.color]="chip.color"
-                [title]="chip.label">{{ chip.count }}</span>
-            }
-          }
-        </span>
-        <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        <svg class="overview-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </button>
 
-      <!-- Collapsible body -->
-      <div class="stats-body">
-        <!-- Status chips -->
-        <div class="summary-row">
-          @for (chip of summaryChips(); track chip.key) {
-            <div class="chip" [style.--chip-color]="chip.color" [style.--chip-bg]="chip.bg">
-              <span class="chip-count">{{ chip.count }}</span>
-              <span class="chip-label">{{ chip.label }}</span>
+      <div class="overview-collapse" [class.open]="overviewOpen()">
+        <div class="overview-collapse-inner">
+          @if (loadingMonth()) {
+            <!-- Skeleton — mirrors the real layout so nothing jumps once data lands -->
+            <div class="overview-skeleton" aria-hidden="true">
+              <div class="skel-cards">
+                @for (i of [0,1,2,3]; track i) { <span class="skel skel-card"></span> }
+              </div>
+              <div class="skel-pills">
+                @for (i of [0,1,2,3]; track i) { <span class="skel skel-pillx"></span> }
+              </div>
+            </div>
+          } @else {
+            <!-- Hero cards: Present / Half Day / Absent / Overtime -->
+            <div class="overview-cards">
+              <div class="ov-card ov-card--present" [style.--i]="0"
+                   (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
+                <span class="ov-card-icon"><ui-icon name="check-circle" [size]="18"></ui-icon></span>
+                <span class="ov-card-value"><span [countUp]="chipCounts()['present']">0</span></span>
+                <span class="ov-card-label">Present</span>
+                <span class="ov-card-bar"><span class="ov-card-bar-fill" [style.width.%]="attendanceRatePct()"></span></span>
+              </div>
+              <div class="ov-card ov-card--half" [style.--i]="1"
+                   (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
+                <span class="ov-card-icon"><ui-icon name="clock" [size]="18"></ui-icon></span>
+                <span class="ov-card-value"><span [countUp]="chipCounts()['half']">0</span></span>
+                <span class="ov-card-label">Half Day</span>
+              </div>
+              <div class="ov-card ov-card--absent" [style.--i]="2"
+                   (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
+                <span class="ov-card-icon"><ui-icon name="x" [size]="18"></ui-icon></span>
+                <span class="ov-card-value"><span [countUp]="chipCounts()['absent']">0</span></span>
+                <span class="ov-card-label">Absent</span>
+              </div>
+              <div class="ov-card ov-card--overtime" [style.--i]="3"
+                   (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
+                <span class="ov-card-icon"><ui-icon name="sparkles" [size]="18"></ui-icon></span>
+                <span class="ov-card-value ov-card-value--text">{{ workStats().overtimeHours }}</span>
+                <span class="ov-card-label">Overtime</span>
+              </div>
+            </div>
+
+            <!-- Secondary row: Leave / Comp Off / Holiday / Avg per day -->
+            <div class="overview-pills">
+              <span class="ov-pill" [style.--i]="0">
+                <ui-icon name="tree" [size]="13"></ui-icon>
+                <span [countUp]="chipCounts()['leave']">0</span> Leave
+              </span>
+              <span class="ov-pill" [style.--i]="1">
+                <ui-icon name="repeat" [size]="13"></ui-icon>
+                <span [countUp]="chipCounts()['comp_off']">0</span> Comp Off
+              </span>
+              <span class="ov-pill" [style.--i]="2">
+                <ui-icon name="award" [size]="13"></ui-icon>
+                <span [countUp]="chipCounts()['holiday']">0</span> Holiday
+              </span>
+              <span class="ov-pill ov-pill--accent" [style.--i]="3">
+                <ui-icon name="bar-chart" [size]="13"></ui-icon>
+                {{ workStats().avgHours }} Avg/day
+              </span>
             </div>
           }
         </div>
-
-        <!-- Avg hours + Overtime -->
-        <div class="stats-extra">
-          <div class="stat-item">
-            <span class="stat-value">{{ workStats().avgHours }}</span>
-            <span class="stat-label">Avg / day</span>
-          </div>
-          <div class="stat-sep"></div>
-          <div class="stat-item">
-            <span class="stat-value stat-ot">{{ workStats().overtimeHours }}</span>
-            <span class="stat-label">Overtime</span>
-          </div>
-        </div>
       </div>
-
     </div>
 
     <!-- ── CALENDAR VIEW ─────────────────────────────────────────── -->

@@ -1,77 +1,105 @@
 <div class="page">
   <h1>Time Management Overview</h1>
 
-  <div class="loading-wrap" *ngIf="loading()">
-    <ui-loader variant="klocky" [size]="72"></ui-loader>
-  </div>
+  <!-- Skeleton — mirrors the real section layout, shimmer, no blank spinner -->
+  <ng-container *ngIf="loading()">
+    <div class="card skel-card" style="--i:0">
+      <span class="skel skel-line" style="width:110px;height:12px;margin-bottom:16px;"></span>
+      <div class="skel-status-row">
+        <span class="skel skel-badge"></span>
+        <span class="skel skel-line" style="width:90px;height:13px;"></span>
+      </div>
+      <div class="skel-punch-row">
+        <span class="skel skel-line" style="width:70%;height:34px;"></span>
+        <span class="skel skel-line" style="width:70%;height:34px;"></span>
+        <span class="skel skel-line" style="width:70%;height:34px;"></span>
+        <span class="skel skel-line" style="width:70%;height:34px;"></span>
+      </div>
+    </div>
+    <div class="card" style="--i:1">
+      <span class="skel skel-line" style="width:170px;height:12px;margin-bottom:16px;"></span>
+      <div class="skel-cards">
+        <span class="skel skel-ov-card"></span><span class="skel skel-ov-card"></span>
+        <span class="skel skel-ov-card"></span><span class="skel skel-ov-card"></span>
+      </div>
+    </div>
+    <div class="card" style="--i:2">
+      <span class="skel skel-line" style="width:130px;height:12px;margin-bottom:16px;"></span>
+      <span class="skel skel-line" style="width:100%;height:38px;margin-bottom:8px;"></span>
+      <span class="skel skel-line" style="width:100%;height:38px;"></span>
+    </div>
+  </ng-container>
+
   <div class="error" *ngIf="error()">{{ error() }}</div>
 
   <ng-container *ngIf="!loading() && !error() && overview() as ov">
 
     <!-- Section 1: Today's Status -->
-    <div class="card">
-      <div class="card-title">Today's Status</div>
-      <div class="status-row">
-        <span
-          class="status-badge"
-          [style.background]="statusColor() + '1a'"
-          [style.color]="statusColor()"
-        >
-          <span class="status-dot" [style.background]="statusColor()"></span>
+    <div class="card" style="--i:0">
+      <div class="card-title"><ui-icon name="clock" [size]="13"></ui-icon> Today's Status</div>
+
+      <div class="status-hero" [style.--sc]="statusColor()">
+        <span class="status-badge-lg">
+          <span class="status-dot-lg" [class.live]="ov.status === 'present'"></span>
           {{ statusLabel() }}
         </span>
         <span class="status-date">{{ ov.date | orgDateOnly }}</span>
       </div>
 
-      <div class="punch-row">
-        <div class="punch-item">
-          <span class="punch-label">Clock In</span>
-          <span class="punch-value">{{ ov.clockInTime ?? '—' }}</span>
+      <div class="punch-grid">
+        <div class="punch-tile" style="--i:0">
+          <span class="punch-tile-icon"><ui-icon name="scan" [size]="16"></ui-icon></span>
+          <span class="punch-tile-value">{{ ov.clockInTime ?? '—' }}</span>
+          <span class="punch-tile-label">Clock In</span>
         </div>
-        <div class="punch-divider"></div>
-        <div class="punch-item">
-          <span class="punch-label">Clock Out</span>
-          <span class="punch-value">{{ ov.clockOutTime ?? '—' }}</span>
+        <div class="punch-tile" style="--i:1">
+          <span class="punch-tile-icon"><ui-icon name="log-out" [size]="16"></ui-icon></span>
+          <span class="punch-tile-value">{{ ov.clockOutTime ?? '—' }}</span>
+          <span class="punch-tile-label">Clock Out</span>
         </div>
-        <div class="punch-divider"></div>
-        <div class="punch-item">
-          <span class="punch-label">Work Duration</span>
-          <span class="punch-value">{{ workHours() }}</span>
+        <div class="punch-tile" style="--i:2">
+          <span class="punch-tile-icon"><ui-icon name="clock" [size]="16"></ui-icon></span>
+          <span class="punch-tile-value">{{ workHours() }}</span>
+          <span class="punch-tile-label">Work Duration</span>
         </div>
-        <div class="punch-divider"></div>
-        <div class="punch-item">
-          <span class="punch-label">Punch Method</span>
-          <span class="punch-value">{{ ov.punchMethod ?? '—' }}</span>
+        <div class="punch-tile" style="--i:3">
+          <span class="punch-tile-icon"><ui-icon name="map-pin" [size]="16"></ui-icon></span>
+          <span class="punch-tile-value">{{ ov.punchMethod ?? '—' }}</span>
+          <span class="punch-tile-label">Punch Method</span>
         </div>
       </div>
     </div>
 
-    <!-- Section 2: Attendance Metrics -->
-    <div class="card">
-      <div class="card-title">Attendance Metrics (This Month)</div>
-      <div class="stats-row">
-        <div class="stat-tile">
-          <span class="stat-value" style="color:#22c55e">{{ ov.attendanceMetrics.presentDays }}</span>
-          <span class="stat-label">Present Days</span>
+    <!-- Section 2: Attendance Metrics — vivid gradient stat cards -->
+    <div class="card" style="--i:1">
+      <div class="card-title"><ui-icon name="bar-chart" [size]="13"></ui-icon> Attendance Metrics (This Month)</div>
+      <div class="ov-cards">
+        <div class="ov-card ov-card--present" style="--i:0" (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
+          <span class="ov-card-icon"><ui-icon name="check-circle" [size]="17"></ui-icon></span>
+          <span class="ov-card-value"><span [countUp]="ov.attendanceMetrics.presentDays">0</span></span>
+          <span class="ov-card-label">Present Days</span>
         </div>
-        <div class="stat-tile">
-          <span class="stat-value" style="color:#ef4444">{{ ov.attendanceMetrics.absentDays }}</span>
-          <span class="stat-label">Absent Days</span>
+        <div class="ov-card ov-card--absent" style="--i:1" (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
+          <span class="ov-card-icon"><ui-icon name="x" [size]="17"></ui-icon></span>
+          <span class="ov-card-value"><span [countUp]="ov.attendanceMetrics.absentDays">0</span></span>
+          <span class="ov-card-label">Absent Days</span>
         </div>
-        <div class="stat-tile">
-          <span class="stat-value" style="color:#f59e0b">{{ ov.attendanceMetrics.latePunches }}</span>
-          <span class="stat-label">Late Punches</span>
+        <div class="ov-card ov-card--late" style="--i:2" (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
+          <span class="ov-card-icon"><ui-icon name="clock" [size]="17"></ui-icon></span>
+          <span class="ov-card-value"><span [countUp]="ov.attendanceMetrics.latePunches">0</span></span>
+          <span class="ov-card-label">Late Punches</span>
         </div>
-        <div class="stat-tile">
-          <span class="stat-value">{{ ov.attendanceMetrics.avgWorkHoursThisMonth | number:'1.1-1' }}h</span>
-          <span class="stat-label">Avg Work Hrs</span>
+        <div class="ov-card ov-card--avg" style="--i:3" (mousemove)="onCardTilt($event)" (mouseleave)="onCardTiltReset($event)">
+          <span class="ov-card-icon"><ui-icon name="sparkles" [size]="17"></ui-icon></span>
+          <span class="ov-card-value ov-card-value--text">{{ ov.attendanceMetrics.avgWorkHoursThisMonth | number:'1.1-1' }}h</span>
+          <span class="ov-card-label">Avg Work Hrs</span>
         </div>
       </div>
     </div>
 
     <!-- Section 3: Pending Requests -->
-    <div class="card">
-      <div class="card-title">Pending Requests</div>
+    <div class="card" style="--i:2">
+      <div class="card-title"><ui-icon name="clipboard-check" [size]="13"></ui-icon> Pending Requests</div>
       <ng-container *ngIf="ov.pendingRequests.length > 0; else noRequests">
         <table class="req-table">
           <thead>
@@ -104,8 +132,8 @@
     </div>
 
     <!-- Section 4: Upcoming Events -->
-    <div class="card">
-      <div class="card-title">Upcoming Events (Next 30 Days)</div>
+    <div class="card" style="--i:3">
+      <div class="card-title"><ui-icon name="megaphone" [size]="13"></ui-icon> Upcoming Events (Next 30 Days)</div>
       <ng-container *ngIf="events().length > 0; else noEvents">
         <div class="event-list">
           <div class="event-row" *ngFor="let ev of events()">
@@ -136,7 +164,13 @@
     </div>
 
     <div class="team-loading" *ngIf="teamLoading()">
-      <ui-loader variant="klocky" [size]="48"></ui-loader>
+      <div class="card">
+        <div class="skel-team-list">
+          <span class="skel skel-team-row"></span>
+          <span class="skel skel-team-row"></span>
+          <span class="skel skel-team-row"></span>
+        </div>
+      </div>
     </div>
 
     <ng-container *ngIf="!teamLoading()">
@@ -149,17 +183,13 @@
           <span class="team-count">{{ clockedInEmployees().length }}</span>
         </div>
         <ng-container *ngIf="clockedInEmployees().length > 0; else noClockedIn">
-          <div class="team-list">
-            <div class="team-row" *ngFor="let emp of clockedInEmployees(); trackBy: trackById">
+          <div class="team-grid">
+            <div class="team-card-item" [style.--i]="i" *ngFor="let emp of clockedInEmployees(); let i = index; trackBy: trackById">
               <div class="team-avatar">{{ emp.fullName.charAt(0) }}</div>
-              <div class="team-info">
-                <span class="team-name">{{ emp.fullName }}</span>
-                <span class="team-dept">{{ emp.departmentName ?? 'No department' }}</span>
-              </div>
-              <div class="team-meta">
-                <span class="team-time">In: {{ formatClockIn(emp) }}</span>
-                <span class="team-status-badge team-status-badge--green">Active</span>
-              </div>
+              <span class="team-card-name">{{ emp.fullName }}</span>
+              <span class="team-card-dept">{{ emp.departmentName ?? 'No department' }}</span>
+              <span class="team-status-badge team-status-badge--green">Active</span>
+              <span class="team-card-time">In: {{ formatClockIn(emp) }}</span>
             </div>
           </div>
         </ng-container>
@@ -175,16 +205,12 @@
           On Leave
           <span class="team-count">{{ onLeaveEmployees().length }}</span>
         </div>
-        <div class="team-list">
-          <div class="team-row" *ngFor="let emp of onLeaveEmployees(); trackBy: trackById">
+        <div class="team-grid">
+          <div class="team-card-item" [style.--i]="i" *ngFor="let emp of onLeaveEmployees(); let i = index; trackBy: trackById">
             <div class="team-avatar team-avatar--amber">{{ emp.fullName.charAt(0) }}</div>
-            <div class="team-info">
-              <span class="team-name">{{ emp.fullName }}</span>
-              <span class="team-dept">{{ emp.departmentName ?? 'No department' }}</span>
-            </div>
-            <div class="team-meta">
-              <span class="team-status-badge team-status-badge--amber">Leave</span>
-            </div>
+            <span class="team-card-name">{{ emp.fullName }}</span>
+            <span class="team-card-dept">{{ emp.departmentName ?? 'No department' }}</span>
+            <span class="team-status-badge team-status-badge--amber">Leave</span>
           </div>
         </div>
       </div>
@@ -206,23 +232,31 @@
           </button>
         </div>
         <ng-container *ngIf="absentEmployees().length > 0; else noAbsent">
-          <div class="team-list">
-            <div class="team-row" [class.team-row--selected]="isUserSelected(emp.userId)" *ngFor="let emp of absentEmployees(); trackBy: trackById">
+          <div class="team-grid">
+            <div class="team-card-item team-card-item--selectable"
+                 [class.team-card-item--selected]="isUserSelected(emp.userId)"
+                 [style.--i]="i"
+                 *ngFor="let emp of absentEmployees(); let i = index; trackBy: trackById">
               <input
                 *ngIf="canMarkPresent()"
                 type="checkbox"
-                class="team-row-check"
+                class="team-card-check"
                 [checked]="isUserSelected(emp.userId)"
                 (change)="toggleUserSelected(emp.userId)"
                 [attr.aria-label]="'Select ' + emp.fullName" />
               <div class="team-avatar team-avatar--red">{{ emp.fullName.charAt(0) }}</div>
-              <div class="team-info">
-                <span class="team-name">{{ emp.fullName }}</span>
-                <span class="team-dept">{{ emp.departmentName ?? 'No department' }}</span>
-              </div>
-              <div class="team-meta">
-                <span class="team-status-badge team-status-badge--red">Absent</span>
-              </div>
+              <span class="team-card-name">{{ emp.fullName }}</span>
+              <span class="team-card-dept">{{ emp.departmentName ?? 'No department' }}</span>
+              <span class="team-status-badge team-status-badge--red">Absent</span>
+              <button
+                *ngIf="canMarkPresent()"
+                type="button"
+                class="team-card-action"
+                [disabled]="markPresentBusy()"
+                (click)="markPresentSingle(emp)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Mark Present
+              </button>
             </div>
           </div>
         </ng-container>

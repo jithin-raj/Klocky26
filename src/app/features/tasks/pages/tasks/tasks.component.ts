@@ -334,6 +334,8 @@ export class TasksComponent implements OnInit {
   regReason       = signal('');
   regSubmitting   = signal(false);
 
+  /** Earliest still-open cycle date. Also used as the leave "From" picker's
+   *  floor below — same closed-cycle boundary, no separate leave endpoint. */
   regMinDate      = signal('');
   regMaxDate      = signal(this.todayIso);
   regBlockedDates = signal<string[]>([]);

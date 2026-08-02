@@ -330,79 +330,16 @@
             <span class="lp-feature-top" aria-hidden="true"></span>
             <span class="lp-feature-shine" aria-hidden="true"></span>
 
-            <!-- Illustrated scene — replaces the plain icon-only header -->
+            <!-- Feature icon — app-wide UiIcon set, idle float + pulsing ring, hover pop -->
             <div class="lp-feature-visual" [attr.data-key]="f.key" aria-hidden="true">
               <span class="lp-feature-visual-shimmer"></span>
-              @switch (f.key) {
-                @case ('attendance') {
-                  <span class="lpv-map"></span>
-                  <span class="lpv-ring lpv-ring-1"></span>
-                  <span class="lpv-ring lpv-ring-2"></span>
-                  <span class="lpv-pin">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                  </span>
-                  <span class="lpv-chip lpv-chip-a">
-                    <span class="lpv-dot lpv-dot-ok"></span>Clocked in
-                  </span>
-                }
-                @case ('leave') {
-                  <span class="lpv-cal">
-                    @for (d of [0,1,2,3,4,5,6,7,8,9,10,11]; track d) {
-                      <span class="lpv-cal-cell" [class.active]="d === 5" [style.--ci]="d"></span>
-                    }
-                  </span>
-                  <span class="lpv-pin lpv-pin-static">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12v9"/><path d="M3 12a9 5 0 0 1 18 0z"/><path d="M12 12c0-4 2-7 5-8"/></svg>
-                  </span>
-                  <span class="lpv-chip lpv-chip-b">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                    Approved
-                  </span>
-                }
-                @case ('directory') {
-                  <span class="lpv-net" aria-hidden="true">
-                    <svg viewBox="0 0 120 76" width="100%" height="100%" fill="none">
-                      <line x1="60" y1="38" x2="24" y2="16" stroke="currentColor" stroke-width="1.4" stroke-opacity=".35"/>
-                      <line x1="60" y1="38" x2="96" y2="16" stroke="currentColor" stroke-width="1.4" stroke-opacity=".35"/>
-                      <line x1="60" y1="38" x2="24" y2="60" stroke="currentColor" stroke-width="1.4" stroke-opacity=".35"/>
-                      <line x1="60" y1="38" x2="96" y2="60" stroke="currentColor" stroke-width="1.4" stroke-opacity=".35"/>
-                    </svg>
-                  </span>
-                  <span class="lpv-av lpv-av-c">HQ</span>
-                  <span class="lpv-av lpv-av-1">AK</span>
-                  <span class="lpv-av lpv-av-2">MP</span>
-                  <span class="lpv-av lpv-av-3">RS</span>
-                  <span class="lpv-av lpv-av-4">DV</span>
-                }
-                @case ('dashboard') {
-                  <span class="lpv-bars">
-                    @for (h of [46,72,58,88,64]; track $index) {
-                      <span class="lpv-bar" [style.--bh.%]="h" [style.--bi]="$index"></span>
-                    }
-                  </span>
-                  <span class="lpv-donut"></span>
-                }
-                @case ('offices') {
-                  <span class="lpv-map lpv-map-dots"></span>
-                  <span class="lpv-pin lpv-pin-sm lpv-pin-p1">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7z"/></svg>
-                  </span>
-                  <span class="lpv-pin lpv-pin-sm lpv-pin-p2">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7z"/></svg>
-                  </span>
-                  <span class="lpv-pin lpv-pin-sm lpv-pin-p3">
-                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7z"/></svg>
-                  </span>
-                }
-                @case ('notifications') {
-                  <span class="lpv-ring lpv-ring-1"></span>
-                  <span class="lpv-pin">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 2 8 2 8H4s2-1 2-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
-                  </span>
-                  <span class="lpv-chip lpv-chip-a lpv-chip-stack1">New request</span>
-                  <span class="lpv-chip lpv-chip-b lpv-chip-stack2">Anniversary 🎉</span>
-                }
-              }
+              <span class="lp-feature-icon-ring"></span>
+              <span class="lp-feature-icon-ring lp-feature-icon-ring--2"></span>
+              <span class="lp-feature-icon-float">
+                <span class="lp-feature-icon-tile">
+                  <ui-icon [name]="f.icon" [size]="30" [strokeWidth]="1.8"></ui-icon>
+                </span>
+              </span>
             </div>
 
             <div class="lp-feature-body">

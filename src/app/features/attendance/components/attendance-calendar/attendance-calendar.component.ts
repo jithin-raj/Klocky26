@@ -5,8 +5,6 @@ import {
   signal,
   Input,
   HostListener,
-  ElementRef,
-  AfterViewInit,
   OnDestroy,
   inject,
   effect,
@@ -19,6 +17,7 @@ import { RealtimeService } from '../../../../core/services/realtime.service';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { MarkPresentDialogService } from '../../../../shared/components/mark-present-dialog/mark-present-dialog.service';
 import { RegularisationDialogService } from '../../../../shared/components/regularisation-dialog/regularisation-dialog.service';
+import { UiIconComponent, UiIconName, CountUpDirective } from '../../../../shared/components';
 import {
   AttendanceRecordResponse,
   CalendarDayStatus,
@@ -110,6 +109,20 @@ export const STATUS_META: Record<
   overtime: { label: 'Overtime', color: '#0D9488', bg: '#ccfbf1' },
 };
 
+/** Icon shown on each status chip in the Time Overview panel — reuses the
+ *  app-wide UiIcon set so the overview matches the icon language used
+ *  everywhere else (dashboards, landing page) instead of ad-hoc glyphs. */
+const CHIP_ICONS: Record<AttendanceStatus, UiIconName> = {
+  present:  'check-circle',
+  half:     'clock',
+  absent:   'x',
+  leave:    'tree',
+  comp_off: 'repeat',
+  holiday:  'award',
+  off:      'calendar',
+  overtime: 'sparkles',
+};
+
 /** Legend-only entry for future/scheduled days — not a real AttendanceStatus
  *  (those cells carry `status: null` + `isFuture: true`), but the calendar
  *  renders them in a distinct indigo style, so the legend should explain it. */
@@ -128,12 +141,12 @@ const REQUIRED_HOURS: Partial<Record<AttendanceStatus, number>> = {
 @Component({
   selector: 'app-attendance-calendar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, UiIconComponent, CountUpDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './attendance-calendar.component.html',
   styleUrl: './attendance-calendar.component.scss',
 })
-export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
+export class AttendanceCalendarComponent implements OnDestroy {
 
   // ── Inputs ────────────────────────────────────────────────────────────────
 
@@ -155,7 +168,7 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   @Input() set userId(val: string | undefined) { this._userId.set(val); }
   private readonly _userId = signal<string | undefined>(undefined);
 
-  constructor(private _el: ElementRef<HTMLElement>) {
+  constructor() {
     // Fetch whenever the visible month or the targeted user changes.
     effect(() => {
       const { year, month } = this._ym();
@@ -168,18 +181,9 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
       .subscribe((rec) => this._applyLiveRecord(rec));
   }
 
-  ngAfterViewInit(): void {
-    // Register as non-passive so preventDefault() can block the page scroll
-    this._el.nativeElement.addEventListener('wheel', this._wheelHandler, { passive: false });
-  }
-
   ngOnDestroy(): void {
-    this._el.nativeElement.removeEventListener('wheel', this._wheelHandler);
     this._liveSub?.unsubscribe();
-    if (this._wheelAccumTimer) clearTimeout(this._wheelAccumTimer);
   }
-
-  private readonly _wheelHandler = (e: WheelEvent): void => this.onWheel(e);
 
   @Input() set records(val: AttendanceRecord[]) {
     this._recordMap.set(this._toMap(val));
@@ -342,11 +346,14 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
   /** The cell shown in the day-detail modal (null = modal closed) */
   readonly selectedCell = signal<DayCell | null>(null);
 
-  /** Controls the summary accordion open/closed state */
-  summaryOpen = signal(false);
-
   /** 'calendar' | 'list' */
   viewMode = signal<'calendar' | 'list'>('calendar');
+
+  /** Time Overview panel — collapsed by default, expand/collapse on demand. */
+  overviewOpen = signal(false);
+  toggleOverview(): void {
+    this.overviewOpen.update(v => !v);
+  }
 
   // ── Computed ──────────────────────────────────────────────────────────────
 
@@ -464,6 +471,48 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
     };
   });
 
+  /** Presence rate so far this cycle — present days full credit, half-days half
+   *  credit, out of every day attendance was actually required (present + half
+   *  + absent). Leave/holiday/comp-off don't count against it either way. */
+  readonly attendanceRatePct = computed(() => {
+    const chips = this.summaryChips();
+    const countOf = (k: AttendanceStatus) => chips.find(c => c.key === k)?.count ?? 0;
+    const present = countOf('present');
+    const half = countOf('half');
+    const absent = countOf('absent');
+    const total = present + half + absent;
+    if (total === 0) return 0;
+    return Math.round(((present + half * 0.5) / total) * 100);
+  });
+
+  /** Icon for a status chip key in the Time Overview panel. */
+  chipIcon(key: string): UiIconName {
+    return CHIP_ICONS[key as AttendanceStatus] ?? 'calendar';
+  }
+
+  /** summaryChips() as a plain key→count map — easier to pull individual
+   *  counts from the template than searching the array each time. */
+  readonly chipCounts = computed(() => {
+    const map: Record<string, number> = {};
+    for (const c of this.summaryChips()) map[c.key] = c.count;
+    return map;
+  });
+
+  // ── Time Overview card hover-tilt (subtle 3D, desktop pointer only) ──────
+  onCardTilt(e: MouseEvent): void {
+    const card = e.currentTarget as HTMLElement;
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    card.style.setProperty('--tiltX', `${(-py * 8).toFixed(2)}deg`);
+    card.style.setProperty('--tiltY', `${(px * 8).toFixed(2)}deg`);
+  }
+  onCardTiltReset(e: MouseEvent): void {
+    const card = e.currentTarget as HTMLElement;
+    card.style.setProperty('--tiltX', '0deg');
+    card.style.setProperty('--tiltY', '0deg');
+  }
+
   readonly listRows = computed((): DayCell[] => {
     const isoDates = this._cycleDates();
     const map  = this._recordMap();
@@ -502,62 +551,12 @@ export class AttendanceCalendarComponent implements AfterViewInit, OnDestroy {
 
   // ── Month navigation ──────────────────────────────────────────────────────
 
-  toggleSummary(): void {
-    this.summaryOpen.update(v => !v);
-  }
-
   setView(mode: 'calendar' | 'list'): void {
     this.viewMode.set(mode);
   }
 
   private _touchStartX = 0;
   private _touchStartY = 0;
-  private _wheelCooldown = false;
-
-  /** Accumulated vertical wheel delta since the last pause — requires a sustained
-   *  scroll (roughly two mouse-wheel notches), not a single tick, before the month
-   *  flips. Resets after a short pause so it doesn't creep up between gestures. */
-  private _wheelAccum = 0;
-  private _wheelAccumTimer: ReturnType<typeof setTimeout> | null = null;
-  private static readonly WHEEL_THRESHOLD = 220;
-  private static readonly WHEEL_ACCUM_RESET_MS = 350;
-
-  onWheel(e: WheelEvent): void {
-    if (this._wheelCooldown) return;
-
-    const isDesktop = window.innerWidth > 600;
-
-    if (isDesktop && Math.abs(e.deltaY) >= 30 && Math.abs(e.deltaY) >= Math.abs(e.deltaX)) {
-      // Desktop / laptop: a deliberate vertical scroll (mouse wheel or trackpad
-      // up/down) over the calendar flips months instead of scrolling the page.
-      // Tiny/inertial deltas below 30 fall through untouched so the page still
-      // scrolls normally. Even a deliberate scroll only *counts* toward an
-      // accumulator — a single wheel notch no longer skips a whole month; it
-      // takes a sustained scroll (~2 notches) to actually flip.
-      e.preventDefault();
-      this._wheelAccum += e.deltaY;
-      if (this._wheelAccumTimer) clearTimeout(this._wheelAccumTimer);
-      this._wheelAccumTimer = setTimeout(() => { this._wheelAccum = 0; }, AttendanceCalendarComponent.WHEEL_ACCUM_RESET_MS);
-
-      if (Math.abs(this._wheelAccum) >= AttendanceCalendarComponent.WHEEL_THRESHOLD) {
-        const dir = this._wheelAccum;
-        this._wheelAccum = 0;
-        if (this._wheelAccumTimer) { clearTimeout(this._wheelAccumTimer); this._wheelAccumTimer = null; }
-        this._wheelCooldown = true;
-        if (dir > 0) this.nextMonth();
-        else this.prevMonth();
-        setTimeout(() => { this._wheelCooldown = false; }, 700);
-      }
-      return;
-    }
-
-    // Horizontal trackpad swipe (all screen sizes) — already a deliberate, distinct gesture
-    if (Math.abs(e.deltaX) < Math.abs(e.deltaY) * 2) return;
-    this._wheelCooldown = true;
-    if (e.deltaX > 30) this.nextMonth();
-    else if (e.deltaX < -30) this.prevMonth();
-    setTimeout(() => { this._wheelCooldown = false; }, 600);
-  }
 
   onTouchStart(e: TouchEvent): void {
     this._touchStartX = e.touches[0].clientX;
