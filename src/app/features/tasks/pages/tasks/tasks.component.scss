@@ -1,164 +1,336 @@
-:host{display:block}
-.tk-page{padding:24px 28px 48px;max-width:1440px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-
-// ── Approvals Inbox ───────────────────────────────────────────────────────────
-.tk-inbox{background:#fff;border:1.5px solid #e5e7eb;border-radius:16px;overflow:hidden}
-
-.tk-inbox__head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f1f5f9}
-
-.tk-inbox__title{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:700;color:#1e293b}
-
-.tk-inbox__badge{background:var(--accent,#6366f1);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;min-width:20px;text-align:center}
-
-.tk-inbox__empty{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:32px 20px;font-size:13.5px;color:#94a3b8;text-align:center}
-.tk-inbox__empty-icon{color:#cbd5e1}
-.tk-inbox__empty--error .tk-inbox__empty-icon{color:#ef4444}
-.tk-inbox__error-detail{font-size:12px;color:#dc2626;font-family:monospace;max-width:480px;word-break:break-word}
-
-.tk-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;
-  &--leave{background:rgba(99,102,241,.12);color:#6366f1}
-  &--attendance{background:rgba(245,158,11,.12);color:#b45309}
-  &--compoff{background:rgba(34,197,94,.12);color:#15803d}
+/* ═══════════════════════════════════════════════════════════
+   Tasks — modern, animated
+═══════════════════════════════════════════════════════════ */
+:host {
+  display: block;
+  --pri: #6366f1;
+  --pri-d: #4f46e5;
+  --ink: #0f172a;
+  --slate: #64748b;
+  --slate-2: #94a3b8;
+  --line: #eef1f8;
+  --card: #ffffff;
+  --radius: 18px;
 }
 
-.tk-status-badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:capitalize;background:#fef3c7;color:#92400e}
+.tk-page {
+  padding: 22px 24px 48px;
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
 
-.tk-action-btn{
-  display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;
-  font-size:12.5px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s;white-space:nowrap;
-  &:disabled{opacity:.5;cursor:not-allowed}
-  &--view{
-    background:#f8fafc;color:#475569;border-color:#e5e7eb;
-    &:hover{background:#f1f5f9;border-color:#cbd5e1}
+/* Mount animation (staggered).
+   NOTE: deliberately animates `margin-top`, not `transform`. These wrappers
+   contain <ui-select> (and the "New" split-button), whose dropdown panels are
+   position:fixed/absolute with JS-computed viewport coordinates. Per the CSS
+   spec, ANY ancestor with an active transform becomes the containing block
+   for fixed/absolute descendants — so while a transform-based entrance
+   animation was running, every dropdown inside it opened at the wrong
+   position (relative to the animating wrapper instead of the viewport). */
+.tk-mount {
+  opacity: 0;
+  animation: tk-in .55s cubic-bezier(.16,1,.3,1) forwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes tk-in { from { opacity: 0; margin-top: 14px; } to { opacity: 1; margin-top: 0; } }
+
+/* ── Banner ──────────────────────────────────────────────── */
+/* NOTE: the banner itself must NOT clip overflow — the "New" dropdown is an
+   absolutely-positioned descendant that needs to render outside the banner's
+   box. Only the decorative background (.tk-banner-bg) is clipped, via its own
+   inset wrapper with `border-radius: inherit`, so the rounded corners still
+   contain the blurred orbs/grid without cutting off the dropdown menu. */
+.tk-banner {
+  position: relative; border-radius: 22px;
+  padding: 26px 28px;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #8b5cf6 100%);
+  color: #fff; box-shadow: 0 18px 40px -18px rgba(79,70,229,.5);
+}
+.tk-banner-bg {
+  position: absolute; inset: 0; overflow: hidden; border-radius: inherit;
+  pointer-events: none; z-index: 0;
+}
+.tk-banner-orb { position: absolute; border-radius: 50%; filter: blur(46px); pointer-events: none; }
+.tk-banner-orb--1 { width: 320px; height: 320px; top: -140px; right: -60px; background: radial-gradient(circle, rgba(255,255,255,.2), transparent 70%); animation: tk-drift 15s ease-in-out infinite; }
+.tk-banner-orb--2 { width: 260px; height: 260px; bottom: -140px; left: 20%; background: radial-gradient(circle, rgba(168,85,247,.4), transparent 70%); animation: tk-drift 19s ease-in-out infinite reverse; }
+@keyframes tk-drift { 0%,100% { transform: translate(0,0); } 50% { transform: translate(26px,-18px); } }
+.tk-banner-grid {
+  position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 80% at 20% 20%, #000, transparent 75%);
+          mask-image: radial-gradient(ellipse 70% 80% at 20% 20%, #000, transparent 75%);
+}
+.tk-banner-content { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.tk-banner-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: rgba(255,255,255,.78); margin: 0 0 8px; }
+.tk-banner-text h1 { font-size: clamp(19px, 2.4vw, 25px); font-weight: 800; letter-spacing: -.4px; margin: 0; }
+.tk-banner-sub { font-size: 13.5px; color: rgba(255,255,255,.78); margin: 6px 0 0; font-weight: 500; }
+.tk-banner-side { display: flex; align-items: center; gap: 14px; }
+.tk-banner-stat {
+  display: flex; flex-direction: column; align-items: center; min-width: 68px;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2);
+  padding: 8px 14px; border-radius: 14px; backdrop-filter: blur(6px);
+}
+.tk-banner-stat-val { font-size: 21px; font-weight: 800; letter-spacing: -.5px; line-height: 1.1; }
+.tk-banner-stat-lbl { font-size: 10.5px; color: rgba(255,255,255,.72); font-weight: 600; }
+
+/* ── Tabs ────────────────────────────────────────────────── */
+.tk-tabs {
+  display: flex; gap: 4px; background: #fff; border: 1px solid var(--line);
+  border-radius: 14px; padding: 5px; width: fit-content;
+  box-shadow: 0 4px 14px rgba(15,23,42,.04);
+}
+.tk-tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; font-size: 13.5px; font-weight: 650; color: var(--slate);
+  background: none; border: none; border-radius: 10px; cursor: pointer;
+  transition: color .15s, background .15s;
+  &:hover { color: var(--ink); background: #f8fafc; }
+  &--active { color: #fff; background: linear-gradient(135deg, var(--pri-d), var(--pri)); box-shadow: 0 6px 16px -4px rgba(99,102,241,.5); }
+}
+.tk-tab-count {
+  font-size: 10.5px; font-weight: 800; background: rgba(255,255,255,.28); color: #fff;
+  padding: 1px 7px; border-radius: 20px; min-width: 18px; text-align: center;
+}
+.tk-tab:not(.tk-tab--active) .tk-tab-count { background: #ef4444; color: #fff; }
+
+/* ── Approvals Inbox ─────────────────────────────────────── */
+.tk-inbox { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: 0 6px 20px rgba(15,23,42,.05); }
+.tk-inbox__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.tk-inbox__title { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.tk-inbox__ico { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; color: var(--pri); background: #eef2ff; }
+.tk-inbox__badge { background: linear-gradient(135deg, var(--pri-d), var(--pri)); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 20px; min-width: 20px; text-align: center; }
+
+.tk-inbox__empty { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; padding: 44px 20px; font-size: 13.5px; color: var(--slate-2); text-align: center; }
+.tk-empty-ico { display: inline-flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 16px; color: var(--slate-2); background: #f1f5f9; }
+.tk-empty-ico--ok { color: #16a34a; background: #dcfce7; }
+.tk-empty-ico--error { color: #ef4444; background: #fee2e2; }
+.tk-inbox__error-detail { font-size: 12px; color: #dc2626; font-family: monospace; max-width: 480px; word-break: break-word; }
+
+/* Skeleton loading */
+.tk-skeleton-list { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; }
+.tk-skel-row { height: 44px; border-radius: 10px; background: linear-gradient(90deg, #f1f5f9 25%, #e8edf5 37%, #f1f5f9 63%); background-size: 400% 100%; animation: tk-shimmer 1.4s ease infinite; }
+@keyframes tk-shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+.tk-badge {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap;
+  &--leave { background: #eef2ff; color: var(--pri-d); }
+  &--attendance { background: #fef3c7; color: #b45309; }
+  &--compoff { background: #dcfce7; color: #15803d; }
+}
+.tk-status-badge {
+  display: inline-flex; align-items: center; padding: 3px 11px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: capitalize;
+  &--pending { background: #fef3c7; color: #92400e; }
+}
+
+.tk-action-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 8px;
+  font-size: 12.5px; font-weight: 650; cursor: pointer; border: 1.5px solid transparent; transition: all .15s; white-space: nowrap;
+  &:disabled { opacity: .5; cursor: not-allowed; }
+  &--view { background: #f8fafc; color: #475569; border-color: var(--line); &:hover { background: #f1f5f9; border-color: #cbd5e1; } }
+  &--approve { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; &:not(:disabled):hover { background: #dcfce7; border-color: #86efac; } }
+  &--reject { background: #fef2f2; color: #dc2626; border-color: #fecaca; &:not(:disabled):hover { background: #fee2e2; border-color: #fca5a5; } }
+}
+
+/* ── Spinner (used on any button mid-network-call) ──────────── */
+.tk-spinner {
+  display: inline-block; width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid rgba(0,0,0,.15); border-top-color: currentColor;
+  animation: tk-spin .65s linear infinite;
+}
+.tk-btn .tk-spinner { border-color: rgba(255,255,255,.35); border-top-color: #fff; }
+@keyframes tk-spin { to { transform: rotate(360deg); } }
+
+/* ── Pending approvals — row-card list ──────────────────────── */
+.tk-list { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px; }
+.tk-row-card {
+  position: relative; overflow: hidden; cursor: pointer;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px 14px 20px; border-radius: 14px;
+  background: #fafbff; border: 1.5px solid var(--line);
+  opacity: 0; animation: tk-row-in .4s cubic-bezier(.16,1,.3,1) forwards; animation-delay: calc(var(--i, 0) * 55ms);
+  transition: box-shadow .18s, border-color .18s, transform .18s;
+  &:hover { box-shadow: 0 10px 26px -10px rgba(15,23,42,.18); border-color: #dde3f0; transform: translateY(-1px); }
+  &:hover .tk-row-chevron { color: var(--pri); transform: translateX(2px); }
+  &:focus-visible { outline: 2px solid var(--pri); outline-offset: 2px; }
+  &--busy { opacity: .7 !important; pointer-events: none; }
+}
+.tk-row-chevron {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--slate-2); transition: color .18s, transform .18s;
+}
+@keyframes tk-row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.tk-row-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--tc, var(--pri)); }
+.tk-row-avatar {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 12px; font-size: 14px; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, var(--tc, var(--pri-d)), color-mix(in srgb, var(--tc, var(--pri)) 65%, #fff));
+  text-transform: uppercase;
+}
+.tk-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tk-row-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tk-row-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+.tk-row-sub { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--slate); overflow: hidden; }
+.tk-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tk-row-dot { color: var(--slate-2); flex-shrink: 0; }
+.tk-row-date { flex-shrink: 0; color: var(--slate-2); font-weight: 600; }
+.tk-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.tk-row-actions--card { flex-shrink: 0; }
+.tk-action-label { display: inline; }
+
+/* ── Pagination ──────────────────────────────────────────── */
+.tk-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 4px 20px 16px; }
+.tk-pagination__info { font-size: 12.5px; color: var(--slate); font-weight: 650; }
+.tk-pagination__btns { display: flex; gap: 8px; }
+.tk-page-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 15px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff;
+  color: #374151; font-size: 12.5px; font-weight: 650; cursor: pointer; transition: background .15s, border-color .15s;
+  &:hover:not(:disabled) { background: #f8fafc; border-color: #cbd5e1; }
+  &:disabled { opacity: .45; cursor: not-allowed; }
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.tk-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 17px; border-radius: 10px;
+  font-size: 13.5px; font-weight: 650; cursor: pointer; border: 1.5px solid transparent; transition: all .15s; font-family: inherit;
+  &--primary {
+    background: linear-gradient(135deg, var(--pri-d), var(--pri)); color: #fff;
+    box-shadow: 0 6px 16px -4px rgba(99,102,241,.5);
+    &:hover:not(:disabled) { box-shadow: 0 10px 22px -4px rgba(99,102,241,.6); transform: translateY(-1px); }
+    &:disabled { opacity: .6; cursor: not-allowed; }
   }
-  &--approve{
-    background:rgba(34,197,94,.1);color:#15803d;border-color:rgba(34,197,94,.25);
-    &:not(:disabled):hover{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.4)}
+  &--lg { padding: 11px 20px; font-size: 14px; }
+  &--ghost { background: #fff; color: #374151; border-color: var(--line); &:hover:not(:disabled) { background: #f9fafb; border-color: #cbd5e1; } }
+  &--danger {
+    background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff;
+    box-shadow: 0 6px 16px -4px rgba(239,68,68,.5);
+    &:hover:not(:disabled) { filter: brightness(1.05); }
+    &:disabled { opacity: .6; cursor: not-allowed; }
   }
-  &--reject{
-    background:rgba(239,68,68,.08);color:#dc2626;border-color:rgba(239,68,68,.2);
-    &:not(:disabled):hover{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35)}
-  }
+  &--sm { padding: 6px 12px; font-size: 12.5px; }
 }
 
-// ── Pending table ─────────────────────────────────────────────────────────────
-.tk-table-wrap{overflow-x:auto}
-.tk-table{
-  width:100%;border-collapse:collapse;font-size:13.5px;
-  th{text-align:left;padding:10px 18px;font-weight:700;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.02em;border-bottom:1px solid #f1f5f9;white-space:nowrap}
-  td{padding:12px 18px;border-bottom:1px solid #f8fafc;color:#1e293b;vertical-align:middle}
-  tbody tr:last-child td{border-bottom:none}
-  tbody tr:hover td{background:#fafbff}
+/* ── No-access ───────────────────────────────────────────── */
+.tk-noaccess { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 64px 24px; text-align: center; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+.tk-noaccess__title { margin: 0; font-size: 14.5px; font-weight: 700; color: var(--ink); }
+.tk-noaccess__sub { margin: 0; font-size: 13px; color: var(--slate); max-width: 420px; line-height: 1.55; }
+
+/* ── Modals ──────────────────────────────────────────────── */
+.tk-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(3px);
+  z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: tk-fade .18s ease;
 }
-.tk-row--busy{opacity:.6;pointer-events:none}
-.tk-col-sl{width:40px;color:#94a3b8;font-weight:600}
-.tk-col-actions{white-space:nowrap}
-.tk-row-actions{display:flex;gap:6px;flex-wrap:wrap}
-
-// ── Header ────────────────────────────────────────────────────────────────────
-.tk-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-  h1{margin:0 0 4px;font-size:22px;font-weight:750;color:#0f172a}p{margin:0;font-size:13.5px;color:#64748b}}
-
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-.tk-tabs{display:flex;gap:4px;border-bottom:1.5px solid #e5e7eb}
-.tk-tab{
-  padding:9px 16px;font-size:13.5px;font-weight:600;color:#64748b;background:none;border:none;
-  border-bottom:2px solid transparent;cursor:pointer;transition:color .15s,border-color .15s;margin-bottom:-1.5px;
-  &:hover{color:#374151}
-  &--active{color:var(--accent,#6366f1);border-bottom-color:var(--accent,#6366f1)}
+@keyframes tk-fade { from { opacity: 0; } to { opacity: 1; } }
+/* NOTE: animates margin-top, not transform — these modals contain <ui-select>
+   / <ui-datepicker>, whose popovers are position:fixed with JS-computed
+   coordinates. A transform on .tk-modal (which also clips via overflow:hidden)
+   would both mis-position AND clip those popovers for the animation's
+   duration — same class of bug as the .tk-mount fix above. */
+.tk-modal {
+  background: #fff; border-radius: 20px; width: 100%; max-width: 500px;
+  box-shadow: 0 30px 60px -12px rgba(15,23,42,.3); overflow: hidden;
+  animation: tk-pop .22s cubic-bezier(.16,1,.3,1);
+  &--sm { max-width: 420px; }
 }
-
-// ── Buttons ───────────────────────────────────────────────────────────────────
-.tk-btn{
-  display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:background .15s;
-  &--primary{background:var(--accent,#6366f1);color:#fff;&:hover:not(:disabled){filter:brightness(.9)}&:disabled{opacity:.6;cursor:not-allowed}}
-  &--ghost{background:#fff;color:#374151;border-color:#e5e7eb;&:hover:not(:disabled){background:#f9fafb}}
-  &--danger{background:#ef4444;color:#fff;&:hover:not(:disabled){background:#dc2626}&:disabled{opacity:.6;cursor:not-allowed}}
-  &--sm{padding:6px 12px;font-size:12.5px}
+@keyframes tk-pop { from { opacity: 0; margin-top: 14px; } to { opacity: 1; margin-top: 0; } }
+.tk-modal__head {
+  display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line);
+  h3 { margin: 0; font-size: 16px; font-weight: 750; color: var(--ink); letter-spacing: -.2px; }
+  button { flex-shrink: 0; margin-left: auto; background: none; border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: var(--slate-2); transition: background .12s, color .12s; &:hover { background: #f1f5f9; color: #334155; } }
 }
-
-// ── No-access empty state ───────────────────────────────────────────────────
-.tk-noaccess{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-  padding:60px 24px;text-align:center;background:#fff;border:1.5px solid #e5e7eb;border-radius:16px;
+.tk-modal__head-text { min-width: 0; }
+.tk-modal__ico {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  background: linear-gradient(135deg, var(--mc, var(--pri-d)), color-mix(in srgb, var(--mc, var(--pri)) 70%, #fff));
+  box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--mc, var(--pri)) 55%, transparent);
+  &--danger { --mc: #ef4444; }
 }
-.tk-noaccess__icon{color:#cbd5e1}
-.tk-noaccess__title{margin:0;font-size:14.5px;font-weight:700;color:#1e293b}
-.tk-noaccess__sub{margin:0;font-size:13px;color:#64748b;max-width:420px;line-height:1.5}
+.tk-modal__body { padding: 20px; display: flex; flex-direction: column; gap: 14px; max-height: 65vh; overflow-y: auto; }
+.tk-modal__foot { display: flex; gap: 10px; padding: 16px 20px; border-top: 1px solid var(--line); justify-content: flex-end; }
+.tk-field { display: flex; flex-direction: column; gap: 6px; label { font-size: 12.5px; font-weight: 650; color: #334155; } }
+.tk-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.tk-checkbox { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 650; color: #334155; cursor: pointer;
+  input { position: absolute; opacity: 0; width: 0; height: 0; } }
+.tk-checkbox-box {
+  width: 19px; height: 19px; border-radius: 6px; border: 1.5px solid #cbd5e1; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; color: transparent; transition: all .15s;
+}
+.tk-checkbox input:checked + .tk-checkbox-box { background: linear-gradient(135deg, var(--pri-d), var(--pri)); border-color: var(--pri); color: #fff; }
+.tk-textarea { width: 100%; padding: 10px 13px; border: 1.5px solid var(--line); border-radius: 10px; font-size: 13.5px; color: var(--ink); resize: none; outline: none; box-sizing: border-box; font-family: inherit; transition: border-color .15s, box-shadow .15s;
+  &:focus { border-color: var(--pri); box-shadow: 0 0 0 3px rgba(99,102,241,.12); } }
+.tk-reject-info { margin: 0; font-size: 13.5px; color: #475569; line-height: 1.55; }
+.tk-required { color: #ef4444; }
 
-// ── Modals ────────────────────────────────────────────────────────────────────
-.tk-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
-.tk-modal{background:#fff;border-radius:16px;width:100%;max-width:500px;box-shadow:0 20px 50px rgba(0,0,0,.15);overflow:hidden;&--sm{max-width:420px}}
-.tk-modal__head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #f1f5f9;
-  h3{margin:0;font-size:16px;font-weight:700;color:#0f172a}
-  button{background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;&:hover{color:#374151}}}
-.tk-modal__body{padding:20px;display:flex;flex-direction:column;gap:14px}
-.tk-modal__foot{display:flex;gap:10px;padding:16px 20px;border-top:1px solid #f1f5f9;justify-content:flex-end}
-.tk-field{display:flex;flex-direction:column;gap:5px;label{font-size:12.5px;font-weight:600;color:#374151}}
-.tk-field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.tk-checkbox{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#374151;cursor:pointer}
-.tk-textarea{width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:13.5px;color:#1e293b;resize:none;outline:none;box-sizing:border-box;font-family:inherit;&:focus{border-color:var(--accent,#6366f1)}}
-.tk-reject-info{margin:0;font-size:13.5px;color:#475569;line-height:1.5}
-.tk-required{color:#ef4444}
-
-// ── "New" split-button ────────────────────────────────────────────────────────
-.tk-new-wrap{position:relative}
-.tk-new-backdrop{position:fixed;inset:0;z-index:999}
-.tk-new-menu{
-  position:absolute;top:calc(100% + 6px);right:0;z-index:1000;min-width:190px;
-  background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;box-shadow:0 12px 32px -8px rgba(15,23,42,.18);
-  padding:6px;display:flex;flex-direction:column;gap:2px;
-  button{
-    display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;border:none;background:none;
-    font-size:13px;font-weight:600;color:#334155;cursor:pointer;text-align:left;transition:background .12s;
-    &:hover{background:#f1f5f9}
-    ui-icon{color:#6366f1;flex-shrink:0}
+/* ── "New" split-button ──────────────────────────────────── */
+.tk-new-wrap { position: relative; }
+.tk-new-chevron { transition: transform .2s; &.open { transform: rotate(180deg); } }
+.tk-new-backdrop { position: fixed; inset: 0; z-index: 999; }
+.tk-new-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 1000;
+  width: max-content; min-width: 260px; max-width: min(300px, calc(100vw - 32px));
+  background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 20px 48px -12px rgba(15,23,42,.28);
+  padding: 7px; display: flex; flex-direction: column; gap: 2px;
+  animation: tk-menu-in .16s cubic-bezier(.16,1,.3,1);
+  button {
+    display: flex; align-items: center; gap: 11px; padding: 11px 10px; border-radius: 11px; border: none; background: none;
+    cursor: pointer; text-align: left; transition: background .12s;
+    &:hover { background: #f8fafc; }
+    &:active { background: #f1f5f9; }
   }
 }
+@keyframes tk-menu-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+.tk-new-ico {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; color: var(--nc);
+  background: color-mix(in srgb, var(--nc) 13%, #fff);
+}
+.tk-new-text { display: flex; flex-direction: column; gap: 1px; min-width: 0;
+  span { font-size: 13px; font-weight: 650; color: var(--ink); }
+  small { font-size: 11px; color: var(--slate-2); } }
 
-// ── Detail rows (view modal) ───────────────────────────────────────────────────
-.tk-detail-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;font-size:13px;
-  &:not(:last-child){padding-bottom:12px;border-bottom:1px solid #f8fafc}}
-.tk-detail-label{color:#94a3b8;font-weight:600;flex-shrink:0}
-.tk-detail-value{color:#1e293b;font-weight:500;text-align:right}
+/* ── Detail rows (view modal) ────────────────────────────── */
+.tk-detail-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; font-size: 13px;
+  &:not(:last-child) { padding-bottom: 12px; border-bottom: 1px solid #f8fafc; } }
+.tk-detail-label { color: var(--slate-2); font-weight: 650; flex-shrink: 0; }
+.tk-detail-value { color: var(--ink); font-weight: 550; text-align: right; }
 
-// ── Responsive ────────────────────────────────────────────────────────────────
-@media(max-width:900px){
-  .tk-page{padding:16px 14px 32px}
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .tk-page { padding: 16px 14px 32px; }
+  .tk-banner { padding: 20px; }
 
-  // Collapse the pending table into stacked cards — no markup duplication,
-  // each <td> already carries a [data-label] used as its mobile row label.
-  .tk-table-wrap{overflow-x:visible}
-  .tk-table{
-    display:block;width:100%;
-    thead{display:none}
-    tbody{display:flex;flex-direction:column;gap:10px}
-    tr{
-      display:flex;flex-direction:column;gap:8px;
-      border:1.5px solid #e5e7eb;border-radius:12px;padding:12px 14px;
-    }
-    tbody tr:last-child td{border-bottom:none}
-    tbody tr:hover td{background:none}
-    td{
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:0;border-bottom:none;text-align:right;
-      &::before{content:attr(data-label);font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.02em;text-align:left}
-    }
-    .tk-col-sl{display:none}
-    .tk-col-actions{
-      flex-direction:column;align-items:stretch;padding-top:8px;border-top:1px solid #f8fafc;
-      &::before{display:none}
-    }
-    .tk-row-actions{justify-content:flex-end}
-  }
+  .tk-list { padding: 12px; }
+  .tk-row-card { flex-wrap: wrap; padding: 14px 16px; }
+  .tk-row-avatar { order: 0; }
+  .tk-row-main { flex-basis: 100%; order: 1; }
+  .tk-row-actions--card { flex-basis: 100%; order: 2; justify-content: flex-end; padding-top: 4px; }
+  .tk-action-label { display: inline; }
+  /* Wrapped layout has no single trailing edge for the "tap for details"
+     chevron to sit against — the whole card (and its full-width action row)
+     already make that obvious on touch, so drop it rather than mis-place it. */
+  .tk-row-chevron { display: none; }
 }
 
-@media(max-width:480px){
-  .tk-header{
-    h1{font-size:19px}
-    .tk-btn--primary{width:100%;justify-content:center}
-  }
-  .tk-tabs{overflow-x:auto}
-  .tk-detail-row{flex-direction:column;gap:4px}
-  .tk-detail-value{text-align:left}
+@media (max-width: 480px) {
+  .tk-banner-content { flex-direction: column; align-items: stretch; }
+  .tk-banner-side { justify-content: space-between; }
+  .tk-tabs { width: 100%; overflow-x: auto; }
+  .tk-detail-row { flex-direction: column; gap: 4px; }
+  .tk-detail-value { text-align: left; }
+  .tk-pagination { justify-content: center; text-align: center; }
+  .tk-pagination__btns { width: 100%; }
+  .tk-page-btn { flex: 1; justify-content: center; }
+  .tk-row-chevron { display: none; }
+  .tk-new-menu { min-width: 0; width: calc(100vw - 32px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tk-mount, .tk-row-card { animation: none; opacity: 1; }
+  .tk-banner-orb, .tk-skel-row, .tk-spinner { animation: none !important; }
 }

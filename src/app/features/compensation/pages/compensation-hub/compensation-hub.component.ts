@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy, signal, computed, inject, OnInit } from '@angular/core';
+import { Observable } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PayrollService } from '../../../../core/services/payroll.service';
@@ -7,17 +8,21 @@ import { EmployeeService } from '../../../../core/services/employee.service';
 import { PermissionService } from '../../../../core/services/permission.service';
 import { OrgNavigationService } from '../../../../core/services/org-navigation.service';
 import { ToastService } from '../../../../shared/components/ui-toast/toast.service';
-import {
-  UiSelectComponent, UiInputComponent, UiToggleComponent,
-  UiDataGridComponent, GridColumn, GridAction,
-  UiFormModalComponent, UiFormGridComponent, UiFormFieldComponent,
-  UiPaginationComponent, SelectOption,
-} from '../../../../shared/components';
+import { UiSelectComponent, SelectOption } from '../../../../shared/components/ui-select/ui-select.component';
+import { UiInputComponent } from '../../../../shared/components/ui-input/ui-input.component';
+import { UiToggleComponent } from '../../../../shared/components/ui-toggle/ui-toggle.component';
+import { UiDataGridComponent, GridColumn, GridAction } from '../../../../shared/components/ui-data-grid/ui-data-grid.component';
+import { UiFormModalComponent } from '../../../../shared/components/ui-form/ui-form-modal.component';
+import { UiFormGridComponent, UiFormFieldComponent } from '../../../../shared/components/ui-form/ui-form-layout.components';
+import { UiPaginationComponent } from '../../../../shared/components/ui-pagination/ui-pagination.component';
 import {
   PayrollSettingsDto, PayGradeDto, PayGradeUpsertRequest, BonusDto, PayslipDto, PayslipRunResult,
+  PayFrequency, WeeklyPayslipRunResult,
 } from '../../../../core/models/payroll.model';
 import { EmployeeResponse } from '../../../employees/models/employee-api.model';
 import { isValidName, NAME_VALIDATION_MESSAGE } from '../../../../core/utils/name-validation.util';
+import { triggerBlobDownload } from '../../../../core/utils/file-download.util';
+import { PayslipTemplateBuilderComponent } from '../../components/payslip-template-builder/payslip-template-builder.component';
 
 const AVATAR_COLORS = ['#6366f1','#ec4899','#f59e0b','#22c55e','#14b8a6','#8b5cf6','#ef4444','#0ea5e9'];
 function initialsOf(name: string): string {
@@ -30,7 +35,7 @@ function colorFor(seed: string): string {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
-type Tab = 'settings' | 'grades' | 'employees' | 'bonuses' | 'payslips';
+type Tab = 'settings' | 'grades' | 'employees' | 'bonuses' | 'payslips' | 'template';
 
 interface GradeForm {
   id: string | null;
@@ -47,6 +52,7 @@ interface BonusForm { userId: string; year: number; month: number; amount: numbe
     CommonModule, FormsModule, UiSelectComponent, UiInputComponent, UiToggleComponent,
     UiDataGridComponent, UiPaginationComponent,
     UiFormModalComponent, UiFormGridComponent, UiFormFieldComponent,
+    PayslipTemplateBuilderComponent,
   ],
   templateUrl: './compensation-hub.component.html',
   styleUrl: './compensation-hub.component.scss',
@@ -67,6 +73,7 @@ export class CompensationHubComponent implements OnInit {
     { id: 'grades',    label: 'Pay Grades' },
     { id: 'bonuses',   label: 'Bonuses' },
     { id: 'payslips',  label: 'Run Payroll' },
+    { id: 'template',  label: 'Payslip Template' },
     { id: 'settings',  label: 'Settings' },
   ];
 
@@ -152,15 +159,35 @@ export class CompensationHubComponent implements OnInit {
 
   readonly payslipColumns: GridColumn<PayslipDto>[] = [
     { key: 'employeeName', label: 'Employee', type: 'text', value: (r) => r.employeeName },
+    {
+      key: 'period', label: 'Period', type: 'text',
+      value: (r) => r.payFrequency === 'weekly' && r.weekStart && r.weekEnd
+        ? `${this.loc.formatDateOnly(r.weekStart)} – ${this.loc.formatDateOnly(r.weekEnd)}`
+        : `${this.monthNames[r.month - 1]} ${r.year}`,
+    },
+    {
+      key: 'payFrequency', label: 'Frequency', type: 'badge',
+      value: (r) => r.payFrequency === 'weekly' ? 'Weekly' : 'Monthly',
+      badgeBg: (v) => v === 'Weekly' ? '#fef3c7' : '#e0f2fe',
+      badgeColor: (v) => v === 'Weekly' ? '#92400e' : '#0369a1',
+    },
     { key: 'grossEarnings', label: 'Gross', type: 'text', value: (r) => this.num(r.grossEarnings) },
     { key: 'totalDeductions', label: 'Deductions', type: 'text', value: (r) => this.num(r.totalDeductions) },
     { key: 'netPay', label: 'Net Pay', type: 'text', value: (r) => this.num(r.netPay) },
     { key: 'days', label: 'Payable / LOP', type: 'text', value: (r) => `${r.payableDays} / ${r.lopDays}` },
     {
+      // 'draft' = generated but not yet published — invisible to the employee.
+      // Kept visually distinct (muted, not green) so an admin can't mistake a
+      // generated batch for one the employees can already see.
       key: 'status', label: 'Status', type: 'badge',
-      value: (r) => r.status,
-      badgeBg: () => '#eef2ff', badgeColor: () => '#4338ca',
+      value: (r) => r.status === 'draft' ? 'Draft' : r.status === 'paid' ? 'Paid' : 'Published',
+      badgeBg: (v) => v === 'Draft' ? '#f1f5f9' : v === 'Paid' ? '#dcfce7' : '#eef2ff',
+      badgeColor: (v) => v === 'Draft' ? '#64748b' : v === 'Paid' ? '#15803d' : '#4338ca',
     },
+  ];
+  readonly payslipActions: GridAction<PayslipDto>[] = [
+    { label: 'Publish', visible: (r) => this.canEdit() && r.status === 'draft', click: (r) => this.publishPayslip(r) },
+    { label: 'Download PDF', click: (r) => this.downloadPayslipPdf(r) },
   ];
 
   /** All the columns this feeds (CTC bands, bonus amount, payslip totals) are org-wide money. */
@@ -199,7 +226,13 @@ export class CompensationHubComponent implements OnInit {
   loadSettings(): void {
     this.loadingSettings.set(true);
     this.payrollSvc.getSettings().subscribe({
-      next: (s) => { this.settings.set(s); this.loadingSettings.set(false); },
+      next: (s) => {
+        this.settings.set(s);
+        this.loadingSettings.set(false);
+        // Seed the Run Payroll tab's frequency toggle from the org default —
+        // this always resolves before the user can reach that tab manually.
+        this.runFrequency.set(s.defaultPayFrequency);
+      },
       error: () => { this.loadingSettings.set(false); },
     });
   }
@@ -342,11 +375,33 @@ export class CompensationHubComponent implements OnInit {
   generating = signal(false);
   runYear = signal(this.now.getFullYear());
   runMonth = signal(this.now.getMonth() + 1);
-  lastRunResult = signal<PayslipRunResult | null>(null);
+  /** Which pay run this tab is looking at — defaults to the org's configured default once settings load (see loadSettings). */
+  runFrequency = signal<PayFrequency>('monthly');
+  /** Any date within the target week — the server snaps it to the org's weekStartDay to find the actual period. */
+  runWeekStart = signal(this.toIsoDate(this.now));
+  lastRunResult = signal<PayslipRunResult | WeeklyPayslipRunResult | null>(null);
+
+  readonly frequencyOptions: { label: string; value: PayFrequency }[] = [
+    { label: 'Monthly', value: 'monthly' },
+    { label: 'Weekly', value: 'weekly' },
+  ];
+
+  private toIsoDate(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  setRunFrequency(f: PayFrequency): void {
+    this.runFrequency.set(f);
+    this.lastRunResult.set(null);
+    this.loadPayslips();
+  }
 
   loadPayslips(): void {
     this.loadingPayslips.set(true);
-    this.payrollSvc.getPayslips(this.runYear(), this.runMonth()).subscribe({
+    const req$ = this.runFrequency() === 'weekly'
+      ? this.payrollSvc.getWeeklyPayslips(this.runYear(), this.runMonth())
+      : this.payrollSvc.getPayslips(this.runYear(), this.runMonth());
+    req$.subscribe({
       next: (p) => { this.payslips.set(p); this.loadingPayslips.set(false); },
       error: () => { this.loadingPayslips.set(false); },
     });
@@ -356,7 +411,13 @@ export class CompensationHubComponent implements OnInit {
     if (this.generating()) return;
     this.generating.set(true);
     this.lastRunResult.set(null);
-    this.payrollSvc.generatePayslips({ year: this.runYear(), month: this.runMonth() }).subscribe({
+    // Explicit union annotation — without it TS infers two distinct Observable<...>
+    // arms from the ternary and can't unify their .subscribe() overloads, which
+    // surfaces as "This expression is not callable" on the line below.
+    const req$: Observable<PayslipDto | PayslipRunResult | WeeklyPayslipRunResult> = this.runFrequency() === 'weekly'
+      ? this.payrollSvc.generateWeeklyPayslips({ weekStart: this.runWeekStart() })
+      : this.payrollSvc.generatePayslips({ year: this.runYear(), month: this.runMonth() });
+    req$.subscribe({
       next: (res) => {
         this.generating.set(false);
         if ('generated' in res) {
@@ -371,6 +432,59 @@ export class CompensationHubComponent implements OnInit {
 
   totalNet(): number {
     return this.payslips().reduce((sum, p) => sum + p.netPay, 0);
+  }
+
+  /** How many rows in the currently-loaded list are still drafts — drives the bulk-publish button. */
+  readonly draftCount = computed(() => this.payslips().filter(p => p.status === 'draft').length);
+
+  publishingBulk = signal(false);
+  publishingId = signal<string | null>(null);
+
+  publishPayslip(p: PayslipDto): void {
+    if (this.publishingId()) return;
+    this.publishingId.set(p.id);
+    this.payrollSvc.publishPayslip(p.id).subscribe({
+      next: () => {
+        this.publishingId.set(null);
+        this.toast.success('Payslip published', `${p.employeeName} can now see this payslip.`);
+        this.loadPayslips();
+      },
+      error: (err) => {
+        this.publishingId.set(null);
+        this.toast.error('Could not publish', err?.error?.error ?? err?.error?.message ?? 'Please try again.');
+      },
+    });
+  }
+
+  /**
+   * The realistic flow: generate the whole org's payslips, spot-check a few,
+   * then publish the batch in one go rather than clicking Publish per row.
+   */
+  publishAllForPeriod(): void {
+    if (this.publishingBulk()) return;
+    this.publishingBulk.set(true);
+    const req$ = this.runFrequency() === 'weekly'
+      ? this.payrollSvc.publishForWeek(this.runWeekStart())
+      : this.payrollSvc.publishForMonth(this.runYear(), this.runMonth());
+    req$.subscribe({
+      next: (res) => {
+        this.publishingBulk.set(false);
+        this.toast.success('Payslips published', `${res.published} payslip(s) are now visible to employees.`);
+        this.loadPayslips();
+      },
+      error: (err) => {
+        this.publishingBulk.set(false);
+        this.toast.error('Could not publish', err?.error?.error ?? err?.error?.message ?? 'Please try again.');
+      },
+    });
+  }
+
+  downloadPayslipPdf(p: PayslipDto): void {
+    const period = p.payFrequency === 'weekly' && p.weekStart ? p.weekStart : `${p.year}-${String(p.month).padStart(2, '0')}`;
+    this.payrollSvc.downloadPayslipPdf(p.id).subscribe({
+      next: (blob) => triggerBlobDownload(blob, `payslip-${p.employeeName.replace(/\s+/g, '-')}-${period}.pdf`),
+      error: () => this.toast.error('Could not download', 'Please try again.'),
+    });
   }
 
   readonly monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];

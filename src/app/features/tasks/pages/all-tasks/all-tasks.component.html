@@ -1,32 +1,53 @@
 <div class="at-page">
 
-  <!-- Category filter chips -->
-  <div class="at-chips">
-    @for (c of categories; track c.value) {
-      <button class="at-chip" [class.at-chip--active]="category() === c.value" (click)="selectCategory(c.value)">
-        {{ c.label }}
-      </button>
-    }
+  <!-- Category filter -->
+  <div class="at-filter-bar">
+    <span class="at-filter-label">
+      <ui-icon name="layers" [size]="13"></ui-icon>
+      Category
+    </span>
+    <div class="at-chips">
+      @for (c of categories; track c.value) {
+        <button class="at-chip" [class.at-chip--active]="category() === c.value" (click)="selectCategory(c.value)">
+          <ui-icon [name]="c.icon" [size]="13"></ui-icon>
+          {{ c.label }}
+        </button>
+      }
+    </div>
   </div>
 
   @if (loading() && !pendingApprovals().length && !workTasks().length && !historyItems().length) {
-    <div class="at-empty">Loading…</div>
+    <div class="at-skeleton">
+      @for (i of [1,2,3]; track i) { <span class="at-skel-row"></span> }
+    </div>
   } @else if (error()) {
-    <div class="at-empty at-empty--error">Couldn't load tasks — {{ error() }}</div>
+    <div class="at-empty at-empty--error">
+      <span class="at-empty-ico at-empty-ico--error">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </span>
+      <p class="at-empty-title">Couldn't load tasks</p>
+      <p class="at-empty-sub">{{ error() }}</p>
+    </div>
   } @else {
 
     <!-- Pending approvals -->
     @if (pendingApprovals().length) {
-      <section class="at-section">
-        <h2 class="at-section__title">Pending Approvals</h2>
+      <section class="at-section at-mount" style="--i:0">
+        <div class="at-section__head">
+          <span class="at-section__ico" style="--sc:#6366f1">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </span>
+          <h2 class="at-section__title">Pending Approvals</h2>
+          <span class="at-section__count">{{ pendingApprovals().length }}</span>
+        </div>
         <div class="at-table-wrap">
           <table class="at-table">
             <thead>
               <tr><th>Type</th><th>By</th><th>Closing Date</th><th>Status</th></tr>
             </thead>
             <tbody>
-              @for (item of pendingApprovals(); track item.id) {
-                <tr>
+              @for (item of pendingApprovals(); track item.id; let i = $index) {
+                <tr [style.--i]="i">
                   <td data-label="Type"><span class="at-badge" [class]="taskTypeBadgeClass(item.taskType)">{{ taskTypeLabel(item.taskType) }}</span></td>
                   <td data-label="By">{{ item.requestedBy.name }}</td>
                   <td data-label="Closing Date">{{ closingDate(item) ? (closingDate(item) | orgDateOnly) : '—' }}</td>
@@ -41,16 +62,22 @@
 
     <!-- Work tasks -->
     @if (workTasks().length) {
-      <section class="at-section">
-        <h2 class="at-section__title">Work Tasks</h2>
+      <section class="at-section at-mount" style="--i:1">
+        <div class="at-section__head">
+          <span class="at-section__ico" style="--sc:#0ea5e9">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </span>
+          <h2 class="at-section__title">Work Tasks</h2>
+          <span class="at-section__count">{{ workTasks().length }}</span>
+        </div>
         <div class="at-table-wrap">
           <table class="at-table">
             <thead>
               <tr><th>Title</th><th>Assigned To</th><th>Due Date</th><th>Status</th></tr>
             </thead>
             <tbody>
-              @for (item of workTasks(); track item.id) {
-                <tr>
+              @for (item of workTasks(); track item.id; let i = $index) {
+                <tr [style.--i]="i">
                   <td data-label="Title">{{ item.title }}</td>
                   <td data-label="Assigned To">{{ item.assignedTo.name }}</td>
                   <td data-label="Due Date">{{ item.dueDate ? (item.dueDate | orgDateOnly) : '—' }}</td>
@@ -65,16 +92,22 @@
 
     <!-- History -->
     @if (historyItems().length) {
-      <section class="at-section">
-        <h2 class="at-section__title">History</h2>
+      <section class="at-section at-mount" style="--i:2">
+        <div class="at-section__head">
+          <span class="at-section__ico" style="--sc:#8b5cf6">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </span>
+          <h2 class="at-section__title">History</h2>
+          <span class="at-section__count">{{ historyTotal() }}</span>
+        </div>
         <div class="at-table-wrap">
           <table class="at-table">
             <thead>
               <tr><th>Title</th><th>Category</th><th>Assigned To</th><th>Closed</th><th>Status</th></tr>
             </thead>
             <tbody>
-              @for (item of historyItems(); track item.id) {
-                <tr>
+              @for (item of historyItems(); track item.id; let i = $index) {
+                <tr [style.--i]="i">
                   <td data-label="Title">{{ item.title }}</td>
                   <td data-label="Category">{{ item.category }}</td>
                   <td data-label="Assigned To">{{ item.assignedTo.name }}</td>
@@ -87,16 +120,28 @@
         </div>
         @if (totalPages() > 1) {
           <div class="at-pagination">
-            <button class="at-page-btn" [disabled]="!hasPrev()" (click)="prevPage()">Prev</button>
+            <button class="at-page-btn" [disabled]="!hasPrev()" (click)="prevPage()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              Prev
+            </button>
             <span class="at-page-info">Page {{ page() }} of {{ totalPages() }}</span>
-            <button class="at-page-btn" [disabled]="!hasNext()" (click)="nextPage()">Next</button>
+            <button class="at-page-btn" [disabled]="!hasNext()" (click)="nextPage()">
+              Next
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         }
       </section>
     }
 
     @if (!pendingApprovals().length && !workTasks().length && !historyItems().length) {
-      <div class="at-empty">Nothing here yet.</div>
+      <div class="at-empty">
+        <span class="at-empty-ico at-empty-ico--ok">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </span>
+        <p class="at-empty-title">Nothing here yet</p>
+        <p class="at-empty-sub">Tasks, approvals and requests will show up here as they come in.</p>
+      </div>
     }
   }
 

@@ -9,6 +9,7 @@ import {
   TaskHistoryItem, WorkTaskDto,
 } from '../../../../core/models/task.model';
 import { OrgDateOnlyPipe } from '../../../../shared/pipes/localization.pipes';
+import { UiIconComponent } from '../../../../shared/components';
 
 const PAGE_SIZE = 10;
 
@@ -16,7 +17,7 @@ const PAGE_SIZE = 10;
   selector: 'app-all-tasks',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, OrgDateOnlyPipe],
+  imports: [CommonModule, OrgDateOnlyPipe, UiIconComponent],
   templateUrl: './all-tasks.component.html',
   styleUrl: './all-tasks.component.scss',
 })
@@ -25,12 +26,12 @@ export class AllTasksComponent {
   private readonly taskSvc  = inject(TaskService);
   private readonly realtime = inject(RealtimeService);
 
-  readonly categories: { label: string; value: AllTasksCategory }[] = [
-    { label: 'All',        value: 'all' },
-    { label: 'Attendance', value: 'attendance' },
-    { label: 'Leave',      value: 'leave' },
-    { label: 'Comp-Off',   value: 'comp_off' },
-    { label: 'Work',       value: 'work' },
+  readonly categories: { label: string; value: AllTasksCategory; icon: 'grid' | 'clock' | 'calendar' | 'award' | 'clipboard-check' }[] = [
+    { label: 'All',        value: 'all',        icon: 'grid' },
+    { label: 'Attendance', value: 'attendance', icon: 'clock' },
+    { label: 'Leave',      value: 'leave',      icon: 'calendar' },
+    { label: 'Comp-Off',   value: 'comp_off',   icon: 'award' },
+    { label: 'Work',       value: 'work',       icon: 'clipboard-check' },
   ];
 
   category = signal<AllTasksCategory>('all');
@@ -113,7 +114,7 @@ export class AllTasksComponent {
     return {
       completed: 'at-status--done',
       cancelled: 'at-status--cancelled',
-      expired: 'at-status--progress',
-    }[s] ?? '';
+      expired: 'at-status--expired',
+    }[s] ?? 'at-status--expired';
   }
 }

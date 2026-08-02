@@ -35,7 +35,11 @@
           <div class="es-meta">
             Pay Grade: <strong>{{ current()!.payGradeName || '—' }}</strong> ·
             Effective from <strong>{{ current()!.effectiveFrom | orgDateOnly }}</strong> ·
-            Reason: <strong>{{ current()!.reason }}</strong>
+            Reason: <strong>{{ current()!.reason }}</strong> ·
+            Frequency: <strong>{{ current()!.payFrequency === 'weekly' ? 'Weekly' : 'Monthly' }}</strong>
+            @if (current()!.payFrequency === 'weekly' && current()!.weekStart) {
+              (week starts <strong>{{ current()!.weekStart }}</strong>)
+            }
           </div>
 
           <div class="es-table-wrap">
@@ -95,6 +99,68 @@
         </div>
       </div>
 
+      <!-- ── Pay-to-Date ─────────────────────────────────────────── -->
+      <div class="es-card">
+        <div class="es-card__head"><span class="es-card__title">Pay-to-Date</span></div>
+        @if (previewLoading()) {
+          <div class="es-empty">Loading…</div>
+        } @else if (previewError()) {
+          <div class="es-empty">{{ previewError() }}</div>
+        } @else {
+          @if (preview(); as pv) {
+            <p class="es-preview-banner">Live estimate for the period still in progress — updates as attendance changes, never an official payslip.</p>
+            <div class="es-stats">
+              <div class="es-stat"><span class="es-stat__label">{{ periodLabel(pv) }}</span><span class="es-stat__val">Gross {{ pv.grossEarnings | number }}</span></div>
+              <div class="es-stat"><span class="es-stat__label">Deductions</span><span class="es-stat__val">{{ pv.totalDeductions | number }}</span></div>
+              <div class="es-stat"><span class="es-stat__label">Net Pay</span><span class="es-stat__val es-stat__val--net">{{ pv.netPay | number }}</span></div>
+              <div class="es-stat"><span class="es-stat__label">Employer Contributions</span><span class="es-stat__val">{{ pv.employerContributions | number }}</span></div>
+            </div>
+          } @else {
+            <div class="es-empty">No preview available.</div>
+          }
+        }
+      </div>
+
+      <!-- ── Annual Summary ───────────────────────────────────────── -->
+      <div class="es-card">
+        <div class="es-card__head">
+          <span class="es-card__title">Annual Summary</span>
+          <div class="es-card__head-actions">
+            <ui-select class="es-year-select" [options]="yearSelectOptions()" [ngModel]="summaryYear()" (ngModelChange)="setSummaryYear($event)"></ui-select>
+            <button class="es-btn es-btn--ghost es-btn--sm" [disabled]="downloadingSummary()" (click)="downloadSummaryPdf()">
+              {{ downloadingSummary() ? 'Preparing…' : 'Download PDF' }}
+            </button>
+          </div>
+        </div>
+        @if (summaryLoading()) {
+          <div class="es-empty">Loading…</div>
+        } @else if (!summary() || !summary()!.periods.length) {
+          <div class="es-empty">No published payslips found for {{ summaryYear() }} yet.</div>
+        } @else {
+          <div class="es-stats">
+            <div class="es-stat"><span class="es-stat__label">Total Gross</span><span class="es-stat__val">{{ summary()!.totalGrossEarnings | number }}</span></div>
+            <div class="es-stat"><span class="es-stat__label">Total Deductions</span><span class="es-stat__val">{{ summary()!.totalDeductions | number }}</span></div>
+            <div class="es-stat"><span class="es-stat__label">Total Net</span><span class="es-stat__val es-stat__val--net">{{ summary()!.totalNetPay | number }}</span></div>
+          </div>
+          <div class="es-table-wrap">
+            <table class="es-table">
+              <thead><tr><th>Period</th><th>Frequency</th><th>Gross</th><th>Deductions</th><th>Net Pay</th></tr></thead>
+              <tbody>
+                @for (p of summary()!.periods; track p.payslipId) {
+                  <tr>
+                    <td>{{ p.period }}</td>
+                    <td><span class="es-badge" [class.es-badge--earning]="p.payFrequency === 'weekly'">{{ p.payFrequency === 'weekly' ? 'Weekly' : 'Monthly' }}</span></td>
+                    <td>{{ p.grossEarnings | number }}</td>
+                    <td>{{ p.totalDeductions | number }}</td>
+                    <td>{{ p.netPay | number }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
     } @else {
 
       <!-- ── Structure editor ──────────────────────────────────── -->
@@ -115,6 +181,19 @@
               <label>Reason</label>
               <ui-select [options]="reasonOptions" [ngModel]="reason()" (ngModelChange)="reason.set($event)"></ui-select>
             </div>
+          </div>
+
+          <div class="es-form-row">
+            <div class="es-field">
+              <label>Pay Frequency</label>
+              <ui-select [options]="frequencyOptions" [ngModel]="payFrequency()" (ngModelChange)="payFrequency.set($event)"></ui-select>
+            </div>
+            @if (payFrequency() === 'weekly') {
+              <div class="es-field">
+                <label>Week Starts On</label>
+                <ui-select [options]="weekStartOptions" [ngModel]="weekStart()" (ngModelChange)="weekStart.set($event)"></ui-select>
+              </div>
+            }
           </div>
 
           <div class="es-field">

@@ -1,0 +1,176 @@
+<div class="ptb">
+
+  @if (loading()) {
+    <div class="ptb-empty">Loading…</div>
+  } @else {
+
+    <div class="ptb-layout" [class.ptb-layout--readonly]="!canEdit">
+
+      @if (canEdit) {
+        <!-- ── Palette ─────────────────────────────────────────── -->
+        <div class="ptb-palette">
+          <div class="ptb-palette__group">
+            <span class="ptb-palette__title">Layout</span>
+            @for (def of layoutBlockDefs; track def.type) {
+              <div
+                class="ptb-chip"
+                draggable="true"
+                (dragstart)="onPaletteLayoutDragStart($event, def.type)"
+                (dragend)="onDragEnd()"
+              >
+                <div class="ptb-chip__text">
+                  <span class="ptb-chip__label">{{ def.label }}</span>
+                  <span class="ptb-chip__hint">{{ def.hint }}</span>
+                </div>
+                <button type="button" class="ptb-chip__add" (click)="addLayoutBlock(def.type)" aria-label="Add">+</button>
+              </div>
+            }
+          </div>
+
+          @for (group of fieldCategories(); track group.category) {
+            <div class="ptb-palette__group">
+              <span class="ptb-palette__title">{{ group.category }}</span>
+              @for (f of group.items; track f.key) {
+                <div
+                  class="ptb-chip"
+                  draggable="true"
+                  (dragstart)="onPaletteFieldDragStart($event, f)"
+                  (dragend)="onDragEnd()"
+                >
+                  <div class="ptb-chip__text">
+                    <span class="ptb-chip__label">{{ f.defaultLabel }}</span>
+                  </div>
+                  <button type="button" class="ptb-chip__add" (click)="addField(f)" aria-label="Add">+</button>
+                </div>
+              }
+            </div>
+          }
+          @if (!fieldCategories().length) {
+            <p class="ptb-palette__empty">No fields available from the server yet.</p>
+          }
+        </div>
+      }
+
+      <!-- ── Canvas ────────────────────────────────────────────── -->
+      <div class="ptb-canvas">
+        <div class="ptb-canvas__head">
+          <span class="ptb-canvas__title">Layout</span>
+          @if (canEdit) {
+            <div class="ptb-canvas__actions">
+              <button type="button" class="ptb-btn ptb-btn--ghost" [disabled]="previewing()" (click)="previewPdf()">
+                {{ previewing() ? 'Preparing…' : 'Preview PDF' }}
+              </button>
+              <button type="button" class="ptb-btn ptb-btn--primary" [disabled]="saving() || !!validationError()" (click)="save()">
+                {{ saving() ? 'Saving…' : 'Save Template' }}
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (canEdit && validationError()) {
+          <p class="ptb-warn">{{ validationError() }}</p>
+        }
+        @if (canEdit && dirty() && !validationError()) {
+          <p class="ptb-dirty">Unsaved changes.</p>
+        }
+
+        <!-- ── Document-styled page — a live approximation of the payslip
+             layout, not a settings form. Blocks still only carry a sortOrder
+             (top-to-bottom), no x/y position — dragging reorders, it doesn't
+             place anywhere on the sheet. ──────────────────────────────── -->
+        <div class="ptb-desk">
+          <div class="ptb-page">
+            @if (!blocks().length) {
+              <div class="ptb-page__empty">
+                @if (canEdit) {
+                  Drag fields here from the left, or tap “+” to start building the layout.
+                } @else {
+                  No template configured yet.
+                }
+              </div>
+            }
+
+            @for (b of blocks(); track b._key; let i = $index) {
+              <div
+                class="ptb-block"
+                [class.ptb-block--over]="canEdit && dragOverIndex() === i"
+                [class.ptb-block--spacer]="b.type === 'spacer'"
+                [attr.draggable]="canEdit"
+                (dragstart)="onBlockDragStart($event, i)"
+                (dragover)="onCanvasDragOver($event, i)"
+                (drop)="onDrop($event, i)"
+                (dragend)="onDragEnd()"
+              >
+                <div class="ptb-block__content">
+                  @switch (b.type) {
+                    @case ('heading') {
+                      @if (canEdit) {
+                        <input class="ptb-doc-heading ptb-doc-input" type="text" [ngModel]="b.label" (ngModelChange)="updateLabel(b._key, $event)" placeholder="Heading text" />
+                      } @else {
+                        <h3 class="ptb-doc-heading">{{ b.label }}</h3>
+                      }
+                    }
+                    @case ('field') {
+                      <div class="ptb-doc-field">
+                        @if (canEdit) {
+                          <input class="ptb-doc-field__label ptb-doc-input" type="text" [ngModel]="b.label" (ngModelChange)="updateLabel(b._key, $event)" placeholder="Label" />
+                        } @else {
+                          <span class="ptb-doc-field__label">{{ b.label }}</span>
+                        }
+                        <span class="ptb-doc-field__dots"></span>
+                        <span class="ptb-doc-field__value">{{ sampleFor(b.fieldKey) }}</span>
+                      </div>
+                    }
+                    @case ('line-items-table') {
+                      <table class="ptb-doc-table">
+                        <thead><tr><th>Description</th><th>Type</th><th>Amount</th></tr></thead>
+                        <tbody>
+                          @for (row of sampleLineItems; track row.name) {
+                            <tr>
+                              <td>{{ row.name }}</td>
+                              <td><span class="ptb-doc-type" [class.ptb-doc-type--deduction]="row.type === 'deduction'">{{ row.type === 'earning' ? 'Earning' : 'Deduction' }}</span></td>
+                              <td>{{ row.amount }}</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                      <span class="ptb-doc-caption">Auto-generated from the payslip's real components</span>
+                    }
+                    @case ('logo') {
+                      <div class="ptb-doc-logo">LOGO</div>
+                      <span class="ptb-doc-caption">Blank on the PDF if no logo is set in Company Profile</span>
+                    }
+                    @case ('spacer') {
+                      @if (canEdit) { <span class="ptb-doc-spacer-label">— spacer —</span> }
+                    }
+                  }
+                </div>
+
+                @if (canEdit) {
+                  <div class="ptb-block__rail">
+                    <span class="ptb-block__handle" aria-hidden="true">⠿</span>
+                    <button type="button" (click)="moveUp(i)" [disabled]="i === 0" aria-label="Move up">▲</button>
+                    <button type="button" (click)="moveDown(i)" [disabled]="i === blocks().length - 1" aria-label="Move down">▼</button>
+                    <button type="button" class="ptb-block__remove" (click)="removeBlock(b._key)" aria-label="Remove">✕</button>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (canEdit && blocks().length) {
+              <div
+                class="ptb-block ptb-block--endzone"
+                [class.ptb-block--over]="dragOverIndex() === blocks().length"
+                (dragover)="onCanvasDragOver($event, blocks().length)"
+                (drop)="onDrop($event, blocks().length)"
+                (dragend)="onDragEnd()"
+              >
+                + Drop here, or tap “+” on any field in the palette
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

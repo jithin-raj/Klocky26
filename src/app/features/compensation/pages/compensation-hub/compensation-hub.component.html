@@ -113,19 +113,42 @@
         </div>
 
         <div class="cp-run">
+          <div class="cp-run__freq" role="tablist">
+            @for (opt of frequencyOptions; track opt.value) {
+              <button type="button" role="tab" class="cp-run__freq-tab" [class.cp-run__freq-tab--active]="runFrequency() === opt.value" (click)="setRunFrequency(opt.value)">
+                {{ opt.label }}
+              </button>
+            }
+          </div>
+
           <div class="cp-run__controls">
-            <div class="cp-run__field">
-              <label>Year</label>
-              <ui-input type="number" [ngModel]="runYear()" (ngModelChange)="runYear.set($event)"></ui-input>
-            </div>
-            <div class="cp-run__field">
-              <label>Month</label>
-              <ui-select [options]="monthOptions" [ngModel]="runMonth()" (ngModelChange)="runMonth.set($event)"></ui-select>
-            </div>
+            @if (runFrequency() === 'weekly') {
+              <div class="cp-run__field">
+                <label>Week of</label>
+                <ui-input type="date" [ngModel]="runWeekStart()" (ngModelChange)="runWeekStart.set($event)"></ui-input>
+              </div>
+              <div class="cp-run__field">
+                <label>Year</label>
+                <ui-input type="number" [ngModel]="runYear()" (ngModelChange)="runYear.set($event)"></ui-input>
+              </div>
+              <div class="cp-run__field">
+                <label>Month</label>
+                <ui-select [options]="monthOptions" [ngModel]="runMonth()" (ngModelChange)="runMonth.set($event)"></ui-select>
+              </div>
+            } @else {
+              <div class="cp-run__field">
+                <label>Year</label>
+                <ui-input type="number" [ngModel]="runYear()" (ngModelChange)="runYear.set($event)"></ui-input>
+              </div>
+              <div class="cp-run__field">
+                <label>Month</label>
+                <ui-select [options]="monthOptions" [ngModel]="runMonth()" (ngModelChange)="runMonth.set($event)"></ui-select>
+              </div>
+            }
             <button class="cp-btn cp-btn--ghost" (click)="loadPayslips()">Refresh</button>
             @if (canEdit()) {
               <button class="cp-btn cp-btn--primary" [disabled]="generating()" (click)="runPayrollForOrg()">
-                {{ generating() ? 'Running…' : 'Generate payslips (whole org)' }}
+                {{ generating() ? 'Running…' : (runFrequency() === 'weekly' ? 'Generate weekly payslips (whole org)' : 'Generate payslips (whole org)') }}
               </button>
             }
           </div>
@@ -136,13 +159,28 @@
               @if (r.errors.length) {
                 <ul>@for (e of r.errors; track e) { <li>{{ e }}</li> }</ul>
               }
+              @if (canEdit() && draftCount() > 0) {
+                <button class="cp-btn cp-btn--primary cp-run__publish-all" [disabled]="publishingBulk()" (click)="publishAllForPeriod()">
+                  {{ publishingBulk() ? 'Publishing…' : 'Publish all ' + draftCount() + ' generated payslip(s) for this period' }}
+                </button>
+              }
             </div>
           }
         </div>
 
+        @if (canEdit() && draftCount() > 0 && !lastRunResult()) {
+          <div class="cp-run__result cp-run__result--drafts">
+            <strong>{{ draftCount() }} draft payslip(s)</strong> in this list are not visible to employees yet.
+            <button class="cp-btn cp-btn--primary cp-run__publish-all" [disabled]="publishingBulk()" (click)="publishAllForPeriod()">
+              {{ publishingBulk() ? 'Publishing…' : 'Publish all ' + draftCount() + ' for this period' }}
+            </button>
+          </div>
+        }
+
         <ui-data-grid
           [columns]="payslipColumns"
           [rows]="payslips()"
+          [actions]="payslipActions"
           [loading]="loadingPayslips()"
           emptyMessage="No payslips generated for this period yet"
         ></ui-data-grid>
@@ -150,6 +188,19 @@
         @if (payslips().length) {
           <div class="cp-run__total">Total net pay <strong>{{ totalNet() | number }}</strong></div>
         }
+      </div>
+    }
+
+    <!-- ── Payslip Template ─────────────────────────────────── -->
+    @case ('template') {
+      <div class="cp-panel">
+        <div class="cp-panel__head">
+          <div class="cp-panel__titles">
+            <h2>Payslip Template</h2>
+            <p>Drag fields onto the canvas to control what appears on every generated payslip PDF.</p>
+          </div>
+        </div>
+        <app-payslip-template-builder [canEdit]="canEdit()"></app-payslip-template-builder>
       </div>
     }
 
@@ -167,6 +218,18 @@
           <div class="cp-empty">Loading…</div>
         } @else if (settings()) { @let s = settings()!;
           <div class="cp-settings">
+
+            <div class="cp-stat">
+              <div class="cp-stat__head">
+                <div>
+                  <span class="cp-stat__name">Default Pay Frequency</span>
+                  <span class="cp-stat__sub">Used to pre-select the payslip run type; each employee's salary structure can still override it.</span>
+                </div>
+              </div>
+              <div class="cp-stat__grid">
+                <ui-form-field label="Frequency"><ui-select [options]="frequencyOptions" [ngModel]="s.defaultPayFrequency" (ngModelChange)="s.defaultPayFrequency = $event" [disabled]="!canEdit()"></ui-select></ui-form-field>
+              </div>
+            </div>
 
             <div class="cp-stat">
               <div class="cp-stat__head">

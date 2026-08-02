@@ -80,6 +80,22 @@ export class TasksComponent implements OnInit {
 
   readonly pendingCount = computed(() => this.pendingTasks().length);
 
+  // ── Pagination (client-side for now — GET /tasks/pending returns the full
+  // list; swap `pagedPendingTasks` for real page/pageSize API params once the
+  // server adds pagination there, the UI/interaction stays identical). ──────
+  static readonly PAGE_SIZE = 8;
+  pendingPage = signal(1);
+  readonly pendingTotalPages = computed(() => Math.max(1, Math.ceil(this.pendingCount() / TasksComponent.PAGE_SIZE)));
+  readonly pagedPendingTasks = computed(() => {
+    const page = Math.min(this.pendingPage(), this.pendingTotalPages());
+    const start = (page - 1) * TasksComponent.PAGE_SIZE;
+    return this.pendingTasks().slice(start, start + TasksComponent.PAGE_SIZE);
+  });
+  readonly hasPrevPending = computed(() => this.pendingPage() > 1);
+  readonly hasNextPending = computed(() => this.pendingPage() < this.pendingTotalPages());
+  prevPendingPage(): void { if (this.hasPrevPending()) this.pendingPage.update(p => p - 1); }
+  nextPendingPage(): void { if (this.hasNextPending()) this.pendingPage.update(p => p + 1); }
+
   constructor() {
     // Permissions resolve async (GET /permissions/me fired from the shell) — react
     // once they land instead of checking canView() only at the ngOnInit instant.
@@ -129,6 +145,9 @@ export class TasksComponent implements OnInit {
       next: () => {
         this.inboxBusyId.set(null);
         this.pendingTasks.update(l => l.filter(t => t.id !== item.id));
+        // Close the detail modal only on confirmed success — if it was open for
+        // this item, leaving it open on failure keeps the error visible in context.
+        if (this.viewTarget()?.id === item.id) this.viewTarget.set(null);
         this.toast.success('Approved', `${item.title} has been approved.`);
         this.taskSvc.refreshCounts();
       },
@@ -191,6 +210,15 @@ export class TasksComponent implements OnInit {
       regularization_approval: 'tk-badge--attendance',
       comp_off_approval: 'tk-badge--compoff',
     }[t];
+  }
+
+  /** Row accent colour + icon, keyed the same as taskTypeBadgeClass — used by the row-card list. */
+  taskTypeAccent(t: PendingTaskType): string {
+    return { leave_approval: '#6366f1', regularization_approval: '#d97706', comp_off_approval: '#16a34a' }[t];
+  }
+
+  taskTypeIcon(t: PendingTaskType): 'calendar' | 'clock' | 'award' {
+    return { leave_approval: 'calendar', regularization_approval: 'clock', comp_off_approval: 'award' }[t] as any;
   }
 
   // ── "New" split-button ─────────────────────────────────────────────────

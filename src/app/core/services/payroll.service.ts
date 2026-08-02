@@ -10,6 +10,9 @@ import {
   SalaryStructureDto, SetSalaryStructureRequest,
   BonusDto, BonusRequest,
   PayslipDto, GeneratePayslipRequest, PayslipRunResult,
+  GenerateWeeklyPayslipRequest, WeeklyPayslipRunResult,
+  PayslipTemplateFieldDto, PayslipTemplateDto, UpdatePayslipTemplateRequest,
+  AnnualSummaryDto,
 } from '../models/payroll.model';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,6 +94,23 @@ export class PayrollService {
       .pipe(map(res => asArray<PayslipDto>(res.data)));
   }
 
+  // ── Payslips (admin, weekly) ──────────────────────────────────────────────
+  // NOTE: paths inferred from the existing monthly convention above
+  // (/payroll/payslips[/generate] → /payroll/payslips/weekly[/generate]) —
+  // not yet confirmed against the actual backend route table. Adjust the two
+  // path strings below if they don't match once verified.
+  /** userId omitted → whole-org run (WeeklyPayslipRunResult); userId set → single PayslipDto. */
+  generateWeeklyPayslips(body: GenerateWeeklyPayslipRequest): Observable<PayslipDto | WeeklyPayslipRunResult> {
+    return this.api.post<ApiResponse<PayslipDto | WeeklyPayslipRunResult>>('/payroll/payslips/weekly/generate', body)
+      .pipe(map(res => res.data));
+  }
+
+  /** `month` narrows to weeks starting within that month, same filtering intent as getPayslips(). */
+  getWeeklyPayslips(year: number, month?: number): Observable<PayslipDto[]> {
+    return this.api.get<ApiResponse<PayslipDto[] | { data: PayslipDto[] }>>('/payroll/payslips/weekly', { year, month })
+      .pipe(map(res => asArray<PayslipDto>(res.data)));
+  }
+
   // ── Self (any employee) ───────────────────────────────────────────────────
   getMyPayslips(): Observable<PayslipDto[]> {
     return this.api.get<ApiResponse<PayslipDto[] | { data: PayslipDto[] }>>('/payroll/me/payslips')
@@ -99,5 +119,69 @@ export class PayrollService {
 
   getMyPayslip(year: number, month: number): Observable<PayslipDto> {
     return this.api.get<ApiResponse<PayslipDto>>(`/payroll/me/payslips/${year}/${month}`).pipe(map(res => res.data));
+  }
+
+  // ── Publish ───────────────────────────────────────────────────────────────
+  publishPayslip(payslipId: string): Observable<PayslipDto> {
+    return this.api.post<ApiResponse<PayslipDto>>(`/payroll/payslips/${payslipId}/publish`, {}).pipe(map(res => res.data));
+  }
+
+  publishForMonth(year: number, month: number): Observable<{ published: number }> {
+    return this.api.post<ApiResponse<{ published: number }>>(`/payroll/payslips/publish?year=${year}&month=${month}`, {})
+      .pipe(map(res => res.data));
+  }
+
+  publishForWeek(weekStart: string): Observable<{ published: number }> {
+    return this.api.post<ApiResponse<{ published: number }>>(`/payroll/payslips/publish-weekly?weekStart=${encodeURIComponent(weekStart)}`, {})
+      .pipe(map(res => res.data));
+  }
+
+  // ── PDF downloads ─────────────────────────────────────────────────────────
+  downloadPayslipPdf(payslipId: string): Observable<Blob> {
+    return this.api.getBlob(`/payroll/payslips/${payslipId}/pdf`);
+  }
+
+  downloadMyPayslipPdf(payslipId: string): Observable<Blob> {
+    return this.api.getBlob(`/payroll/me/payslips/${payslipId}/pdf`);
+  }
+
+  downloadAnnualSummaryPdf(userId: string, year: number): Observable<Blob> {
+    return this.api.getBlob(`/payroll/employees/${userId}/annual-summary/${year}/pdf`);
+  }
+
+  downloadMyAnnualSummaryPdf(year: number): Observable<Blob> {
+    return this.api.getBlob(`/payroll/me/annual-summary/${year}/pdf`);
+  }
+
+  // ── Annual summary (JSON, for on-screen display) ────────────────────────────
+  getAnnualSummary(userId: string, year: number): Observable<AnnualSummaryDto> {
+    return this.api.get<ApiResponse<AnnualSummaryDto>>(`/payroll/employees/${userId}/annual-summary/${year}`).pipe(map(res => res.data));
+  }
+
+  getMyAnnualSummary(year: number): Observable<AnnualSummaryDto> {
+    return this.api.get<ApiResponse<AnnualSummaryDto>>(`/payroll/me/annual-summary/${year}`).pipe(map(res => res.data));
+  }
+
+  // ── Pay-to-date preview ──────────────────────────────────────────────────
+  getPreview(userId: string): Observable<PayslipDto> {
+    return this.api.get<ApiResponse<PayslipDto>>(`/payroll/employees/${userId}/payslip-preview`).pipe(map(res => res.data));
+  }
+
+  getMyPreview(): Observable<PayslipDto> {
+    return this.api.get<ApiResponse<PayslipDto>>('/payroll/me/payslip-preview').pipe(map(res => res.data));
+  }
+
+  // ── Template builder ─────────────────────────────────────────────────────
+  getTemplateFields(): Observable<PayslipTemplateFieldDto[]> {
+    return this.api.get<ApiResponse<PayslipTemplateFieldDto[] | { data: PayslipTemplateFieldDto[] }>>('/payroll/template/fields')
+      .pipe(map(res => asArray<PayslipTemplateFieldDto>(res.data)));
+  }
+
+  getTemplate(): Observable<PayslipTemplateDto> {
+    return this.api.get<ApiResponse<PayslipTemplateDto>>('/payroll/template').pipe(map(res => res.data));
+  }
+
+  updateTemplate(req: UpdatePayslipTemplateRequest): Observable<PayslipTemplateDto> {
+    return this.api.put<ApiResponse<PayslipTemplateDto>>('/payroll/template', req).pipe(map(res => res.data));
   }
 }

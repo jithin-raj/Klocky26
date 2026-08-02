@@ -228,6 +228,21 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     return '★★★★★'.slice(0, n);
   }
 
+  // ─── Feature card tilt-on-hover (subtle 3D, desktop pointer only) ────
+  onCardTilt(e: MouseEvent): void {
+    const card = e.currentTarget as HTMLElement;
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    card.style.setProperty('--tiltX', `${(-py * 6).toFixed(2)}deg`);
+    card.style.setProperty('--tiltY', `${(px * 6).toFixed(2)}deg`);
+  }
+  onCardTiltReset(e: MouseEvent): void {
+    const card = e.currentTarget as HTMLElement;
+    card.style.setProperty('--tiltX', '0deg');
+    card.style.setProperty('--tiltY', '0deg');
+  }
+
   mobileMenuOpen = signal(false);
   toggleMenu(): void { this.mobileMenuOpen.update(v => !v); }
   closeMenu(): void  { this.mobileMenuOpen.set(false); }

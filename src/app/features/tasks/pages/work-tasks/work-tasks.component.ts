@@ -67,10 +67,27 @@ export class WorkTasksComponent {
   error    = signal<string | null>(null);
   busyId   = signal<string | null>(null);
 
+  // ── Pagination (client-side for now — GET /tasks/work returns the full
+  // filtered list; swap `pagedTasks` for real page/pageSize API params once
+  // the server adds pagination there, the UI/interaction stays identical). ──
+  static readonly PAGE_SIZE = 8;
+  page = signal(1);
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.tasks().length / WorkTasksComponent.PAGE_SIZE)));
+  readonly pagedTasks = computed(() => {
+    const p = Math.min(this.page(), this.totalPages());
+    const start = (p - 1) * WorkTasksComponent.PAGE_SIZE;
+    return this.tasks().slice(start, start + WorkTasksComponent.PAGE_SIZE);
+  });
+  readonly hasPrevPage = computed(() => this.page() > 1);
+  readonly hasNextPage = computed(() => this.page() < this.totalPages());
+  prevPage(): void { if (this.hasPrevPage()) this.page.update(p => p - 1); }
+  nextPage(): void { if (this.hasNextPage()) this.page.update(p => p + 1); }
+
   constructor() {
     effect(() => {
       const scope = this.scope();
       const status = this.statusFilter();
+      this.page.set(1);
       this.loadTasks(scope, status);
     });
 
@@ -172,6 +189,16 @@ export class WorkTasksComponent {
 
   openEdit(item: WorkTaskDto) {
     if (!item.actions.includes('edit')) return;
+    this._openForm(item);
+  }
+
+  /** Card click — opens the same form as openEdit(), but for ANY task
+   *  (read-only when the viewer can't edit) so every card has a details view. */
+  openDetails(item: WorkTaskDto) {
+    this._openForm(item);
+  }
+
+  private _openForm(item: WorkTaskDto) {
     this.editTarget.set(item);
     this.formTitle.set(item.title);
     this.formDescription.set(item.description ?? '');
@@ -182,13 +209,19 @@ export class WorkTasksComponent {
     this.showForm.set(true);
   }
 
+  /** True once a task without 'edit' access is opened via openDetails() — the form renders read-only. */
+  readonly formReadonly = computed(() => {
+    const t = this.editTarget();
+    return !!t && !t.actions.includes('edit');
+  });
+
   closeForm() {
     this.showForm.set(false);
     this.editTarget.set(null);
   }
 
   submitForm() {
-    if (!this.formTitle().trim() || this.saving()) return;
+    if (!this.formTitle().trim() || this.saving() || this.formReadonly()) return;
     this.saving.set(true);
 
     const editing = this.editTarget();
@@ -237,6 +270,10 @@ export class WorkTasksComponent {
   }
 
   // ── Row actions ───────────────────────────────────────────────────────────
+  /** Which status change is in flight for busyId() — lets the template show a
+   *  spinner on the exact button clicked (a row can offer both actions at once). */
+  busyAction = signal<'done' | 'cancelled' | null>(null);
+
   completeTask(item: WorkTaskDto) {
     this.setStatus(item, 'done');
   }
@@ -248,32 +285,49 @@ export class WorkTasksComponent {
   private setStatus(item: WorkTaskDto, status: 'done' | 'cancelled') {
     if (this.busyId()) return;
     this.busyId.set(item.id);
+    this.busyAction.set(status);
     this.taskSvc.updateWorkTask(item.id, { status }).subscribe({
       next: updated => {
         this.busyId.set(null);
+        this.busyAction.set(null);
         this.tasks.update(l => l.map(t => t.id === updated.id ? updated : t));
         this.taskSvc.refreshCounts();
       },
       error: err => {
         this.busyId.set(null);
+        this.busyAction.set(null);
         this.toast.error('Could not update task', err?.error?.error ?? 'Please try again.');
       },
     });
   }
 
+  // ── Delete confirmation (styled modal — no native confirm()) ────────────
+  deleteTarget = signal<WorkTaskDto | null>(null);
+
   deleteTask(item: WorkTaskDto) {
     if (this.busyId() || !item.actions.includes('delete')) return;
-    if (!confirm(`Delete "${item.title}"? This can't be undone.`)) return;
+    this.deleteTarget.set(item);
+  }
+
+  cancelDelete(): void {
+    this.deleteTarget.set(null);
+  }
+
+  confirmDelete(): void {
+    const item = this.deleteTarget();
+    if (!item || this.busyId()) return;
     this.busyId.set(item.id);
     this.taskSvc.deleteWorkTask(item.id).subscribe({
       next: () => {
         this.busyId.set(null);
+        this.deleteTarget.set(null);
         this.tasks.update(l => l.filter(t => t.id !== item.id));
         this.toast.success('Task deleted');
         this.taskSvc.refreshCounts();
       },
       error: err => {
         this.busyId.set(null);
+        this.deleteTarget.set(null);
         this.toast.error('Could not delete task', err?.error?.error ?? 'Please try again.');
       },
     });
