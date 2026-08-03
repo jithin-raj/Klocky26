@@ -1,0 +1,163 @@
+/* ── ScrollHero — pinned WebGL "chapters" section ─────────────────────────
+   Host is 2 × 120vh (one chunk per chapter) so the page scrolls through it;
+   the inner .sh-pin sticks to the viewport for that whole distance while the
+   camera glides and the chapter text swaps underneath. Releasing the sticky
+   pin always costs exactly one viewport-height of scroll no matter what —
+   120vh/chapter keeps that fixed release cost a modest fraction of the
+   whole section without requiring an excessive amount of scrolling to get
+   through both chapters. */
+:host {
+  display: block;
+  position: relative;
+  height: 240vh;
+  /* Same colour as .sh-pin below — during the sticky "release" (the last
+     stretch of scroll, where the pinned box slides away to hand off to the
+     next section) this is what shows behind it. Without this it was plain
+     white, which read as a broken layout rather than a smooth handoff. */
+  background: #03110f;
+}
+
+.sh-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh; /* matches the *real* mobile viewport, avoiding a gap under browser chrome */
+  overflow: hidden;
+  background: #03110f;
+}
+
+.sh-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sh-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 55%, rgba(3, 17, 15, .55) 0%, transparent 60%),
+    radial-gradient(ellipse at center, transparent 25%, rgba(3, 17, 15, .85) 100%);
+}
+
+.sh-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 24px;
+  transition: opacity .15s linear;
+}
+
+.sh-title {
+  margin: 0 0 22px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1px;
+  font-size: clamp(46px, 10vw, 128px);
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #fff;
+  text-shadow: 0 0 50px rgba(20, 184, 166, .5), 0 0 100px rgba(20, 184, 166, .25);
+}
+.sh-char { display: inline-block; }
+
+.sh-subtitle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
+}
+.sh-subline {
+  margin: 0;
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, .92);
+  line-height: 1.6;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, .85), 0 0 4px rgba(0, 0, 0, .6);
+}
+
+.sh-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 28px;
+}
+.sh-cta-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 26px; border-radius: 12px; border: none;
+  background: #fff; color: #0a6b63;
+  font-size: 15px; font-weight: 700; font-family: inherit;
+  cursor: pointer; box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+  transition: box-shadow .18s, transform .12s;
+  svg { transition: transform .18s; }
+  &:hover { box-shadow: 0 14px 38px rgba(0, 0, 0, .4); transform: translateY(-2px); }
+  &:hover svg { transform: translateX(3px); }
+  &:active { transform: translateY(0); }
+}
+.sh-cta-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 22px; border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, .45); background: rgba(255, 255, 255, .12);
+  color: #fff; font-size: 15px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: border-color .15s, background .15s;
+  &:hover { background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .7); }
+}
+
+.sh-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: opacity .15s linear;
+}
+.sh-hint-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .55);
+}
+.sh-hint-track {
+  width: 120px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .18);
+  overflow: hidden;
+}
+.sh-hint-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #14b8a6, #f59e0b);
+  transition: width .1s linear;
+}
+.sh-hint-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, .5);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  :host { height: 220vh; height: 220dvh; }
+  .sh-hint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sh-hint-fill { transition: none; }
+}

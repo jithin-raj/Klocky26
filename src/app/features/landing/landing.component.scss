@@ -25,7 +25,12 @@
   min-height: 100vh;
   background: #f6faf9;
   font-family: 'Inter', sans-serif;
-  overflow-x: hidden;
+  /* No overflow-x here (body already clips horizontal overflow globally,
+     see styles.scss) — overflow-x: hidden on a non-scrolling ancestor like
+     this makes it a CSS "scroll container" per spec (its overflow-y is then
+     computed as auto), which silently breaks position:sticky for every
+     descendant (the nav bar, and the scroll-hero's pinned section) since
+     sticky resolves against this element instead of the real viewport. */
   color: var(--ink);
 }
 
@@ -105,6 +110,50 @@
   transition: box-shadow .18s, transform .12s;
   &:hover { box-shadow: 0 8px 22px rgba(13,148,136,.42); transform: translateY(-1px); }
   &:active { transform: translateY(0); }
+}
+
+/* ─── Scroll-hero @defer placeholder ─────────────────────── */
+/* Mirrors app-scroll-hero's own height (240vh / 220vh ≤640px) and its
+   sticky-pin + centred-content layout so swapping the real component in
+   causes no layout shift and no visible jump in what's on screen. */
+.lp-sh-placeholder {
+  position: relative;
+  height: 240vh;
+  background: #03110f;
+}
+.lp-sh-placeholder-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 22px;
+  padding: 0 24px;
+}
+.lp-sh-placeholder-title {
+  margin: 0;
+  font-size: clamp(46px, 10vw, 128px);
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #fff;
+  text-shadow: 0 0 50px rgba(20,184,166,.5), 0 0 100px rgba(20,184,166,.25);
+}
+.lp-sh-placeholder-sub {
+  margin: 0;
+  max-width: 560px;
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 500;
+  color: rgba(255,255,255,.92);
+  line-height: 1.6;
+  text-shadow: 0 2px 16px rgba(0,0,0,.85);
+}
+.lp-sh-placeholder-cta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+@media (max-width: 640px) {
+  .lp-sh-placeholder { height: 220vh; }
 }
 
 /* ─── Hero ──────────────────────────────────────────────── */
