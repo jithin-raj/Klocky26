@@ -230,7 +230,6 @@
   font-size: 17px; color: var(--slate); line-height: 1.7;
   max-width: 500px; margin: 0 0 32px;
 }
-.lp-hero-ctas { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 32px; }
 .lp-cta-primary {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 14px 26px; border-radius: 12px; border: none;
@@ -463,18 +462,6 @@
 }
 .lp-logo-mark { display: inline-flex; svg { width: 30px; height: 30px; } }
 .lp-logo-word { font-size: 20px; font-weight: 800; letter-spacing: -.5px; }
-
-/* ─── Stats band ────────────────────────────────────────── */
-.lp-stats-band {
-  position: relative; overflow: hidden;
-  background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 50%, var(--brand-3) 100%);
-  padding: 56px 32px;
-}
-.lp-blob-band { width: 600px; height: 600px; top: -280px; right: -120px; background: radial-gradient(circle, rgba(94,234,212,.22), transparent 70%); }
-.lp-stats-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
-.lp-stat { text-align: center; }
-.lp-stat-value { display: block; font-size: clamp(30px, 4vw, 44px); font-weight: 800; color: #fff; line-height: 1; letter-spacing: -1px; }
-.lp-stat-label { display: block; font-size: 13px; color: rgba(255,255,255,.72); margin-top: 8px; font-weight: 500; }
 
 /* ─── Features ──────────────────────────────────────────── */
 .lp-features { position: relative; overflow: hidden; padding: 96px 32px; background: #fff; }
@@ -886,21 +873,6 @@
   &:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(13,148,136,.16); background: #dff7f2; }
 }
 
-/* ─── Value pillars (fallback for stats band) ───────────── */
-.lp-pillars-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-.lp-pillar {
-  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 16px;
-  padding: 22px 18px; display: flex; flex-direction: column; gap: 7px;
-  transition: transform .25s, background .25s;
-  &:hover { transform: translateY(-5px); background: rgba(255,255,255,.16); }
-}
-.lp-pillar-icon {
-  width: 42px; height: 42px; border-radius: 12px; margin-bottom: 4px;
-  display: inline-flex; align-items: center; justify-content: center; color: var(--brand-1); background: #fff;
-  svg { width: 22px; height: 22px; }
-}
-.lp-pillar-title { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -.2px; }
-.lp-pillar-desc { font-size: 12.5px; color: rgba(255,255,255,.82); line-height: 1.55; }
 
 /* ─── Why-choose cards (fallback for testimonials) ──────── */
 .lp-quote-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
@@ -924,7 +896,6 @@
 @media (max-width: 1024px) {
   .lp-hero-inner { gap: 40px; }
   .lp-nav-inner, .lp-hero-inner, .lp-section-inner { padding-left: 28px; padding-right: 28px; }
-  .lp-pillars-grid { gap: 14px; }
 }
 
 /* Tablet portrait — stack hero + AI, keep multi-column grids */
@@ -932,7 +903,7 @@
   .lp-hero-inner { grid-template-columns: 1fr; gap: 46px; text-align: center; }
   .lp-hero-copy { max-width: 620px; margin: 0 auto; }
   .lp-hero-sub { margin-left: auto; margin-right: auto; }
-  .lp-hero-ctas, .lp-hero-perks { justify-content: center; }
+  .lp-hero-perks { justify-content: center; }
   .lp-hero-visual { order: -1; }
   .lp-pv-preview { left: 50%; transform: translateX(-50%); }
   .lp-ai-inner { grid-template-columns: 1fr; gap: 44px; }
@@ -946,13 +917,11 @@
   .lp-feature-grid { grid-template-columns: repeat(2, 1fr); }
   .lp-quote-grid { grid-template-columns: 1fr; max-width: 520px; margin: 0 auto; }
   .lp-footer-inner { grid-template-columns: 1fr; gap: 32px; }
-  .lp-pillars-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Small tablet / large phone */
 @media (max-width: 768px) {
   .lp-nav-actions { .lp-btn-ghost:nth-child(2) { display: none; } }
-  .lp-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 32px 16px; }
   .lp-steps-grid { grid-template-columns: 1fr; gap: 32px; }
   .lp-steps-line { display: none; }
   .lp-logo-cloud { gap: 16px 28px; }
@@ -969,7 +938,6 @@
   .lp-hero { padding: 40px 18px 56px; }
   .lp-features, .lp-steps, .lp-quote-section { padding: 56px 18px; }
   .lp-cta-banner { padding: 60px 18px; }
-  .lp-stats-band { padding: 44px 18px; }
   .lp-ai { padding: 60px 18px; }
   .lp-logos { padding: 44px 18px 36px; }
   .lp-feature-grid { grid-template-columns: 1fr; }
@@ -977,7 +945,6 @@
   .lp-float-chip { display: none; }
   .lp-pv-preview { top: -10px; }
   .lp-ai-report { right: 0; bottom: -16px; }
-  .lp-hero-ctas { flex-direction: column; align-items: stretch; }
   .lp-cta-primary, .lp-cta-ghost { width: 100%; justify-content: center; }
   .lp-footer { padding: 40px 18px 0; }
   .lp-footer-bottom { flex-direction: column; text-align: center; }
@@ -989,8 +956,6 @@
 /* Small phone */
 @media (max-width: 430px) {
   .lp-hero-title { font-size: 33px; letter-spacing: -.6px; }
-  .lp-stats-grid { grid-template-columns: 1fr 1fr; }
-  .lp-pillars-grid { grid-template-columns: 1fr; }
   .lp-footer-cols { grid-template-columns: 1fr; gap: 20px; }
   .lp-hero-perks { gap: 10px 14px; }
   .lp-perk { font-size: 12.5px; }

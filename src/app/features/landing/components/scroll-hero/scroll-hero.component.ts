@@ -72,6 +72,13 @@ export class ScrollHeroComponent implements AfterViewInit, OnDestroy {
   private readonly prefersReducedMotion =
     typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
+  // Phones need a much lighter scene: capped pixel ratio, fewer stars, and
+  // a cheaper/no bloom pass are what actually keep this smooth — a full
+  // desktop-spec WebGL scene on a mid-range phone is what makes a "scroll
+  // animation" feel janky rather than cinematic.
+  private readonly isMobile =
+    typeof window !== 'undefined' && window.matchMedia?.('(max-width: 640px)').matches;
+
   private el: HTMLElement | null = null;
   private renderer?: THREE.WebGLRenderer;
   private composer?: EffectComposer;
@@ -113,16 +120,19 @@ export class ScrollHeroComponent implements AfterViewInit, OnDestroy {
     }
     this.playEntrance();
 
-    window.addEventListener('scroll', this.onScroll, { passive: true });
+    // Progress is recomputed every animation frame (see animate()) rather
+    // than driven off the native 'scroll' event, which can fire in
+    // irregular bursts (especially with trackpad momentum) and made the
+    // camera chase a stale, jumpy target between events. Reading the live
+    // scroll position on every frame ties the motion to the display's
+    // refresh rate instead, which is what actually reads as "smooth".
     window.addEventListener('resize', this.onResize);
-    this.onScroll();
+    this.updateScrollProgress();
   }
 
   goTrial(): void { this.router.navigate(['/free-trial']); }
-  goDemo(): void { this.router.navigate(['/request-demo']); }
 
   ngOnDestroy(): void {
-    window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('resize', this.onResize);
     if (this.animationId) cancelAnimationFrame(this.animationId);
 
@@ -148,15 +158,22 @@ export class ScrollHeroComponent implements AfterViewInit, OnDestroy {
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
     this.camera.position.set(this.smoothCameraPos.x, this.smoothCameraPos.y, this.smoothCameraPos.z);
 
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !this.isMobile, alpha: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.isMobile ? 1 : 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.55;
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.4, 0.86);
+    // Bloom is the single most expensive pass (multiple blur sub-passes at
+    // full resolution) — keep it, but noticeably cheaper, on mobile.
+    const bloom = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      this.isMobile ? 0.45 : 0.7,
+      0.4,
+      0.86,
+    );
     this.composer.addPass(bloom);
 
     this.createStarField();
@@ -166,7 +183,7 @@ export class ScrollHeroComponent implements AfterViewInit, OnDestroy {
   }
 
   private createStarField(): void {
-    const starCount = 1800;
+    const starCount = this.isMobile ? 700 : 1800;
     for (let i = 0; i < 3; i++) {
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(starCount * 3);
@@ -383,6 +400,8 @@ export class ScrollHeroComponent implements AfterViewInit, OnDestroy {
     this.animationId = requestAnimationFrame(this.animate);
     const time = Date.now() * 0.001;
 
+    this.updateScrollProgress();
+
     this.stars.forEach(s => {
       const mat = s.material as THREE.ShaderMaterial;
       if (mat.uniforms['time']) mat.uniforms['time'].value = time;
@@ -391,7 +410,7 @@ export class ScrollHeroComponent implements AfterViewInit, OnDestroy {
     if (this.clockGroup && !this.prefersReducedMotion) this.clockGroup.rotation.z = time * 0.02;
 
     if (this.camera) {
-      const smoothing = this.prefersReducedMotion ? 1 : 0.09;
+      const smoothing = this.prefersReducedMotion ? 1 : 0.065;
       this.smoothCameraPos.x += (this.target.x - this.smoothCameraPos.x) * smoothing;
       this.smoothCameraPos.y += (this.target.y - this.smoothCameraPos.y) * smoothing;
       this.smoothCameraPos.z += (this.target.z - this.smoothCameraPos.z) * smoothing;
@@ -435,8 +454,9 @@ export class ScrollHeroComponent implements AfterViewInit, OnDestroy {
   };
 
   // ── Scroll-scrubbed chapter progress (scoped to this section only) ──────
+  // Called every animation frame, not on the 'scroll' event — see animate().
 
-  private onScroll = (): void => {
+  private updateScrollProgress = (): void => {
     if (!this.el) return;
     const rect = this.el.getBoundingClientRect();
     const total = rect.height - window.innerHeight;

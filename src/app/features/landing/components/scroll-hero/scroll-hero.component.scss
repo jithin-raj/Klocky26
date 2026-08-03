@@ -39,9 +39,13 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  /* Deliberately strong behind the text/CTA column — the 3D scene's
+     brightness varies with camera position (mountains, clock glow, bloom),
+     so this can't rely on the background happening to be dark enough on
+     its own; it forces enough contrast for text/buttons regardless. */
   background:
-    radial-gradient(ellipse 70% 55% at 50% 55%, rgba(3, 17, 15, .55) 0%, transparent 60%),
-    radial-gradient(ellipse at center, transparent 25%, rgba(3, 17, 15, .85) 100%);
+    radial-gradient(ellipse 60% 60% at 50% 58%, rgba(1, 8, 7, .75) 0%, transparent 65%),
+    radial-gradient(ellipse at center, transparent 20%, rgba(3, 17, 15, .88) 100%);
 }
 
 .sh-content {
@@ -88,31 +92,20 @@
 
 .sh-cta {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
   justify-content: center;
-  margin-top: 28px;
+  margin-top: 30px;
 }
 .sh-cta-primary {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 14px 26px; border-radius: 12px; border: none;
-  background: #fff; color: #0a6b63;
-  font-size: 15px; font-weight: 700; font-family: inherit;
-  cursor: pointer; box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 16px 32px; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, #fff, #f0fdfa); color: #0a6b63;
+  font-size: 16px; font-weight: 700; font-family: inherit;
+  cursor: pointer; box-shadow: 0 12px 34px rgba(0, 0, 0, .35), 0 0 0 1px rgba(255,255,255,.06) inset;
   transition: box-shadow .18s, transform .12s;
   svg { transition: transform .18s; }
-  &:hover { box-shadow: 0 14px 38px rgba(0, 0, 0, .4); transform: translateY(-2px); }
+  &:hover { box-shadow: 0 16px 42px rgba(0, 0, 0, .45); transform: translateY(-2px); }
   &:hover svg { transform: translateX(3px); }
   &:active { transform: translateY(0); }
-}
-.sh-cta-ghost {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 13px 22px; border-radius: 12px;
-  border: 1.5px solid rgba(255, 255, 255, .45); background: rgba(255, 255, 255, .12);
-  color: #fff; font-size: 15px; font-weight: 600; font-family: inherit;
-  cursor: pointer; transition: border-color .15s, background .15s;
-  &:hover { background: rgba(255, 255, 255, .22); border-color: rgba(255, 255, 255, .7); }
 }
 
 .sh-hint {
@@ -156,6 +149,8 @@
 @media (max-width: 640px) {
   :host { height: 220vh; height: 220dvh; }
   .sh-hint { display: none; }
+  .sh-cta { margin-top: 22px; }
+  .sh-cta-primary { padding: 13px 24px; font-size: 14.5px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

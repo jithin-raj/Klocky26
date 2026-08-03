@@ -17,7 +17,6 @@ import { UiIconComponent, UiIconName } from '../../shared/components';
 import { ScrollHeroComponent } from './components/scroll-hero/scroll-hero.component';
 import {
   LandingContentService,
-  LandingStat,
   LandingCustomer,
   LandingTestimonial,
   LandingAnnouncement,
@@ -48,7 +47,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     ctaLabel: 'Get early access',
     ctaUrl: '/free-trial',
   });
-  serverStats = signal<LandingStat[]>([]);
   customers = signal<LandingCustomer[]>([]);
   serverTestimonials = signal<LandingTestimonial[]>([]);
 
@@ -156,22 +154,16 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadContent(): void {
     this.content.getContent().subscribe((c) => {
-      this.serverStats.set(c.stats ?? []);
-      this.customers.set(c.customers ?? []);
-      this.serverTestimonials.set(c.testimonials ?? []);
+      // Filter out entries missing their required fields — a technically
+      // non-empty array of blank/incomplete records would otherwise win the
+      // `.length` check and render as empty "real" content instead of
+      // falling back to the honest, always-populated fallback copy.
+      this.customers.set((c.customers ?? []).filter(cu => !!cu.name));
+      this.serverTestimonials.set((c.testimonials ?? []).filter(t => !!t.quote && !!t.author));
       // Only override the default beta banner if the server explicitly sends one.
       if (c.announcement) this.announcement.set(c.announcement);
     });
   }
-
-  /** Honest value pillars — shown in place of headline metrics until the
-   *  server returns real, verifiable stats. No fabricated numbers. */
-  valuePillars = [
-    { key: 'fast', title: 'Set up in minutes', desc: 'Launch your workspace and invite your team the same day — no IT project.' },
-    { key: 'truth', title: 'One source of truth', desc: 'Attendance, leave and people data live together in a single view.' },
-    { key: 'devices', title: 'Web & mobile', desc: 'Your team clocks in from any device, in the office or on the go.' },
-    { key: 'ai', title: 'AI-assisted', desc: 'Ask questions and get insight reports grounded on your own data.' },
-  ];
 
   steps = [
     {
@@ -274,6 +266,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ─── Scroll-reveal (no animation library needed) ─────────────
   private io?: IntersectionObserver;
+  private revealFallbackTimer?: ReturnType<typeof setTimeout>;
 
   ngAfterViewInit(): void {
     const root: HTMLElement = this.host.nativeElement;
@@ -307,6 +300,15 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     );
 
     targets.forEach(el => this.io!.observe(el));
+
+    // Safety net — this is trust-building content (stats, testimonials,
+    // feature cards), not decoration, so it must never end up permanently
+    // invisible over an observer edge case. Anything still unrevealed after
+    // a few seconds is forced visible.
+    this.revealFallbackTimer = setTimeout(() => {
+      targets.forEach(el => el.classList.add('is-visible'));
+      this.io?.disconnect();
+    }, 3000);
   }
 
   // Thin gradient bar in the nav that fills with scroll depth.
@@ -326,5 +328,6 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
     this.io?.disconnect();
     window.removeEventListener('scroll', this.onScroll);
     if (this.clockTimer) clearInterval(this.clockTimer);
+    if (this.revealFallbackTimer) clearTimeout(this.revealFallbackTimer);
   }
 }

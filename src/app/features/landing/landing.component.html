@@ -86,7 +86,6 @@
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
           </button>
-          <button class="lp-cta-ghost light" (click)="goDemo()">Request a Demo</button>
         </div>
       </div>
     </div>
@@ -120,24 +119,7 @@
           approvals and org insights into one elegant platform.
           No spreadsheets. No chaos.
         </p>
-        <div class="lp-hero-ctas lp-anim-up" style="--d:240ms">
-          <button class="lp-cta-primary" (click)="goTrial()">
-            Start Free Trial
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </button>
-          <button class="lp-cta-ghost" (click)="goDemo()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <path d="M8 21h8M12 17v4"/>
-            </svg>
-            Request a Demo
-          </button>
-        </div>
-        <div class="lp-hero-perks lp-anim-up" style="--d:320ms">
+        <div class="lp-hero-perks lp-anim-up" style="--d:240ms">
           @for (perk of ['Free during beta', 'No credit card', 'Set up in minutes']; track perk) {
             <span class="lp-perk">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -300,40 +282,6 @@
         </div>
       }
     </div>
-  </section>
-
-  <!-- ─── STATS BAND / VALUE PILLARS ───────────────────────── -->
-  <section class="lp-stats-band">
-    <div class="lp-blob lp-blob-band" aria-hidden="true"></div>
-    @if (serverStats().length) {
-      <!-- Real, verifiable platform metrics from the server -->
-      <div class="lp-section-inner lp-stats-grid">
-        @for (s of serverStats(); track s.label; let i = $index) {
-          <div class="lp-stat" data-reveal="up" [style.--i]="i">
-            <span class="lp-stat-value">{{ s.value }}</span>
-            <span class="lp-stat-label">{{ s.label }}</span>
-          </div>
-        }
-      </div>
-    } @else {
-      <!-- Honest fallback: product value pillars (no fabricated numbers) -->
-      <div class="lp-section-inner lp-pillars-grid">
-        @for (p of valuePillars; track p.title; let i = $index) {
-          <div class="lp-pillar" data-reveal="up" [style.--i]="i">
-            <span class="lp-pillar-icon">
-              @switch (p.key) {
-                @case ('fast') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg> }
-                @case ('truth') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a8 3 0 0 0 16 0 8 3 0 0 0-16 0z"/><path d="M4 7v10a8 3 0 0 0 16 0V7"/><path d="M4 12a8 3 0 0 0 16 0"/></svg> }
-                @case ('devices') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="10" rx="1.5"/><path d="M2 18h11"/><rect x="16" y="9" width="6" height="11" rx="1.5"/></svg> }
-                @case ('ai') { <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.7L18 9.5l-4.2 1.8L12 16l-1.8-4.7L6 9.5l4.2-1.8z"/><path d="M18 15l.9 2.3L21 18l-2.1.7L18 21l-.9-2.3L15 18l2.1-.7z"/></svg> }
-              }
-            </span>
-            <span class="lp-pillar-title">{{ p.title }}</span>
-            <span class="lp-pillar-desc">{{ p.desc }}</span>
-          </div>
-        }
-      </div>
-    }
   </section>
 
   <!-- ─── FEATURES ─────────────────────────────────────────── -->
