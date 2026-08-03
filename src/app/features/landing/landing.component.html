@@ -64,6 +64,34 @@
     }
   </nav>
 
+  <!-- ─── SCROLL-DRIVEN WEBGL OPENER ────────────────────────── -->
+  <!-- Deferred into its own chunk (three.js is ~1.6MB) so the shell above —
+       nav + this placeholder — paints immediately; the real scene swaps in
+       once loaded. Placeholder matches the real component's height so
+       nothing below it jumps when the swap happens. -->
+  @defer (on immediate) {
+    <app-scroll-hero></app-scroll-hero>
+  } @placeholder (minimum 200ms) {
+    <div class="lp-sh-placeholder">
+      <div class="lp-sh-placeholder-pin">
+        <h1 class="lp-sh-placeholder-title">KLOCKK</h1>
+        <p class="lp-sh-placeholder-sub">
+          Where HR meets clarity — attendance, leave and insight in one calm platform.
+        </p>
+        <div class="lp-sh-placeholder-cta">
+          <button class="lp-cta-primary light" (click)="goTrial()">
+            Start Free Trial
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </button>
+          <button class="lp-cta-ghost light" (click)="goDemo()">Request a Demo</button>
+        </div>
+      </div>
+    </div>
+  }
+
   <!-- ─── HERO ──────────────────────────────────────────────── -->
   <section class="lp-hero">
     <!-- Animated backdrop -->
@@ -83,10 +111,10 @@
           <span class="lp-badge-dot"></span>
           AI-powered HR insights are here
         </div>
-        <h1 class="lp-hero-title lp-anim-up" style="--d:80ms">
+        <h2 class="lp-hero-title lp-anim-up" style="--d:80ms">
           HR &amp; Attendance<br/>
           <span class="lp-gradient-text">Made effortless</span>
-        </h1>
+        </h2>
         <p class="lp-hero-sub lp-anim-up" style="--d:160ms">
           Klockk brings employee management, attendance tracking, leave
           approvals and org insights into one elegant platform.

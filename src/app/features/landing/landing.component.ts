@@ -14,6 +14,7 @@ import { Title, Meta } from '@angular/platform-browser';
 import { OrgThemeService } from '../../core/services/org-theme.service';
 import { AppStateService } from '../../core/services/app-state.service';
 import { UiIconComponent, UiIconName } from '../../shared/components';
+import { ScrollHeroComponent } from './components/scroll-hero/scroll-hero.component';
 import {
   LandingContentService,
   LandingStat,
@@ -26,7 +27,7 @@ import {
   selector: 'app-landing',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [UiIconComponent],
+  imports: [UiIconComponent, ScrollHeroComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })

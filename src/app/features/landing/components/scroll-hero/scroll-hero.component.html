@@ -1,0 +1,37 @@
+<div class="sh-pin">
+  <canvas #canvasRef class="sh-canvas" aria-hidden="true"></canvas>
+
+  <div class="sh-vignette" aria-hidden="true"></div>
+
+  <div class="sh-content" [style.opacity]="contentOpacity()">
+    <h1 #titleEl class="sh-title">
+      @for (ch of titleChars(); track $index) {
+        <span class="sh-char">{{ ch }}</span>
+      }
+    </h1>
+
+    <div #subtitleEl class="sh-subtitle">
+      <p class="sh-subline">{{ chapters[activeChapter()].sub1 }}</p>
+      <p class="sh-subline">{{ chapters[activeChapter()].sub2 }}</p>
+    </div>
+
+    <div #ctaEl class="sh-cta">
+      <button class="sh-cta-primary" (click)="goTrial()">
+        Start Free Trial
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+      <button class="sh-cta-ghost" (click)="goDemo()">Request a Demo</button>
+    </div>
+  </div>
+
+  <div class="sh-hint" aria-hidden="true" [style.opacity]="contentOpacity()">
+    <span class="sh-hint-label">Scroll</span>
+    <div class="sh-hint-track">
+      <div class="sh-hint-fill" [style.width.%]="progressPct()"></div>
+    </div>
+    <span class="sh-hint-count">{{ activeChapter() + 1 }} / {{ chapters.length }}</span>
+  </div>
+</div>
